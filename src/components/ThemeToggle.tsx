@@ -1,81 +1,38 @@
-import { useEffect, useState } from 'react'
+import { MoonStarIcon, SunIcon, SunMoonIcon } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { Button } from '#/components/ui/button'
 
-type ThemeMode = 'light' | 'dark' | 'auto'
-
-function getInitialMode(): ThemeMode {
-  if (typeof window === 'undefined') {
-    return 'auto'
-  }
-
-  const stored = window.localStorage.getItem('theme')
-  if (stored === 'light' || stored === 'dark' || stored === 'auto') {
-    return stored
-  }
-
-  return 'auto'
-}
-
-function applyThemeMode(mode: ThemeMode) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const resolved = mode === 'auto' ? (prefersDark ? 'dark' : 'light') : mode
-
-  document.documentElement.classList.remove('light', 'dark')
-  document.documentElement.classList.add(resolved)
-
-  if (mode === 'auto') {
-    document.documentElement.removeAttribute('data-theme')
-  } else {
-    document.documentElement.setAttribute('data-theme', mode)
-  }
-
-  document.documentElement.style.colorScheme = resolved
-}
+const ORDER = ['light', 'dark', 'system'] as const
 
 export default function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>('auto')
+  const { theme, setTheme } = useTheme()
+  const currentTheme = theme ?? 'system'
+  const nextTheme =
+    ORDER[
+      (ORDER.indexOf(currentTheme as (typeof ORDER)[number]) + 1) % ORDER.length
+    ]
 
-  useEffect(() => {
-    const initialMode = getInitialMode()
-    setMode(initialMode)
-    applyThemeMode(initialMode)
-  }, [])
-
-  useEffect(() => {
-    if (mode !== 'auto') {
-      return
-    }
-
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyThemeMode('auto')
-
-    media.addEventListener('change', onChange)
-    return () => {
-      media.removeEventListener('change', onChange)
-    }
-  }, [mode])
-
-  function toggleMode() {
-    const nextMode: ThemeMode =
-      mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
-    setMode(nextMode)
-    applyThemeMode(nextMode)
-    window.localStorage.setItem('theme', nextMode)
-  }
-
-  const label =
-    mode === 'auto'
-      ? 'Theme mode: auto (system). Click to switch to light mode.'
-      : `Theme mode: ${mode}. Click to switch mode.`
+  const icon =
+    currentTheme === 'light' ? (
+      <SunIcon className="size-4" />
+    ) : currentTheme === 'dark' ? (
+      <MoonStarIcon className="size-4" />
+    ) : (
+      <SunMoonIcon className="size-4" />
+    )
 
   return (
-    <button
+    <Button
       type="button"
-      onClick={toggleMode}
-      aria-label={label}
-      title={label}
-      className="rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--sea-ink)] shadow-[0_8px_22px_rgba(30,90,72,0.08)] transition hover:-translate-y-0.5"
+      variant="outline"
+      size="icon-sm"
+      suppressHydrationWarning
+      className="rounded-full border-border/70 bg-background/70 backdrop-blur-sm"
+      onClick={() => setTheme(nextTheme)}
+      title={`Theme: ${currentTheme}`}
+      aria-label={`Theme: ${currentTheme}`}
     >
-      {mode === 'auto' ? 'Auto' : mode === 'dark' ? 'Dark' : 'Light'}
-    </button>
+      {icon}
+    </Button>
   )
 }

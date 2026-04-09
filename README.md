@@ -1,204 +1,160 @@
-Welcome to your new TanStack Start app! 
+# AI Arena
 
-# Getting Started
+AI Arena is a live battle platform for major AI models, built with:
 
-To run this application:
+- TanStack Start
+- TanStack Router file-based routing
+- Convex for backend, realtime state, orchestration, and history
+- Clerk for admin authentication
+- shadcn/ui on Tailwind CSS v4
+- Vite
+- `@chenglou/pretext` for measured editorial text blocks
+
+The current base includes:
+
+- public guest join by share link or join code
+- admin session creation, start, stop, and early vote close
+- Host / MC agent artifacts
+- Critic agent analysis
+- realtime public session view via Convex subscriptions
+- anonymous response cards and reveal after scoring
+- human voting plus AI model judging
+- session history, scoreboard, and event log
+
+## Product structure
+
+### Public flow
+
+- `/` landing page
+- `/join` join by code
+- `/sessions/$slug` public lobby and live round page
+
+### Admin flow
+
+- `/admin` session list
+- `/admin/sessions/new` create session
+- `/admin/sessions/$sessionId` admin controls
+
+### Backend
+
+- `convex/sessions.ts` public/admin session API
+- `convex/rounds.ts` topic lock and round controls
+- `convex/votes.ts` human voting
+- `convex/state.ts` internal state transitions
+- `convex/orchestration.ts` provider calls, Host, Critic, AI judging
+
+## Local setup
+
+### 1. Install
 
 ```bash
 pnpm install
+```
+
+### 2. Environment
+
+Copy `.env.example` to `.env.local` and fill the keys you have.
+
+Important notes:
+
+- `VITE_CONVEX_URL` must point at your Convex deployment.
+- `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_JWT_ISSUER_DOMAIN` are required for real admin auth.
+- If you do not have provider API keys yet, set `AI_ARENA_DEMO_MODE=true` to keep the arena usable without external model calls.
+
+### 3. Convex
+
+Run the Convex dev workflow when you need codegen and function deploys:
+
+```bash
+pnpm convex:dev
+```
+
+This repo already includes the official local Convex AI guidance files:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `convex/_generated/ai/guidelines.md`
+
+When touching Convex code, read `convex/_generated/ai/guidelines.md` first.
+
+### 4. Start the app
+
+```bash
 pnpm dev
 ```
 
-# Building For Production
-
-To build this application for production:
+## Scripts
 
 ```bash
+pnpm dev
+pnpm convex:dev
 pnpm build
-```
-
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
-
-```bash
-pnpm test
-```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
-
-## Linting & Formatting
-
-
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
-
-```bash
+pnpm preview
+pnpm typecheck
 pnpm lint
+pnpm test
 pnpm format
 pnpm check
 ```
 
+## Testing
 
+The repo includes:
 
-## Routing
+- shared schema and validation unit tests
+- Convex function tests with `convex-test`
+- React Doctor verification for changed React code
 
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
+Run the full verification set with:
 
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
 ```
 
-Then anywhere in your JSX you can use it like so:
+## Clerk note
 
-```tsx
-<Link to="/about">About</Link>
-```
+To unblock local Convex codegen, the dev deployment currently has a placeholder
+`CLERK_JWT_ISSUER_DOMAIN` set. Replace it in Convex and in your local env with
+your real Clerk issuer before relying on admin auth.
 
-This will create a link that will navigate to the `/about` route.
+## Architecture notes
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+### Session lifecycle
 
-### Using A Layout
+- `waiting`
+- `active`
+- `stopped` or `ended`
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
+### Round lifecycle
 
-Here is an example layout that includes a header:
+- `pending`
+- `collecting_topic`
+- `generating`
+- `voting`
+- `scored`
 
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+### Scoring
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
+- one human vote = one ballot
+- one eligible AI judge vote = one ballot
+- ties are explicit, not broken arbitrarily
 
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+## Deployment
 
-## Server Functions
+Recommended production split:
 
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
+- frontend/app shell: Vercel
+- backend/realtime: Convex Cloud
+- auth: Clerk
 
-```tsx
-import { createServerFn } from '@tanstack/react-start'
+## Official references used
 
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- TanStack Start: https://tanstack.com/start/latest/docs/framework/react/
+- Convex: https://docs.convex.dev/
+- Clerk TanStack Start: https://clerk.com/docs/tanstack-react-start/overview
+- shadcn/ui: https://ui.shadcn.com/docs/installation/tanstack
+- Tailwind CSS v4: https://tailwindcss.com/docs/installation/using-vite
+- Vite: https://vite.dev/guide/

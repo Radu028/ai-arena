@@ -15,6 +15,19 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'import/consistent-type-specifier-style': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      'no-shadow': 'off',
+    },
+  },
+  {
+    ignores: [
+      'eslint.config.js',
+      'prettier.config.js',
+      'convex/_generated/**',
+      'src/routeTree.gen.ts',
+    ],
   },
 ]

@@ -1,61 +1,93 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRoute,
+} from '@tanstack/react-router'
 import Header from '../components/Header'
-
+import Footer from '../components/Footer'
+import { AppProviders, useRuntimeConfig } from '#/components/AppProviders'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
+import { Toaster } from '#/components/ui/sonner'
 import appCss from '../styles.css?url'
-
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      {
-        charSet: 'utf-8',
-      },
+      { charSet: 'utf-8' },
       {
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'AI Arena',
       },
-    ],
-    links: [
       {
-        rel: 'stylesheet',
-        href: appCss,
+        name: 'description',
+        content:
+          'Run live battles between major AI models, with Host and Critic agents, public voting, and realtime results.',
       },
     ],
+    links: [{ rel: 'stylesheet', href: appCss }],
   }),
   shellComponent: RootDocument,
+  component: RootLayout,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
-        <Footer />
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function RootLayout() {
+  return (
+    <AppProviders>
+      <RootFrame />
+    </AppProviders>
+  )
+}
+
+function RootFrame() {
+  const runtime = useRuntimeConfig()
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1 py-8">
+        {runtime.hasConvex ? (
+          <Outlet />
+        ) : (
+          <div className="page-frame">
+            <Card className="arena-panel">
+              <CardHeader>
+                <CardTitle className="font-serif text-3xl">
+                  Convex is not configured yet
+                </CardTitle>
+                <CardDescription>
+                  Add `VITE_CONVEX_URL` to the environment before rendering the
+                  live app.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        )}
+      </main>
+      <Footer />
+      <Toaster richColors position="top-right" />
+    </div>
   )
 }
