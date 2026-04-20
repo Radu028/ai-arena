@@ -6,7 +6,8 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "concurrently -n web,convex -c blue,magenta \"pnpm run vite:dev\" \"pnpm run convex:dev\"",
+    "vite:dev": "vite dev --port 3000",
     "convex:dev": "convex dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -61,9 +62,11 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.4",
+    "concurrently": "^9.2.1",
     "convex-test": "0.0.47",
     "eslint": "^9.38.0",
     "jsdom": "^28.1.0",
+    "nitro": "npm:nitro-nightly@latest",
     "prettier": "3.8.1",
     "prettier-plugin-tailwindcss": "0.7.1",
     "typescript": "^6.0.2",
