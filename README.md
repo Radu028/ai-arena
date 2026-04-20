@@ -28,10 +28,12 @@ The current base includes:
 - `/` landing page
 - `/join` join by code
 - `/sessions/$slug` public lobby and live round page
+- `/leaderboard` all-time model standings across every session
+- `/history` browsable archive of finished sessions
 
 ### Admin flow
 
-- `/admin` session list
+- `/admin` session list + cost tracking dashboard
 - `/admin/sessions/new` create session
 - `/admin/sessions/$sessionId` admin controls
 
@@ -149,6 +151,13 @@ Recommended production split:
 - frontend/app shell: Vercel
 - backend/realtime: Convex Cloud
 - auth: Clerk
+
+## Docs
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component, data model,
+  session/round lifecycles, sequence and agent workflow diagrams
+- [`docs/AI_TOOLS_REPORT.md`](docs/AI_TOOLS_REPORT.md) — how AI tools were
+  used across planning, architecture, implementation, testing, and reflection
 
 ## Official references used
 

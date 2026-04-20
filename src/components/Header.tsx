@@ -45,6 +45,20 @@ export default function Header() {
             Join
           </Link>
           <Link
+            to="/leaderboard"
+            className="nav-pill"
+            activeProps={{ className: 'nav-pill is-active' }}
+          >
+            Leaderboard
+          </Link>
+          <Link
+            to="/history"
+            className="nav-pill"
+            activeProps={{ className: 'nav-pill is-active' }}
+          >
+            History
+          </Link>
+          <Link
             to="/admin"
             className="nav-pill"
             activeProps={{ className: 'nav-pill is-active' }}

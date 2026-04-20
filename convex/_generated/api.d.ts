@@ -13,6 +13,7 @@ import type * as orchestration from "../orchestration.js";
 import type * as rounds from "../rounds.js";
 import type * as sessions from "../sessions.js";
 import type * as state from "../state.js";
+import type * as stats from "../stats.js";
 import type * as validators from "../validators.js";
 import type * as votes from "../votes.js";
 
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   rounds: typeof rounds;
   sessions: typeof sessions;
   state: typeof state;
+  stats: typeof stats;
   validators: typeof validators;
   votes: typeof votes;
 }>;

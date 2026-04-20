@@ -9,16 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SessionsSlugRouteImport } from './routes/sessions.$slug'
 import { Route as AdminSessionsNewRouteImport } from './routes/admin.sessions.new'
 import { Route as AdminSessionsSessionIdRouteImport } from './routes/admin.sessions.$sessionId'
 
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -50,7 +62,9 @@ const AdminSessionsSessionIdRoute = AdminSessionsSessionIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
@@ -58,7 +72,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
@@ -67,7 +83,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
@@ -77,7 +95,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/history'
     | '/join'
+    | '/leaderboard'
     | '/sessions/$slug'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
@@ -85,7 +105,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/history'
     | '/join'
+    | '/leaderboard'
     | '/sessions/$slug'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
@@ -93,7 +115,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/history'
     | '/join'
+    | '/leaderboard'
     | '/sessions/$slug'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
@@ -102,17 +126,33 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  HistoryRoute: typeof HistoryRoute
   JoinRoute: typeof JoinRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   SessionsSlugRoute: typeof SessionsSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/join': {
       id: '/join'
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -168,7 +208,9 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  HistoryRoute: HistoryRoute,
   JoinRoute: JoinRoute,
+  LeaderboardRoute: LeaderboardRoute,
   SessionsSlugRoute: SessionsSlugRoute,
 }
 export const routeTree = rootRouteImport

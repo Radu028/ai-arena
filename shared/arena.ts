@@ -185,6 +185,59 @@ export const AGENT_TIMEOUT_MS = 8_000
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 
+// Approximate USD pricing per 1M tokens as of early 2026. Kept intentionally
+// coarse so the dashboard can show meaningful budget estimates without
+// pretending to be a real billing system.
+export type ModelPricing = {
+  inputUsdPerMillionTokens: number
+  outputUsdPerMillionTokens: number
+}
+
+export const MODEL_PRICING: Record<string, ModelPricing> = {
+  'openai-gpt5': { inputUsdPerMillionTokens: 2.5, outputUsdPerMillionTokens: 10 },
+  'anthropic-claude-sonnet-4': {
+    inputUsdPerMillionTokens: 3,
+    outputUsdPerMillionTokens: 15,
+  },
+  'google-gemini-25-pro': {
+    inputUsdPerMillionTokens: 1.25,
+    outputUsdPerMillionTokens: 5,
+  },
+  'xai-grok-41-fast': {
+    inputUsdPerMillionTokens: 0.5,
+    outputUsdPerMillionTokens: 1.5,
+  },
+  'mistral-large': {
+    inputUsdPerMillionTokens: 2,
+    outputUsdPerMillionTokens: 6,
+  },
+}
+
+export function getModelPricing(modelKey: string): ModelPricing | null {
+  return MODEL_PRICING[modelKey] ?? null
+}
+
+export function computeCostMicrosUsd(
+  modelKey: string,
+  inputTokens: number | null,
+  outputTokens: number | null,
+): number {
+  const pricing = getModelPricing(modelKey)
+  if (!pricing) return 0
+  const inputUsd =
+    ((inputTokens ?? 0) * pricing.inputUsdPerMillionTokens) / 1_000_000
+  const outputUsd =
+    ((outputTokens ?? 0) * pricing.outputUsdPerMillionTokens) / 1_000_000
+  return Math.round((inputUsd + outputUsd) * 1_000_000)
+}
+
+export function formatMicrosUsd(micros: number): string {
+  const usd = micros / 1_000_000
+  if (usd < 0.01) return `$${usd.toFixed(4)}`
+  if (usd < 1) return `$${usd.toFixed(3)}`
+  return `$${usd.toFixed(2)}`
+}
+
 const MODEL_MAP = new Map<string, (typeof AVAILABLE_MODELS)[number]>(
   AVAILABLE_MODELS.map((model) => [model.key, model]),
 )
