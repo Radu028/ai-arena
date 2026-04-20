@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai'
 import { Mistral } from '@mistralai/mistralai'
 import OpenAI from 'openai'
 import type { Doc } from './_generated/dataModel'
-import { api, internal } from './_generated/api'
+import { internal } from './_generated/api'
 import { internalAction } from './_generated/server'
 import { v } from 'convex/values'
 import {
@@ -196,6 +196,29 @@ async function generateWithOpenAI(
     apiKey,
     baseURL,
   })
+  const response = await client.responses.create({
+    model: modelId,
+    input: prompt,
+  })
+  return {
+    text: response.output_text,
+    usage: {
+      input: response.usage?.input_tokens ?? null,
+      output: response.usage?.output_tokens ?? null,
+    },
+  }
+}
+
+async function generateWithOpenAICompatibleChat(
+  modelId: string,
+  apiKey: string,
+  prompt: string,
+  baseURL: string,
+) {
+  const client = new OpenAI({
+    apiKey,
+    baseURL,
+  })
   const response = await client.chat.completions.create({
     model: modelId,
     messages: [{ role: 'user', content: prompt }],
@@ -336,7 +359,7 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithOpenAI(
+          generateWithOpenAICompatibleChat(
             model.modelId,
             apiKey,
             prompt,
@@ -743,7 +766,7 @@ export const afterRoundFinalized = internalAction({
     })
 
     if (args.isLastRound) {
-      const adminView = await ctx.runQuery(api.sessions.getAdminSession, {
+      const scoreboard = await ctx.runQuery(internal.state.getSessionScoreboard, {
         sessionId: args.sessionId,
       })
       const recapCopy = await generateAgentCopy({
@@ -752,7 +775,7 @@ export const afterRoundFinalized = internalAction({
           phase: 'recap',
           themeLabel: reviewContext.themeCopy.label,
           hostTone: reviewContext.themeCopy.hostTone,
-          scoreboardSummary: summarizeScoreboard(adminView?.scoreboard ?? []),
+          scoreboardSummary: summarizeScoreboard(scoreboard),
         }),
         fallback:
           'Host recap unavailable. Check the final scoreboard for the official result.',

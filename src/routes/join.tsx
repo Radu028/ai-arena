@@ -1,4 +1,4 @@
-import { startTransition, useState } from 'react'
+import { useEffect, useReducer } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
@@ -22,17 +22,58 @@ export const Route = createFileRoute('/join')({
 function JoinPage() {
   const navigate = useNavigate()
   const joinByCode = useMutation(api.sessions.joinByCode)
-  const [code, setCode] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [email, setEmail] = useState('')
-  const [pending, setPending] = useState(false)
+  const [state, dispatch] = useReducer(
+    (
+      current: {
+        code: string
+        displayName: string
+        email: string
+        pending: boolean
+        redirectSlug: string | null
+      },
+      action:
+        | {
+            type: 'setField'
+            field: 'code' | 'displayName' | 'email'
+            value: string
+          }
+        | { type: 'setPending'; value: boolean }
+        | { type: 'setRedirectSlug'; value: string | null },
+    ) => {
+      switch (action.type) {
+        case 'setField':
+          return { ...current, [action.field]: action.value }
+        case 'setPending':
+          return { ...current, pending: action.value }
+        case 'setRedirectSlug':
+          return { ...current, redirectSlug: action.value }
+      }
+    },
+    {
+      code: '',
+      displayName: '',
+      email: '',
+      pending: false,
+      redirectSlug: null,
+    },
+  )
+
+  useEffect(() => {
+    if (!state.redirectSlug) {
+      return
+    }
+    void navigate({
+      to: '/sessions/$slug',
+      params: { slug: state.redirectSlug },
+    })
+  }, [navigate, state.redirectSlug])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const parsed = joinCodeSchema.safeParse({
-      code,
-      displayName,
-      email,
+      code: state.code,
+      displayName: state.displayName,
+      email: state.email,
     })
     if (!parsed.success) {
       toast.error(
@@ -41,7 +82,7 @@ function JoinPage() {
       return
     }
 
-    setPending(true)
+    dispatch({ type: 'setPending', value: true })
     try {
       const result = await joinByCode({
         code: parsed.data.code.trim().toUpperCase(),
@@ -53,18 +94,13 @@ function JoinPage() {
         result.accessToken,
       )
       toast.success('Joined session.')
-      startTransition(() => {
-        void navigate({
-          to: '/sessions/$slug',
-          params: { slug: result.slug },
-        })
-      })
+      dispatch({ type: 'setRedirectSlug', value: result.slug })
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not join that session.',
       )
     } finally {
-      setPending(false)
+      dispatch({ type: 'setPending', value: false })
     }
   }
 
@@ -100,32 +136,50 @@ function JoinPage() {
                 <Label htmlFor="code">Join code</Label>
                 <Input
                   id="code"
-                  value={code}
-                  onChange={(event) => setCode(event.target.value)}
+                  value={state.code}
+                  onChange={(event) =>
+                    dispatch({
+                      type: 'setField',
+                      field: 'code',
+                      value: event.target.value,
+                    })
+                  }
                   placeholder="A1B2C3"
                   className="uppercase"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="displayName">Display name</Label>
+                <Label htmlFor="displayName">Display name (optional)</Label>
                 <Input
                   id="displayName"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Radu"
+                  value={state.displayName}
+                  onChange={(event) =>
+                    dispatch({
+                      type: 'setField',
+                      field: 'displayName',
+                      value: event.target.value,
+                    })
+                  }
+                  placeholder="Radu or leave blank for an auto-name"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email (optional)</Label>
                 <Input
                   id="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  value={state.email}
+                  onChange={(event) =>
+                    dispatch({
+                      type: 'setField',
+                      field: 'email',
+                      value: event.target.value,
+                    })
+                  }
                   placeholder="radu@example.com"
                 />
               </div>
-              <Button type="submit" size="lg" disabled={pending}>
-                {pending ? 'Joining…' : 'Join Session'}
+              <Button type="submit" size="lg" disabled={state.pending}>
+                {state.pending ? 'Joining…' : 'Join Session'}
               </Button>
             </form>
           </CardContent>

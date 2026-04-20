@@ -621,6 +621,33 @@ async function joinSession(
   const accessToken = args.existingToken ?? generateGuestAccessToken()
   const accessTokenHash = await hashToken(accessToken)
 
+  if (identity) {
+    const existingByIdentity = await ctx.db
+      .query('sessionParticipants')
+      .withIndex('by_session_id_and_clerk_token_identifier', (q) =>
+        q
+          .eq('sessionId', session._id)
+          .eq('clerkTokenIdentifier', identity.tokenIdentifier),
+      )
+      .unique()
+
+    if (existingByIdentity) {
+      await ctx.db.patch(existingByIdentity._id, {
+        displayName,
+        email: args.email ?? null,
+        accessTokenHash,
+        lastSeenAt: now(),
+      })
+      return {
+        slug: session.slug,
+        sessionId: session._id,
+        participantId: existingByIdentity._id,
+        accessToken,
+        displayName,
+      }
+    }
+  }
+
   const existing = await ctx.db
     .query('sessionParticipants')
     .withIndex('by_session_id_and_access_token_hash', (q) =>

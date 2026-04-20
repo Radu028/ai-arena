@@ -17,6 +17,8 @@ const RuntimeContext = createContext<RuntimeContextValue>({
 })
 
 const clerkAppearance = {
+  theme: 'simple',
+  cssLayerName: 'clerk',
   elements: {
     card: 'border border-border/70 bg-card shadow-[0_18px_40px_rgba(20,28,44,0.08)]',
     headerTitle: 'font-serif text-2xl text-foreground',

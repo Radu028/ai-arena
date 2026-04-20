@@ -8,7 +8,7 @@ import {
   getThemeCopy,
   resolveModelSnapshots,
 } from './arena'
-import { createSessionSchema, topicSchema } from './validation'
+import { createSessionSchema, joinSessionSchema, topicSchema } from './validation'
 
 describe('shared validation', () => {
   test('rejects duplicate model selections', () => {
@@ -47,6 +47,15 @@ describe('shared validation', () => {
   test('rejects empty topics', () => {
     const result = topicSchema.safeParse({ topic: '' })
     expect(result.success).toBe(false)
+  })
+
+  test('allows blank display names so the server can auto-generate one', () => {
+    const result = joinSessionSchema.parse({
+      displayName: '   ',
+      email: '',
+    })
+
+    expect(result.displayName).toBe('')
   })
 })
 

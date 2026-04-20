@@ -34,11 +34,6 @@ export function MeasuredEditorialText({
       <p className="font-serif text-[1.05rem] leading-7 text-foreground">
         {text ?? fallback}
       </p>
-      {metrics ? (
-        <p className="mt-3 text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">
-          {metrics.lineCount} measured line{metrics.lineCount === 1 ? '' : 's'}
-        </p>
-      ) : null}
     </div>
   )
 }

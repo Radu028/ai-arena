@@ -32,7 +32,6 @@ export const joinSessionSchema = z.object({
   displayName: z
     .string()
     .trim()
-    .min(2, 'Use a display name with at least 2 characters.')
     .max(40, 'Display names must stay under 40 characters.'),
   email: z
     .string()

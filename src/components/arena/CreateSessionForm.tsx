@@ -1,4 +1,4 @@
-import { useState, startTransition } from 'react'
+import { useEffect, useReducer } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
@@ -32,23 +32,81 @@ import {
 export function CreateSessionForm() {
   const navigate = useNavigate()
   const createSession = useMutation(api.sessions.create)
-  const [title, setTitle] = useState('Friday Night Arena')
-  const [theme, setTheme] = useState<keyof typeof THEME_COPY>('comedy')
-  const [roundCount, setRoundCount] = useState(3)
-  const [maxParticipants, setMaxParticipants] = useState(200)
-  const [selectedModels, setSelectedModels] = useState<string[]>(
-    AVAILABLE_MODELS.slice(0, 4).map((model) => model.key),
+  const [state, dispatch] = useReducer(
+    (
+      current: {
+        title: string
+        theme: keyof typeof THEME_COPY
+        roundCount: number
+        maxParticipants: number
+        selectedModels: string[]
+        pending: boolean
+        redirectSessionId: string | null
+      },
+      action:
+        | {
+            type: 'field'
+            field: 'title' | 'theme' | 'roundCount' | 'maxParticipants'
+            value: string | number
+          }
+        | { type: 'toggleModel'; modelKey: string }
+        | { type: 'pending'; value: boolean }
+        | { type: 'redirect'; sessionId: string | null },
+    ) => {
+      switch (action.type) {
+        case 'field':
+          return {
+            ...current,
+            [action.field]: action.value,
+          }
+        case 'toggleModel':
+          return {
+            ...current,
+            selectedModels: current.selectedModels.includes(action.modelKey)
+              ? current.selectedModels.filter((item) => item !== action.modelKey)
+              : [...current.selectedModels, action.modelKey],
+          }
+        case 'pending':
+          return {
+            ...current,
+            pending: action.value,
+          }
+        case 'redirect':
+          return {
+            ...current,
+            redirectSessionId: action.sessionId,
+          }
+      }
+    },
+    {
+      title: 'Friday Night Arena',
+      theme: 'comedy' as keyof typeof THEME_COPY,
+      roundCount: 3,
+      maxParticipants: 200,
+      selectedModels: AVAILABLE_MODELS.slice(0, 4).map((model) => model.key),
+      pending: false,
+      redirectSessionId: null,
+    },
   )
-  const [pending, setPending] = useState(false)
+
+  useEffect(() => {
+    if (!state.redirectSessionId) {
+      return
+    }
+    void navigate({
+      to: '/admin/sessions/$sessionId',
+      params: { sessionId: state.redirectSessionId },
+    })
+  }, [navigate, state.redirectSessionId])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const parsed = createSessionSchema.safeParse({
-      title,
-      theme,
-      roundCount,
-      modelKeys: selectedModels,
-      maxParticipants,
+      title: state.title,
+      theme: state.theme,
+      roundCount: state.roundCount,
+      modelKeys: state.selectedModels,
+      maxParticipants: state.maxParticipants,
     })
     if (!parsed.success) {
       toast.error(
@@ -57,31 +115,18 @@ export function CreateSessionForm() {
       return
     }
 
-    setPending(true)
+    dispatch({ type: 'pending', value: true })
     try {
       const result = await createSession(parsed.data)
       toast.success('Session created.')
-      startTransition(() => {
-        void navigate({
-          to: '/admin/sessions/$sessionId',
-          params: { sessionId: result.sessionId },
-        })
-      })
+      dispatch({ type: 'redirect', sessionId: result.sessionId })
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Failed to create session.',
       )
     } finally {
-      setPending(false)
+      dispatch({ type: 'pending', value: false })
     }
-  }
-
-  function toggleModel(modelKey: string) {
-    setSelectedModels((current) =>
-      current.includes(modelKey)
-        ? current.filter((item) => item !== modelKey)
-        : [...current, modelKey],
-    )
   }
 
   return (
@@ -102,20 +147,30 @@ export function CreateSessionForm() {
               <Label htmlFor="title">Session title</Label>
               <Input
                 id="title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
+                value={state.title}
+                onChange={(event) =>
+                  dispatch({
+                    type: 'field',
+                    field: 'title',
+                    value: event.target.value,
+                  })
+                }
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Theme</Label>
+              <Label htmlFor="theme">Theme</Label>
               <Select
-                value={theme}
+                value={state.theme}
                 onValueChange={(value) =>
-                  setTheme(value as keyof typeof THEME_COPY)
+                  dispatch({
+                    type: 'field',
+                    field: 'theme',
+                    value: value as keyof typeof THEME_COPY,
+                  })
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger id="theme">
                   <SelectValue placeholder="Select a theme" />
                 </SelectTrigger>
                 <SelectContent>
@@ -135,8 +190,14 @@ export function CreateSessionForm() {
                 type="number"
                 min={MIN_ROUNDS}
                 max={MAX_ROUNDS}
-                value={roundCount}
-                onChange={(event) => setRoundCount(Number(event.target.value))}
+                value={state.roundCount}
+                onChange={(event) =>
+                  dispatch({
+                    type: 'field',
+                    field: 'roundCount',
+                    value: Number(event.target.value),
+                  })
+                }
               />
             </div>
 
@@ -147,9 +208,13 @@ export function CreateSessionForm() {
                 type="number"
                 min={2}
                 max={1000}
-                value={maxParticipants}
+                value={state.maxParticipants}
                 onChange={(event) =>
-                  setMaxParticipants(Number(event.target.value))
+                  dispatch({
+                    type: 'field',
+                    field: 'maxParticipants',
+                    value: Number(event.target.value),
+                  })
                 }
               />
             </div>
@@ -159,33 +224,37 @@ export function CreateSessionForm() {
             <Label>Model lineup</Label>
             <div className="grid gap-3 md:grid-cols-2">
               {AVAILABLE_MODELS.map((model) => {
-                const checked = selectedModels.includes(model.key)
+                const checked = state.selectedModels.includes(model.key)
+                const checkboxId = `model-${model.key}`
                 return (
-                  <label
+                  <div
                     key={model.key}
                     className="flex cursor-pointer items-start gap-3 rounded-[1.3rem] border border-border/70 bg-background/70 px-4 py-4"
                   >
                     <Checkbox
+                      id={checkboxId}
                       checked={checked}
-                      onCheckedChange={() => toggleModel(model.key)}
+                      onCheckedChange={() =>
+                        dispatch({ type: 'toggleModel', modelKey: model.key })
+                      }
                     />
-                    <div className="space-y-1">
+                    <label htmlFor={checkboxId} className="space-y-1">
                       <p className="font-medium text-foreground">
                         {model.label}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {model.description}
                       </p>
-                    </div>
-                  </label>
+                    </label>
+                  </div>
                 )
               })}
             </div>
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={pending}>
-              {pending ? 'Creating…' : 'Create Session'}
+            <Button type="submit" size="lg" disabled={state.pending}>
+              {state.pending ? 'Creating…' : 'Create Session'}
             </Button>
           </div>
         </form>

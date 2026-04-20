@@ -108,4 +108,63 @@ describe('sessions flow', () => {
     )
     expect(liveView?.currentRound?.status).toBe('generating')
   })
+
+  test('blank display names fall back to an auto-generated participant name', async () => {
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Auto Name Test',
+      theme: 'freeform',
+      roundCount: 1,
+      modelKeys: ['openai-gpt5', 'mistral-large'],
+      maxParticipants: 20,
+    })
+
+    const joined = await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: '   ',
+      email: null,
+      existingToken: null,
+    })
+
+    expect(joined.displayName).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/)
+  })
+
+  test('joining again with the same Clerk identity reuses the same participant', async () => {
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Identity Rejoin Test',
+      theme: 'debate',
+      roundCount: 1,
+      modelKeys: ['openai-gpt5', 'anthropic-claude-sonnet-4'],
+      maxParticipants: 20,
+    })
+
+    const firstJoin = await admin.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Arena Admin',
+      email: null,
+      existingToken: null,
+    })
+
+    const secondJoin = await admin.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Arena Admin Updated',
+      email: 'admin@example.com',
+      existingToken: null,
+    })
+
+    expect(secondJoin.participantId).toBe(firstJoin.participantId)
+    expect(secondJoin.accessToken).not.toBe(firstJoin.accessToken)
+
+    const sessionView = await admin.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: secondJoin.accessToken,
+    })
+
+    expect(sessionView?.viewer?.displayName).toBe('Arena Admin Updated')
+  })
 })

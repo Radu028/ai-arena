@@ -87,6 +87,103 @@ export const getRoundReviewContext = internalQuery({
   },
 })
 
+export const getSessionScoreboard = internalQuery({
+  args: {
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) {
+      return []
+    }
+
+    const rounds = await ctx.db
+      .query('rounds')
+      .withIndex('by_session_id_and_round_number', (query) =>
+        query.eq('sessionId', session._id),
+      )
+      .take(session.roundCount + 1)
+
+    const scoreByModel = new Map<
+      string,
+      {
+        label: string
+        wins: number
+        totalVotes: number
+        roundsPlayed: number
+      }
+    >()
+
+    for (const round of rounds) {
+      const responses = await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(16)
+      const humanVotes = await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(512)
+      const aiVotes = await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(512)
+
+      const tally = new Map<string, number>()
+      for (const response of responses) {
+        tally.set(response._id, 0)
+        const existing = scoreByModel.get(response.modelKey)
+        if (existing) {
+          existing.roundsPlayed += 1
+        } else {
+          scoreByModel.set(response.modelKey, {
+            label: response.modelLabel,
+            wins: 0,
+            totalVotes: 0,
+            roundsPlayed: 1,
+          })
+        }
+      }
+      for (const vote of humanVotes) {
+        tally.set(vote.responseId, (tally.get(vote.responseId) ?? 0) + 1)
+      }
+      for (const vote of aiVotes) {
+        tally.set(vote.responseId, (tally.get(vote.responseId) ?? 0) + 1)
+      }
+      for (const response of responses) {
+        const entry = scoreByModel.get(response.modelKey)
+        if (!entry) {
+          continue
+        }
+        entry.totalVotes += tally.get(response._id) ?? 0
+        if (round.winnerResponseIds.includes(response._id)) {
+          entry.wins += 1
+        }
+      }
+    }
+
+    return Array.from(scoreByModel.entries())
+      .map(([modelKey, entry]) => ({
+        modelKey,
+        label: entry.label,
+        wins: entry.wins,
+        totalVotes: entry.totalVotes,
+        roundsPlayed: entry.roundsPlayed,
+      }))
+      .sort((left, right) => {
+        if (right.wins !== left.wins) {
+          return right.wins - left.wins
+        }
+        return right.totalVotes - left.totalVotes
+      })
+  },
+})
+
 export const saveArtifact = internalMutation({
   args: {
     sessionId: v.id('sessions'),
