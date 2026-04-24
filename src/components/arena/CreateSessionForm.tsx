@@ -63,7 +63,9 @@ export function CreateSessionForm() {
           return {
             ...current,
             selectedModels: current.selectedModels.includes(action.modelKey)
-              ? current.selectedModels.filter((item) => item !== action.modelKey)
+              ? current.selectedModels.filter(
+                  (item) => item !== action.modelKey,
+                )
               : [...current.selectedModels, action.modelKey],
           }
         case 'pending':

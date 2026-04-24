@@ -11,7 +11,7 @@ covers planning, architecture, implementation, testing, and reflection.
   course barem (barem = grading rubric) into user-facing stories.
 - **Linear MCP plugin** (this project uses the Linear Cursor plugin) for
   creating and maintaining the backlog. Issues live under the AIA prefix,
-  grouped by two milestones: *Prezentare intermediară* and *Prezentare finală*.
+  grouped by two milestones: _Prezentare intermediară_ and _Prezentare finală_.
 - **GitHub issue tracker** for cross-linking bugs discovered during the build.
 
 **How the assistant helped**
@@ -71,16 +71,16 @@ covers planning, architecture, implementation, testing, and reflection.
 
 **Breakdown by feature**
 
-| Feature | AI-assisted share | Notes |
-|---|---|---|
-| `convex/schema.ts` | ~60% | Schema was drafted by the assistant, then manually adjusted to add indexes (`by_session_id_and_access_token_hash`, `by_round_id_and_response_id`) and nullable validators. |
-| `convex/orchestration.ts` | ~55% | The provider adapters (OpenAI, Anthropic, Google, Mistral, xAI) and the prompt builders were generated; the timeout wrapper, judging loop, and fallback behaviour were refined by hand. |
-| `convex/state.ts` | ~50% | State transitions were sketched by the assistant and then hardened around edge cases (stopped mid-round, aborted rounds, ties). |
-| `convex/stats.ts` (new) | ~80% | Cross-session leaderboard, history, and admin cost queries were generated with the current schema as context. |
-| `src/routes/*` | ~65% | shadcn scaffolds + Tailwind layout generated; data wiring to Convex and interactive handlers reviewed by a human. |
-| `src/components/arena/*` | ~50% | RoundResponseCard, LiveVoteChart and MeasuredEditorialText started from assistant output, heavily tuned for editorial feel. |
-| Tests | ~70% | Test skeletons generated; edge cases hand-picked. |
-| `docs/ARCHITECTURE.md`, this file | ~85% | Drafted by the assistant and manually verified against current code. |
+| Feature                           | AI-assisted share | Notes                                                                                                                                                                                   |
+| --------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `convex/schema.ts`                | ~60%              | Schema was drafted by the assistant, then manually adjusted to add indexes (`by_session_id_and_access_token_hash`, `by_round_id_and_response_id`) and nullable validators.              |
+| `convex/orchestration.ts`         | ~55%              | The provider adapters (OpenAI, Anthropic, Google, Mistral, xAI) and the prompt builders were generated; the timeout wrapper, judging loop, and fallback behaviour were refined by hand. |
+| `convex/state.ts`                 | ~50%              | State transitions were sketched by the assistant and then hardened around edge cases (stopped mid-round, aborted rounds, ties).                                                         |
+| `convex/stats.ts` (new)           | ~80%              | Cross-session leaderboard, history, and admin cost queries were generated with the current schema as context.                                                                           |
+| `src/routes/*`                    | ~65%              | shadcn scaffolds + Tailwind layout generated; data wiring to Convex and interactive handlers reviewed by a human.                                                                       |
+| `src/components/arena/*`          | ~50%              | RoundResponseCard, LiveVoteChart and MeasuredEditorialText started from assistant output, heavily tuned for editorial feel.                                                             |
+| Tests                             | ~70%              | Test skeletons generated; edge cases hand-picked.                                                                                                                                       |
+| `docs/ARCHITECTURE.md`, this file | ~85%              | Drafted by the assistant and manually verified against current code.                                                                                                                    |
 
 Hand-written (or heavily rewritten) pieces include most of the editorial copy,
 the `pretext` measured text integration, and the exact wording of Critic / Host

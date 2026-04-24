@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import { HistoryIcon } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon, HistoryIcon } from 'lucide-react'
 import { api } from '@convex/_generated/api'
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import {
   Card,
   CardContent,
@@ -24,8 +26,30 @@ export const Route = createFileRoute('/history')({
   component: HistoryPage,
 })
 
+const PAGE_SIZE = 24
+
 function HistoryPage() {
-  const data = useQuery(api.stats.listCompletedSessions, { limit: 50 })
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [previousCursors, setPreviousCursors] = useState<Array<string | null>>(
+    [],
+  )
+  const data = useQuery(api.stats.listCompletedSessions, {
+    limit: PAGE_SIZE,
+    cursor,
+  })
+
+  const pageNumber = previousCursors.length + 1
+
+  function goToNextPage() {
+    if (!data?.nextCursor) return
+    setPreviousCursors((current) => [...current, cursor])
+    setCursor(data.nextCursor)
+  }
+
+  function goToPreviousPage() {
+    setCursor(previousCursors.at(-1) ?? null)
+    setPreviousCursors((current) => current.slice(0, -1))
+  }
 
   return (
     <div className="page-frame space-y-6">
@@ -55,7 +79,7 @@ function HistoryPage() {
           </CardTitle>
           <CardDescription>
             {data
-              ? `${data.rows.length} session${data.rows.length === 1 ? '' : 's'} finished.`
+              ? `${data.rows.length} session${data.rows.length === 1 ? '' : 's'} on page ${pageNumber}.`
               : 'Loading archive...'}
           </CardDescription>
         </CardHeader>
@@ -105,16 +129,48 @@ function HistoryPage() {
                       )}
                     </TableCell>
                     <TableCell>{row.totalHumanVotes}</TableCell>
-                    <TableCell>{formatDateTime(row.endedAt)}</TableCell>
+                    <TableCell>{formatDateTime(row.finishedAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           ) : (
             <div className="rounded-[1.2rem] border border-dashed border-border/80 bg-muted/40 px-4 py-8 text-center text-muted-foreground">
-              {data ? 'No completed sessions yet — run your first arena!' : 'Loading...'}
+              {data
+                ? 'No completed sessions yet — run your first arena!'
+                : 'Loading...'}
             </div>
           )}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
+            <p className="text-sm text-muted-foreground">
+              Page {pageNumber}
+              {data?.hasMore
+                ? ' · more sessions available'
+                : ' · end of archive'}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousPage}
+                disabled={previousCursors.length === 0}
+              >
+                <ChevronLeftIcon className="size-4" />
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={goToNextPage}
+                disabled={!data?.nextCursor}
+              >
+                Next
+                <ChevronRightIcon className="size-4" />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

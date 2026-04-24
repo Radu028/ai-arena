@@ -68,10 +68,7 @@ function AdminDashboard() {
                     label="Sessions"
                     value={costs.totals.sessions.toString()}
                   />
-                  <Stat
-                    label="Rounds"
-                    value={costs.totals.rounds.toString()}
-                  />
+                  <Stat label="Rounds" value={costs.totals.rounds.toString()} />
                   <Stat
                     label="Input tokens"
                     value={costs.totals.tokensIn.toLocaleString()}

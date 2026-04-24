@@ -8,7 +8,11 @@ import {
   getThemeCopy,
   resolveModelSnapshots,
 } from './arena'
-import { createSessionSchema, joinSessionSchema, topicSchema } from './validation'
+import {
+  createSessionSchema,
+  joinSessionSchema,
+  topicSchema,
+} from './validation'
 
 describe('shared validation', () => {
   test('rejects duplicate model selections', () => {

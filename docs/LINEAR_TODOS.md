@@ -8,28 +8,28 @@ Snapshot local al tuturor issue-urilor din proiectul **AI Arena** (team `AI Aren
 
 ## Summary
 
-| ID | Title | Status | Priority | Milestone | Labels |
-| --- | --- | --- | --- | --- | --- |
-| AIA-1 | Submit topic | Done | High | Prezentare intermediară | backend, frontend, Feature |
-| AIA-2 | View responses side-by-side | Done | High | Prezentare intermediară | frontend, Feature |
-| AIA-3 | Vote for the best response | Done | High | Prezentare intermediară | backend, frontend, Feature |
-| AIA-4 | Real-time voting results | Done | High | Prezentare intermediară | real-time, frontend, Feature |
-| AIA-5 | Model leaderboard | Done | Medium | Prezentare finală | backend, frontend, Feature |
-| AIA-6 | Join session via link | Done | High | Prezentare intermediară | backend, frontend, Feature |
-| AIA-7 | Create and configure session | Done | High | Prezentare intermediară | admin, backend, frontend, Feature |
-| AIA-8 | Start and stop session | Done | High | Prezentare intermediară | admin, backend, frontend, Feature |
-| AIA-9 | Cost tracking dashboard | Done | Medium | Prezentare finală | admin, backend, Feature |
-| AIA-10 | Critic agent analysis | Done | High | Prezentare intermediară | ai-agent, backend, Feature |
-| AIA-11 | Host / MC agent | Done | High | Prezentare intermediară | ai-agent, backend, Feature |
-| AIA-12 | Session history | Done | Medium | Prezentare finală | backend, frontend, Feature |
-| AIA-13 | Architecture & diagrams | Done | Medium | Prezentare intermediară | Improvement |
-| AIA-14 | Automated tests & agent evals | Done | High | Prezentare finală | ai-agent, backend, Improvement |
-| AIA-15 | CI/CD pipeline | In Progress | High | Prezentare finală | backend, Improvement |
-| AIA-16 | Bug report & fix via pull request | Backlog | Medium | Prezentare finală | Bug |
-| AIA-17 | AI tools usage report | Done | Medium | Prezentare finală | Improvement |
-| AIA-18 | Epic: Session Flow | Done | Urgent | Prezentare intermediară | Feature |
-| AIA-19 | Epic: AI Agents | Done | Urgent | Prezentare intermediară | ai-agent, Feature |
-| AIA-20 | Epic: Discovery & Stats | Done | Medium | Prezentare finală | Feature |
+| ID     | Title                             | Status      | Priority | Milestone               | Labels                            |
+| ------ | --------------------------------- | ----------- | -------- | ----------------------- | --------------------------------- |
+| AIA-1  | Submit topic                      | Done        | High     | Prezentare intermediară | backend, frontend, Feature        |
+| AIA-2  | View responses side-by-side       | Done        | High     | Prezentare intermediară | frontend, Feature                 |
+| AIA-3  | Vote for the best response        | Done        | High     | Prezentare intermediară | backend, frontend, Feature        |
+| AIA-4  | Real-time voting results          | Done        | High     | Prezentare intermediară | real-time, frontend, Feature      |
+| AIA-5  | Model leaderboard                 | Done        | Medium   | Prezentare finală       | backend, frontend, Feature        |
+| AIA-6  | Join session via link             | Done        | High     | Prezentare intermediară | backend, frontend, Feature        |
+| AIA-7  | Create and configure session      | Done        | High     | Prezentare intermediară | admin, backend, frontend, Feature |
+| AIA-8  | Start and stop session            | Done        | High     | Prezentare intermediară | admin, backend, frontend, Feature |
+| AIA-9  | Cost tracking dashboard           | Done        | Medium   | Prezentare finală       | admin, backend, Feature           |
+| AIA-10 | Critic agent analysis             | Done        | High     | Prezentare intermediară | ai-agent, backend, Feature        |
+| AIA-11 | Host / MC agent                   | Done        | High     | Prezentare intermediară | ai-agent, backend, Feature        |
+| AIA-12 | Session history                   | Done        | Medium   | Prezentare finală       | backend, frontend, Feature        |
+| AIA-13 | Architecture & diagrams           | Done        | Medium   | Prezentare intermediară | Improvement                       |
+| AIA-14 | Automated tests & agent evals     | Done        | High     | Prezentare finală       | ai-agent, backend, Improvement    |
+| AIA-15 | CI/CD pipeline                    | In Progress | High     | Prezentare finală       | backend, Improvement              |
+| AIA-16 | Bug report & fix via pull request | Backlog     | Medium   | Prezentare finală       | Bug                               |
+| AIA-17 | AI tools usage report             | Done        | Medium   | Prezentare finală       | Improvement                       |
+| AIA-18 | Epic: Session Flow                | Done        | Urgent   | Prezentare intermediară | Feature                           |
+| AIA-19 | Epic: AI Agents                   | Done        | Urgent   | Prezentare intermediară | ai-agent, Feature                 |
+| AIA-20 | Epic: Discovery & Stats           | Done        | Medium   | Prezentare finală       | Feature                           |
 
 ---
 
@@ -287,7 +287,7 @@ As an admin, I want to see how many tokens and estimated cost each session and e
 - [x] Admin can view historical cost data for all past sessions
 - [x] The dashboard is only accessible to authenticated admins
 
-**Implementation:** `convex/stats.ts::getAdminCostSummary` + secțiunea *Cost tracking* pe `/admin`. Pricing table în `shared/arena.ts` (`MODEL_PRICING`, `computeCostMicrosUsd`).
+**Implementation:** `convex/stats.ts::getAdminCostSummary` + secțiunea _Cost tracking_ pe `/admin`. Pricing table în `shared/arena.ts` (`MODEL_PRICING`, `computeCostMicrosUsd`).
 
 ---
 
@@ -305,9 +305,9 @@ As a user, I want to browse past sessions with all rounds, responses, votes, age
 - [x] Clicking into a session shows a full round-by-round breakdown including all model responses, vote counts, Critic analysis, and Host commentary
 - [x] Session history is publicly accessible without login
 - [x] Sessions are stored indefinitely and do not expire
-- [ ] The page handles large numbers of sessions without performance degradation (pagination or infinite scroll)
+- [x] The page handles large numbers of sessions without performance degradation (pagination or infinite scroll)
 
-**Notes:** lista + overall winner implementate în `/history` via `listCompletedSessions`. Pagination cu cursor se poate adăuga când volumul crește (≥100 sesiuni). Breakdown pe rundă reutilizează pagina publică `/sessions/$slug`.
+**Notes:** lista + overall winner implementate în `/history` via `listCompletedSessions`. Pagination este implementată cu cursor manual peste sesiunile `ended` și `stopped`, folosind indexuri Convex pe timestampul de finalizare. Breakdown pe rundă reutilizează pagina publică `/sessions/$slug`.
 
 ---
 
@@ -327,15 +327,15 @@ Cover critical app logic with automated tests and validate both AI agents with l
 
 **Agent evals**
 
-- [ ] **Host eval** — output is non-empty, references the topic, tone fits the session theme
-- [ ] **Critic eval** — analysis mentions all models and provides a rationale for the winner
+- [x] **Host eval** — output is non-empty, references the topic, tone fits the session theme
+- [x] **Critic eval** — analysis mentions all models and provides a rationale for the winner
 
 **Setup**
 
 - [x] Vitest configured; tests run in CI (see AIA-15)
 - [x] At least one test written with AI — documented în `docs/AI_TOOLS_REPORT.md`
 
-**Files:** `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts` · 23 tests pass.
+**Files:** `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts`, `shared/agent-evals.test.ts`.
 
 ---
 
@@ -353,14 +353,14 @@ Automate build, test, and deployment on every push so the project is always in a
 
 **CD — on merge to** `main`
 
-- [ ] Deploy frontend to Cloudflare Pages (*actualmente pe Vercel — de aliniat*)
-- [ ] Push Convex functions to production
+- [x] Deploy frontend to Cloudflare Pages (_workflow scaffolded; requires repository secrets_)
+- [x] Push Convex functions to production (_workflow scaffolded; requires `CONVEX_DEPLOY_KEY`_)
 
 **Setup**
 
 - [x] GitHub Actions workflow under `.github/workflows/`
 - [ ] Required secrets configured (Cloudflare token, Convex deploy key)
-- [ ] CI status badge in `README.md`
+- [x] CI status badge in `README.md`
 - [x] Initial workflow YAML scaffolded with AI — prompt documentat în `docs/AI_TOOLS_REPORT.md`
 
 ---
@@ -408,4 +408,4 @@ Write `/docs/AI_TOOLS_REPORT.md` documenting how AI was used throughout the proj
 - **In Progress:** 1 (AIA-15)
 - **Backlog:** 1 (AIA-16)
 
-Rămas de finalizat pentru barem complet: CD pipeline real (AIA-15) + bug report-to-PR ca exercițiu de proces (AIA-16).
+Rămas de finalizat pentru barem complet: configurarea secretelor reale pentru deploy (AIA-15) + bug report-to-PR ca exercițiu de proces (AIA-16).

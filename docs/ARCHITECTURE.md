@@ -19,7 +19,7 @@ flowchart LR
     History[/"/history"/]
   end
 
-  subgraph Edge["Vercel Edge / Nitro"]
+  subgraph Edge["Cloudflare Pages / Nitro"]
     SSR[[TanStack Start SSR]]
   end
 
@@ -66,8 +66,9 @@ flowchart LR
 
 - **Frontend** — TanStack Router file-based routes in `src/routes/*`. Live
   session data is subscribed via `convex/react` for realtime updates.
-- **SSR host** — Nitro with the `vercel` preset (`vite.config.ts`). Delivers
-  streamed HTML from TanStack Start.
+- **SSR host** — Nitro with a provider preset selected through
+  `NITRO_PRESET`; CI builds Cloudflare Pages with `cloudflare_pages`, while
+  local/default builds keep the Vercel preset unless overridden.
 - **Backend** — Convex functions split into **public** (`query` + `mutation`)
   and **internal** state machine / orchestration pieces.
 - **Auth** — Clerk provides JWT identity for admin users. Guests authenticate

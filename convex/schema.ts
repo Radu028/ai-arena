@@ -36,6 +36,8 @@ export default defineSchema({
   })
     .index('by_slug', ['slug'])
     .index('by_join_code', ['joinCode'])
+    .index('by_status_and_ended_at', ['status', 'endedAt'])
+    .index('by_status_and_stopped_at', ['status', 'stoppedAt'])
     .index('by_created_by_identity_and_created_at', [
       'createdByIdentity',
       'createdAt',

@@ -54,10 +54,7 @@ function emptyAggregate(
   }
 }
 
-async function collectRoundData(
-  ctx: QueryCtx,
-  session: Doc<'sessions'>,
-) {
+async function collectRoundData(ctx: QueryCtx, session: Doc<'sessions'>) {
   const rounds = await ctx.db
     .query('rounds')
     .withIndex('by_session_id_and_round_number', (queryBuilder) =>
@@ -143,10 +140,7 @@ function accumulateModelStats(
     )
     if (response.status === 'success') {
       agg.successes += 1
-    } else if (
-      response.status === 'error' ||
-      response.status === 'timeout'
-    ) {
+    } else if (response.status === 'error' || response.status === 'timeout') {
       agg.failures += 1
     }
     agg.totalVotes += voteTally.get(response._id) ?? 0
@@ -195,9 +189,7 @@ export const getModelLeaderboard = query({
       .filter((entry) => entry.roundsPlayed > 0)
       .map((entry) => {
         const winRate =
-          entry.roundsPlayed > 0
-            ? (entry.wins / entry.roundsPlayed) * 100
-            : 0
+          entry.roundsPlayed > 0 ? (entry.wins / entry.roundsPlayed) * 100 : 0
         const reliability =
           entry.successes + entry.failures > 0
             ? (entry.successes / (entry.successes + entry.failures)) * 100
@@ -239,21 +231,50 @@ export const getModelLeaderboard = query({
 export const listCompletedSessions = query({
   args: {
     limit: v.optional(v.number()),
+    cursor: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const cap = Math.min(Math.max(args.limit ?? 24, 1), 100)
-    const sessions = await ctx.db
-      .query('sessions')
-      .order('desc')
-      .take(MAX_SESSIONS_SCAN)
+    const cap = Math.min(Math.max(args.limit ?? 24, 1), 50)
+    const cursorDate = args.cursor ? Number(args.cursor) : null
+    const beforeFinishedAt =
+      cursorDate && Number.isFinite(cursorDate) ? cursorDate : null
 
-    const completed = sessions.filter(
-      (session) =>
-        session.status === 'ended' || session.status === 'stopped',
-    )
+    const endedSessionsQuery = ctx.db
+      .query('sessions')
+      .withIndex('by_status_and_ended_at', (queryBuilder) =>
+        beforeFinishedAt
+          ? queryBuilder.eq('status', 'ended').lt('endedAt', beforeFinishedAt)
+          : queryBuilder.eq('status', 'ended'),
+      )
+      .order('desc')
+
+    const stoppedSessionsQuery = ctx.db
+      .query('sessions')
+      .withIndex('by_status_and_stopped_at', (queryBuilder) =>
+        beforeFinishedAt
+          ? queryBuilder
+              .eq('status', 'stopped')
+              .lt('stoppedAt', beforeFinishedAt)
+          : queryBuilder.eq('status', 'stopped'),
+      )
+      .order('desc')
+
+    const endedSessions = await endedSessionsQuery.take(cap + 1)
+    const stoppedSessions = await stoppedSessionsQuery.take(cap + 1)
+    const completed = [...endedSessions, ...stoppedSessions]
+      .map((session) => ({
+        session,
+        finishedAt: session.endedAt ?? session.stoppedAt ?? session.createdAt,
+      }))
+      .sort((left, right) => {
+        if (right.finishedAt !== left.finishedAt) {
+          return right.finishedAt - left.finishedAt
+        }
+        return right.session.createdAt - left.session.createdAt
+      })
 
     const rows = []
-    for (const session of completed.slice(0, cap)) {
+    for (const { session, finishedAt } of completed.slice(0, cap)) {
       const rounds = await ctx.db
         .query('rounds')
         .withIndex('by_session_id_and_round_number', (queryBuilder) =>
@@ -262,10 +283,7 @@ export const listCompletedSessions = query({
         .take(MAX_ROUNDS_PER_SESSION)
 
       const scoredRounds = rounds.filter((round) => round.status === 'scored')
-      const winnerTally = new Map<
-        string,
-        { label: string; wins: number }
-      >()
+      const winnerTally = new Map<string, { label: string; wins: number }>()
       let totalVotes = 0
 
       for (const round of scoredRounds) {
@@ -310,6 +328,7 @@ export const listCompletedSessions = query({
         completedRounds: scoredRounds.length,
         totalHumanVotes: totalVotes,
         modelCount: session.selectedModelsSnapshot.length,
+        finishedAt,
         endedAt: session.endedAt ?? session.stoppedAt,
         createdAt: session.createdAt,
         overallWinner: overallWinner
@@ -324,7 +343,13 @@ export const listCompletedSessions = query({
 
     return {
       rows,
-      scanned: sessions.length,
+      pageSize: cap,
+      nextCursor:
+        completed.length > cap && rows.length > 0
+          ? String(rows.at(-1)?.finishedAt)
+          : null,
+      hasMore: completed.length > cap,
+      scanned: Math.min(completed.length, MAX_SESSIONS_SCAN),
     }
   },
 })
@@ -409,10 +434,7 @@ export const getAdminCostSummary = query({
           agg.roundsPlayed += 1
           agg.sessionsPlayed.add(session._id)
           if (response.status === 'success') agg.successes += 1
-          else if (
-            response.status === 'error' ||
-            response.status === 'timeout'
-          )
+          else if (response.status === 'error' || response.status === 'timeout')
             agg.failures += 1
         }
       }

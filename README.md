@@ -1,5 +1,7 @@
 # AI Arena
 
+[![CI](https://github.com/Radu028/ai-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/Radu028/ai-arena/actions/workflows/ci.yml)
+
 AI Arena is a live battle platform for major AI models, built with:
 
 - TanStack Start
@@ -91,6 +93,7 @@ pnpm dev
 pnpm dev
 pnpm convex:dev
 pnpm build
+pnpm build:cloudflare
 pnpm preview
 pnpm typecheck
 pnpm lint
@@ -105,6 +108,7 @@ The repo includes:
 
 - shared schema and validation unit tests
 - Convex function tests with `convex-test`
+- deterministic Host and Critic agent evals
 - React Doctor verification for changed React code
 
 Run the full verification set with:
@@ -148,9 +152,14 @@ your real Clerk issuer before relying on admin auth.
 
 Recommended production split:
 
-- frontend/app shell: Vercel
+- frontend/app shell: Cloudflare Pages, built with `pnpm build:cloudflare`
 - backend/realtime: Convex Cloud
 - auth: Clerk
+
+GitHub Actions runs type-check, lint, tests, and build on every PR. On `main`,
+the deploy job publishes Convex functions when `CONVEX_DEPLOY_KEY` is present
+and uploads Cloudflare Pages when `CLOUDFLARE_API_TOKEN`,
+`CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_PROJECT_NAME` are configured.
 
 ## Docs
 

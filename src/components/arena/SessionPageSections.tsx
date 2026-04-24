@@ -96,7 +96,9 @@ export function SessionOverviewSection({
                 <Input
                   id="email"
                   value={state.email}
-                  onChange={(event) => onFieldChange('email', event.target.value)}
+                  onChange={(event) =>
+                    onFieldChange('email', event.target.value)
+                  }
                   placeholder="radu@example.com"
                 />
               </div>
@@ -208,7 +210,9 @@ export function LiveSessionTab({
                 <Textarea
                   id="topic"
                   value={state.topic}
-                  onChange={(event) => onFieldChange('topic', event.target.value)}
+                  onChange={(event) =>
+                    onFieldChange('topic', event.target.value)
+                  }
                   placeholder="Example: Make a joke about debugging a smart toaster."
                 />
                 <Button type="submit" disabled={state.pendingTopic}>
@@ -262,7 +266,9 @@ export function LiveSessionTab({
 
             {liveRound.status === 'scored' &&
             liveRound.artifacts.criticAnalysis ? (
-              <MeasuredEditorialText text={liveRound.artifacts.criticAnalysis} />
+              <MeasuredEditorialText
+                text={liveRound.artifacts.criticAnalysis}
+              />
             ) : null}
             {liveRound.status === 'scored' && liveRound.artifacts.hostRecap ? (
               <MeasuredEditorialText text={liveRound.artifacts.hostRecap} />
@@ -344,7 +350,9 @@ export function SessionEventLogTab({
                 className="rounded-[1.2rem] border border-border/70 bg-background/65 px-4 py-4"
               >
                 <p className="eyebrow">{formatClock(event.createdAt)}</p>
-                <p className="mt-2 font-medium text-foreground">{event.title}</p>
+                <p className="mt-2 font-medium text-foreground">
+                  {event.title}
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {event.description}
                 </p>

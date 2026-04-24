@@ -194,7 +194,10 @@ export type ModelPricing = {
 }
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
-  'openai-gpt5': { inputUsdPerMillionTokens: 2.5, outputUsdPerMillionTokens: 10 },
+  'openai-gpt5': {
+    inputUsdPerMillionTokens: 2.5,
+    outputUsdPerMillionTokens: 10,
+  },
   'anthropic-claude-sonnet-4': {
     inputUsdPerMillionTokens: 3,
     outputUsdPerMillionTokens: 15,

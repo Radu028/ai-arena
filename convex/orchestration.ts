@@ -766,9 +766,12 @@ export const afterRoundFinalized = internalAction({
     })
 
     if (args.isLastRound) {
-      const scoreboard = await ctx.runQuery(internal.state.getSessionScoreboard, {
-        sessionId: args.sessionId,
-      })
+      const scoreboard = await ctx.runQuery(
+        internal.state.getSessionScoreboard,
+        {
+          sessionId: args.sessionId,
+        },
+      )
       const recapCopy = await generateAgentCopy({
         role: 'host',
         prompt: buildHostPrompt({
