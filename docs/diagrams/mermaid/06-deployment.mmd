@@ -1,0 +1,23 @@
+flowchart TB
+  GitHub[(GitHub repository)]
+  Actions[GitHub Actions CI/CD<br/>typecheck · lint · test · build · Convex deploy]
+  Vercel[Vercel Production<br/>TanStack Start + Nitro SSR]
+  Browser[User browser]
+  Clerk[Clerk Auth<br/>register/login/JWT]
+  Convex[Convex Cloud<br/>queries · mutations · actions · scheduler]
+  DB[(Convex database)]
+  OpenAI[OpenAI API]
+  Anthropic[Anthropic API]
+  Gemini[Google Gemini API]
+
+  GitHub --> Actions
+  GitHub --> Vercel
+  Actions --> Convex
+  Browser --> Vercel
+  Browser <--> Convex
+  Browser --> Clerk
+  Clerk --> Convex
+  Convex --> DB
+  Convex --> OpenAI
+  Convex --> Anthropic
+  Convex --> Gemini

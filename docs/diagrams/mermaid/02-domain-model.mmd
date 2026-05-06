@@ -1,0 +1,84 @@
+classDiagram
+  class Session {
+    +string slug
+    +string joinCode
+    +string title
+    +SessionTheme theme
+    +SessionStatus status
+    +number roundCount
+    +number currentRoundNumber
+    +start()
+    +stop()
+  }
+
+  class SessionParticipant {
+    +ParticipantKind kind
+    +string displayName
+    +string accessTokenHash
+    +join()
+    +vote()
+  }
+
+  class Round {
+    +number roundNumber
+    +RoundStatus status
+    +string topic
+    +number votingEndsAt
+    +RoundResultStatus resultStatus
+    +submitTopic()
+    +finalize()
+  }
+
+  class RoundResponse {
+    +string providerKey
+    +string modelKey
+    +string anonymizedSlot
+    +string responseText
+    +ResponseStatus status
+    +number latencyMs
+    +number tokenUsageInput
+    +number tokenUsageOutput
+  }
+
+  class HumanVote {
+    +Id participantId
+    +Id responseId
+    +cast()
+  }
+
+  class AiVote {
+    +string voterModelKey
+    +Id responseId
+    +string rationale
+    +judge()
+  }
+
+  class RoundArtifact {
+    +ArtifactType type
+    +ArtifactStatus status
+    +string content
+    +string modelId
+  }
+
+  class AdminUser {
+    +string email
+    +string grantedByEmail
+    +grantAccess()
+  }
+
+  class SessionEvent {
+    +string type
+    +string title
+    +string description
+  }
+
+  Session "1" --> "*" SessionParticipant
+  Session "1" --> "*" Round
+  Session "1" --> "*" SessionEvent
+  Round "1" --> "*" RoundResponse
+  Round "1" --> "*" HumanVote
+  Round "1" --> "*" AiVote
+  Round "1" --> "*" RoundArtifact
+  SessionParticipant "1" --> "*" HumanVote
+  RoundResponse "1" --> "*" HumanVote
+  RoundResponse "1" --> "*" AiVote

@@ -7,3 +7,4 @@ dist
 .tanstack
 .wrangler
 convex/_generated
+docs/diagrams
