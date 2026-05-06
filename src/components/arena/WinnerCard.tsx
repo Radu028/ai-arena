@@ -1,6 +1,12 @@
 import { useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
-import { DownloadIcon, ImageIcon, ShareIcon, TrophyIcon } from 'lucide-react'
+import {
+  CrownIcon,
+  DownloadIcon,
+  ImageIcon,
+  ShareIcon,
+  SparklesIcon,
+} from 'lucide-react'
 import { ArenaLogo } from '#/components/ArenaLogo'
 import { Button } from '#/components/ui/button'
 import type { PublicSessionView } from './SessionPageSections'
@@ -98,27 +104,27 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
       : 0
 
   return (
-    <div className="space-y-4">
-      {/* The card itself — this is what gets exported as image */}
+    <div className="space-y-3">
+      {/* Exportable card */}
       <div
         ref={cardRef}
-        className="relative overflow-hidden rounded-2xl"
+        className="relative overflow-hidden rounded-3xl"
         style={{
-          background: 'linear-gradient(135deg, #0f0c29, #1a1040, #24243e)',
-          fontFamily: 'Manrope Variable, system-ui, sans-serif',
+          background:
+            'linear-gradient(150deg, oklch(0.18 0.05 290) 0%, oklch(0.16 0.06 280) 40%, oklch(0.22 0.08 60) 100%)',
+          fontFamily: 'Geist Variable, system-ui, -apple-system, sans-serif',
           width: '100%',
           maxWidth: 480,
         }}
       >
-        {/* Background glow orbs */}
         <div
           aria-hidden
           style={{
             position: 'absolute',
             inset: 0,
             background:
-              'radial-gradient(circle at 20% 20%, rgba(251,146,60,0.25) 0%, transparent 50%),' +
-              'radial-gradient(circle at 80% 80%, rgba(99,102,241,0.2) 0%, transparent 50%)',
+              'radial-gradient(circle at 18% 18%, rgba(168,85,247,0.32) 0%, transparent 50%),' +
+              'radial-gradient(circle at 82% 82%, rgba(251,191,36,0.30) 0%, transparent 50%)',
             pointerEvents: 'none',
           }}
         />
@@ -129,17 +135,18 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '16px 20px 0',
+            padding: '18px 22px 0',
+            position: 'relative',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ArenaLogo size={28} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ArenaLogo size={30} />
             <span
               style={{
                 color: 'rgba(255,255,255,0.6)',
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: 600,
-                letterSpacing: '0.18em',
+                letterSpacing: '0.22em',
                 textTransform: 'uppercase',
               }}
             >
@@ -148,18 +155,21 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
           </div>
           <span
             style={{
-              background: 'rgba(251,146,60,0.2)',
-              border: '1px solid rgba(251,146,60,0.4)',
+              background: 'rgba(251,191,36,0.18)',
+              border: '1px solid rgba(251,191,36,0.45)',
               borderRadius: 999,
-              color: '#fb923c',
-              fontSize: 11,
+              color: '#fcd34d',
+              fontSize: 10,
               fontWeight: 700,
-              padding: '3px 10px',
-              letterSpacing: '0.1em',
+              padding: '4px 11px',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            Champion
+            <CrownIcon size={11} /> Champion
           </span>
         </div>
 
@@ -170,7 +180,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
             width: '100%',
             aspectRatio: '1',
             overflow: 'hidden',
-            marginTop: 8,
+            marginTop: 10,
           }}
         >
           {portraitUrl ? (
@@ -186,15 +196,15 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
                 }}
                 crossOrigin="anonymous"
               />
-              {/* Bottom fade overlay */}
               <div
                 style={{
                   position: 'absolute',
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  height: '40%',
-                  background: 'linear-gradient(to top, #0f0c29, transparent)',
+                  height: '45%',
+                  background:
+                    'linear-gradient(to top, oklch(0.18 0.05 290), transparent)',
                 }}
               />
             </>
@@ -209,11 +219,11 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
                 justifyContent: 'center',
                 gap: 12,
                 background: 'rgba(255,255,255,0.04)',
-                color: 'rgba(255,255,255,0.35)',
+                color: 'rgba(255,255,255,0.45)',
               }}
             >
-              <ImageIcon size={40} />
-              <span style={{ fontSize: 13 }}>Portrait not generated yet</span>
+              <ImageIcon size={36} />
+              <span style={{ fontSize: 12 }}>Portrait not generated yet</span>
             </div>
           )}
         </div>
@@ -221,27 +231,26 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
         {/* Winner info */}
         <div
           style={{
-            padding: '0 20px 20px',
-            marginTop: portraitUrl ? -32 : 0,
+            padding: '0 22px 22px',
+            marginTop: portraitUrl ? -36 : 0,
             position: 'relative',
           }}
         >
-          {/* Trophy + model name */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              marginBottom: 4,
+              marginBottom: 6,
             }}
           >
-            <TrophyIcon size={18} color="#fbbf24" />
+            <CrownIcon size={16} color="#fcd34d" />
             <span
               style={{
                 color: 'rgba(255,255,255,0.5)',
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.2em',
+                letterSpacing: '0.22em',
                 textTransform: 'uppercase',
               }}
             >
@@ -251,20 +260,20 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
           <h2
             style={{
               color: '#ffffff',
-              fontSize: 28,
+              fontSize: 30,
               fontWeight: 700,
-              lineHeight: 1.1,
+              letterSpacing: '-0.025em',
+              lineHeight: 1.05,
               margin: '0 0 4px',
-              fontFamily: 'Source Serif 4, Georgia, serif',
             }}
           >
             {winner.label}
           </h2>
           <p
             style={{
-              color: 'rgba(255,255,255,0.5)',
+              color: 'rgba(255,255,255,0.55)',
               fontSize: 13,
-              margin: '0 0 16px',
+              margin: '0 0 18px',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -273,7 +282,6 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
             {session.title}
           </p>
 
-          {/* Stats row */}
           <div
             style={{
               display: 'flex',
@@ -294,12 +302,17 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
                   flex: 1,
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 10,
-                  padding: '8px 10px',
+                  borderRadius: 12,
+                  padding: '10px 11px',
                 }}
               >
                 <div
-                  style={{ color: '#ffffff', fontSize: 18, fontWeight: 700 }}
+                  style={{
+                    color: '#ffffff',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: '-0.015em',
+                  }}
                 >
                   {stat.value}
                 </div>
@@ -308,9 +321,9 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
                     color: 'rgba(255,255,255,0.4)',
                     fontSize: 10,
                     fontWeight: 600,
-                    letterSpacing: '0.12em',
+                    letterSpacing: '0.14em',
                     textTransform: 'uppercase',
-                    marginTop: 2,
+                    marginTop: 3,
                   }}
                 >
                   {stat.label}
@@ -330,15 +343,15 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
           onClick={handleGenerate}
           disabled={loading}
         >
-          <ImageIcon className="size-4" />
+          <SparklesIcon className="size-4" />
           {loading
-            ? 'Generating portrait…'
+            ? 'Generating portrait...'
             : portraitUrl
-              ? 'Regenerate portrait'
+              ? 'Regenerate'
               : 'Generate AI portrait'}
         </Button>
 
-        {portraitUrl && (
+        {portraitUrl ? (
           <>
             <Button
               type="button"
@@ -348,7 +361,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
               disabled={downloading}
             >
               <DownloadIcon className="size-4" />
-              {downloading ? 'Saving…' : 'Download card'}
+              {downloading ? 'Saving...' : 'Download card'}
             </Button>
             <Button
               type="button"
@@ -360,7 +373,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
               Share
             </Button>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   )
