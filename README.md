@@ -184,6 +184,9 @@ production deploy key is available.
   production secret setup and deployment checklist
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component, data model,
   session/round lifecycles, sequence and agent workflow diagrams
+- [`docs/UML_DIAGRAMS.md`](docs/UML_DIAGRAMS.md) — dedicated GitHub-rendered UML
+  diagrams for use case, class/domain model, activity, state, sequence, and
+  deployment views
 - [`docs/AI_TOOLS_REPORT.md`](docs/AI_TOOLS_REPORT.md) — how AI tools were
   used across planning, architecture, implementation, testing, and reflection
 

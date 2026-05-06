@@ -237,7 +237,8 @@ Document the system visually so any team member or evaluator can understand the 
 
 **Notes**
 
-- Diagrams live in `/docs/ARCHITECTURE.md` (Mermaid — rendează în GitHub)
+- Diagrams live in `/docs/ARCHITECTURE.md` and `/docs/UML_DIAGRAMS.md`
+  (Mermaid — renders visually in GitHub)
 - AI-assisted generation; notat în `/docs/AI_TOOLS_REPORT.md`
 
 ---
