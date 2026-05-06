@@ -390,6 +390,32 @@ code {
   --sidebar-ring: var(--ring);
 }
 
+/* Scroll reveal */
+.reveal-target {
+  opacity: 0;
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-target[data-reveal-direction='up'] { transform: translateY(28px); }
+.reveal-target[data-reveal-direction='down'] { transform: translateY(-28px); }
+.reveal-target[data-reveal-direction='left'] { transform: translateX(28px); }
+.reveal-target[data-reveal-direction='right'] { transform: translateX(-28px); }
+
+.reveal-target[data-revealed='true'] {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-target {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
