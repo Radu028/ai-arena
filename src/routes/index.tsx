@@ -27,14 +27,14 @@ function HomePage() {
       >
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div className="space-y-6">
-            <Badge className="rounded-full bg-[var(--arena-signal)] px-4 py-1.5 text-white">
-              Host + Critic agents included
+            <Badge className="rounded-full bg-(--arena-signal) px-4 py-1.5 text-white">
+              Host + Critic + Stats agents included
             </Badge>
             <div className="space-y-4">
               <p className="eyebrow">Live editorial AI battles</p>
               <h1 className="display max-w-4xl text-balance">
-                One prompt. Five major models. Real people voting alongside
-                them.
+                One prompt. {AVAILABLE_MODELS.length} major models. Real people
+                voting alongside them.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
                 AI Arena runs synchronized rounds where every selected model
@@ -56,8 +56,8 @@ function HomePage() {
             <CardHeader>
               <CardTitle className="font-serif text-3xl">Round loop</CardTitle>
               <CardDescription>
-                Topic lock, simultaneous responses, anonymous voting, critic
-                analysis, then the next round.
+                Topic lock, simultaneous responses, anonymous voting, critic and
+                stats analysis, then the next round.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -79,8 +79,8 @@ function HomePage() {
                 ],
                 [
                   '4',
-                  'Host and Critic react',
-                  'The MC transitions, the Critic explains the result.',
+                  'Agents react',
+                  'The MC transitions, while Critic and Stats summarize the result.',
                 ],
               ].map(([step, title, copy]) => (
                 <div
@@ -139,8 +139,8 @@ function HomePage() {
           <CardHeader>
             <CardTitle className="font-serif text-3xl">Battle roster</CardTitle>
             <CardDescription>
-              The initial base ships with five providers and model snapshots
-              saved at session creation time.
+              The model roster is snapshotted at session creation time, so
+              historical sessions remain stable.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
