@@ -1,12 +1,15 @@
-import {
-  AlertTriangleIcon,
-  CheckIcon,
-  CrownIcon,
-  TimerIcon,
-} from 'lucide-react'
+import { TrophyIcon } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { formatDurationMs } from '#/lib/format'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 
 export function RoundResponseCard({
   response,
@@ -34,105 +37,65 @@ export function RoundResponseCard({
   const failed = response.status !== 'success'
 
   return (
-    <div
+    <Card
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all',
-        response.isWinner && revealed
-          ? 'border-amber-400/50 ring-amber-400/30 ring-amber-glow [box-shadow:0_24px_60px_-24px_color-mix(in_oklab,var(--arena-amber),transparent_55%),inset_0_0_0_1px_color-mix(in_oklab,var(--arena-amber),transparent_70%)]'
-          : 'border-border/60 hover:border-border',
+        'arena-panel flex h-full flex-col',
+        response.isWinner &&
+          revealed &&
+          'border-[var(--arena-win)] shadow-[0_20px_40px_rgba(214,118,21,0.14)]',
       )}
     >
-      {response.isWinner && revealed ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_-20%,color-mix(in_oklab,var(--arena-amber),transparent_55%),transparent_45%)]"
-        />
-      ) : null}
-
-      <div className="relative flex items-center justify-between gap-2 px-5 pt-4">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'inline-flex h-6 items-center gap-1.5 rounded-full px-2 font-mono text-[0.65rem] uppercase tracking-[0.2em]',
-              revealed
-                ? 'bg-muted text-muted-foreground'
-                : 'bg-foreground/8 text-foreground/70',
-            )}
+      <CardHeader className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Badge
+            variant="outline"
+            className="rounded-full px-3 py-1 text-xs tracking-[0.18em]"
           >
-            slot {response.slot}
-          </span>
-          {failed ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-wider text-red-600 dark:text-red-300">
-              <AlertTriangleIcon className="size-3" />
-              {response.status}
-            </span>
+            Slot {response.slot}
+          </Badge>
+          {response.isWinner && revealed ? (
+            <Badge className="rounded-full bg-[var(--arena-win)] text-white">
+              <TrophyIcon className="mr-1 size-3.5" />
+              Winner
+            </Badge>
           ) : null}
         </div>
-
-        {response.isWinner && revealed ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-            <CrownIcon className="size-3" />
-            Winner
-          </span>
-        ) : null}
-      </div>
-
-      <div className="relative flex-1 px-5 pt-3">
-        <p className="text-sm font-semibold tracking-tight">
-          {revealed ? (
-            <>{response.label ?? `Response ${response.slot}`}</>
-          ) : (
-            <span className="text-muted-foreground">
-              Anonymous · revealed after voting
-            </span>
-          )}
-        </p>
-
-        <div className="mt-3 text-pretty">
-          {failed ? (
-            <p className="rounded-xl border border-dashed border-border/60 bg-muted/40 px-3 py-3 text-xs leading-6 text-muted-foreground">
-              {response.errorMessage ??
-                'This model did not return a valid answer in time.'}
-            </p>
-          ) : (
-            <p className="font-editorial text-[0.95rem] leading-7 text-foreground/95">
-              {response.text}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="relative mt-4 flex items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-5 py-3">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {revealed ? (
-            <span className="font-mono tabular-nums text-foreground">
-              {response.votes}{' '}
-              <span className="text-muted-foreground">
-                {response.votes === 1 ? 'vote' : 'votes'}
-              </span>
-            </span>
-          ) : (
-            <span>Anonymous until reveal</span>
-          )}
-          {response.latencyMs ? (
-            <span className="inline-flex items-center gap-1 font-mono">
-              <TimerIcon className="size-3" />
-              {formatDurationMs(response.latencyMs)}
-            </span>
-          ) : null}
+        <CardTitle className="font-serif text-2xl">
+          {revealed
+            ? (response.label ?? `Response ${response.slot}`)
+            : `Anonymous ${response.slot}`}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 space-y-4">
+        {failed ? (
+          <div className="rounded-[1.2rem] border border-dashed border-border/80 bg-muted/60 px-4 py-5 text-sm text-muted-foreground">
+            {response.errorMessage ??
+              'This model did not return a valid answer in time.'}
+          </div>
+        ) : (
+          <p className="text-pretty text-[0.98rem] leading-7 text-foreground">
+            {response.text}
+          </p>
+        )}
+      </CardContent>
+      <CardFooter className="flex items-center justify-between gap-3">
+        <div className="text-sm text-muted-foreground">
+          {revealed
+            ? `${response.votes} vote${response.votes === 1 ? '' : 's'}`
+            : 'Anonymous until reveal'}
+          {response.latencyMs
+            ? ` · ${formatDurationMs(response.latencyMs)}`
+            : ''}
         </div>
         {showVoteButton ? (
           <Button
-            size="sm"
             disabled={disabled || failed}
             onClick={() => onVote?.(response.id)}
-            className="rounded-full"
           >
-            <CheckIcon className="size-3.5" />
             Vote
           </Button>
         ) : null}
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   )
 }

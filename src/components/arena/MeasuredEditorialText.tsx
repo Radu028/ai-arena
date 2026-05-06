@@ -5,46 +5,35 @@ export function MeasuredEditorialText({
   text,
   className,
   fallback = 'No copy available yet.',
-  label,
-  accent = 'primary',
 }: {
   text: string | null
   className?: string
   fallback?: string
-  /** Optional eyebrow that prefixes the block (e.g. "Critic" / "Stats"). */
-  label?: string
-  accent?: 'primary' | 'amber' | 'cyan'
 }) {
   const { ref, metrics } = usePretextBlock(
     text,
-    '500 17px "Source Serif 4"',
-    27,
+    '600 18px "Source Serif 4"',
+    28,
   )
 
-  const accentClass =
-    accent === 'amber'
-      ? 'before:bg-amber-400/70'
-      : accent === 'cyan'
-        ? 'before:bg-cyan-400/70'
-        : 'before:bg-primary/70'
-
   return (
-    <figure
+    <div
       ref={ref}
       className={cn(
-        'relative rounded-2xl border border-border/60 bg-card/90 px-5 py-4 sm:px-6 sm:py-5',
-        'before:absolute before:inset-y-4 before:left-0 before:w-[2px] before:rounded-full',
-        accentClass,
+        'rounded-[1.4rem] border border-border/70 bg-card px-5 py-4',
         className,
       )}
       style={
-        metrics?.height ? { minHeight: `${metrics.height + 36}px` } : undefined
+        metrics?.height
+          ? {
+              minHeight: `${metrics.height + 32}px`,
+            }
+          : undefined
       }
     >
-      {label ? <figcaption className="eyebrow mb-2">{label}</figcaption> : null}
-      <p className="font-editorial text-[1.02rem] leading-7 text-foreground">
+      <p className="font-serif text-[1.05rem] leading-7 text-foreground">
         {text ?? fallback}
       </p>
-    </figure>
+    </div>
   )
 }

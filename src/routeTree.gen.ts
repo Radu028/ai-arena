@@ -14,7 +14,6 @@ import { Route as JoinRouteImport } from './routes/join'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as SessionsSlugRouteImport } from './routes/sessions.$slug'
 import { Route as AdminSessionsNewRouteImport } from './routes/admin.sessions.new'
 import { Route as AdminSessionsSessionIdRouteImport } from './routes/admin.sessions.$sessionId'
@@ -44,11 +43,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const SessionsSlugRoute = SessionsSlugRouteImport.update({
   id: '/sessions/$slug',
   path: '/sessions/$slug',
@@ -72,17 +66,16 @@ export interface FileRoutesByFullPath {
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
-  '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
-  '/admin': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
 }
@@ -94,7 +87,6 @@ export interface FileRoutesById {
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
   '/sessions/$slug': typeof SessionsSlugRoute
-  '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
   '/admin/sessions/new': typeof AdminSessionsNewRoute
 }
@@ -107,17 +99,16 @@ export interface FileRouteTypes {
     | '/join'
     | '/leaderboard'
     | '/sessions/$slug'
-    | '/admin/'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/history'
     | '/join'
     | '/leaderboard'
     | '/sessions/$slug'
-    | '/admin'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
   id:
@@ -128,7 +119,6 @@ export interface FileRouteTypes {
     | '/join'
     | '/leaderboard'
     | '/sessions/$slug'
-    | '/admin/'
     | '/admin/sessions/$sessionId'
     | '/admin/sessions/new'
   fileRoutesById: FileRoutesById
@@ -179,13 +169,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/sessions/$slug': {
       id: '/sessions/$slug'
       path: '/sessions/$slug'
@@ -211,13 +194,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminIndexRoute: typeof AdminIndexRoute
   AdminSessionsSessionIdRoute: typeof AdminSessionsSessionIdRoute
   AdminSessionsNewRoute: typeof AdminSessionsNewRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminIndexRoute: AdminIndexRoute,
   AdminSessionsSessionIdRoute: AdminSessionsSessionIdRoute,
   AdminSessionsNewRoute: AdminSessionsNewRoute,
 }

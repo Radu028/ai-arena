@@ -17,30 +17,17 @@ export function useGlobalReveal() {
       { threshold: 0.07 },
     )
 
-    const observeAll = () => {
-      const targets = document.querySelectorAll(
-        '[data-reveal]:not([data-revealed])',
-      )
-      targets.forEach((el) => observer.observe(el))
-    }
-
-    const timer = setTimeout(observeAll, 60)
-
-    const mutationObserver = new MutationObserver(() => {
-      observeAll()
-    })
-
-    mutationObserver.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['data-reveal'],
-    })
+    const timer = setTimeout(() => {
+      const targets = document.querySelectorAll('[data-reveal]')
+      targets.forEach((el) => {
+        el.removeAttribute('data-revealed')
+        observer.observe(el)
+      })
+    }, 60)
 
     return () => {
       clearTimeout(timer)
       observer.disconnect()
-      mutationObserver.disconnect()
     }
   }, [pathname])
 }

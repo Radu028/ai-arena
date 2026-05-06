@@ -1,7 +1,6 @@
 import { useReducer, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { joinSessionSchema, topicSchema } from '@shared/validation'
@@ -13,6 +12,12 @@ import {
 } from '#/components/arena/SessionPageSections'
 import { WinnerCard } from '#/components/arena/WinnerCard'
 import { useParticipantToken } from '#/hooks/use-participant-token'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 import { Button } from '#/components/ui/button'
 import {
   Dialog,
@@ -22,13 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#/components/ui/empty'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
@@ -46,7 +44,11 @@ type SessionPageState = {
 }
 
 type SessionPageAction =
-  | { type: 'field'; field: 'displayName' | 'topic'; value: string }
+  | {
+      type: 'field'
+      field: 'displayName' | 'topic'
+      value: string
+    }
   | { type: 'pendingJoin'; value: boolean }
   | { type: 'pendingTopic'; value: boolean }
   | { type: 'pendingVoteId'; value: string | null }
@@ -66,15 +68,30 @@ function sessionPageReducer(
 ): SessionPageState {
   switch (action.type) {
     case 'field':
-      return { ...current, [action.field]: action.value }
+      return {
+        ...current,
+        [action.field]: action.value,
+      }
     case 'pendingJoin':
-      return { ...current, pendingJoin: action.value }
+      return {
+        ...current,
+        pendingJoin: action.value,
+      }
     case 'pendingTopic':
-      return { ...current, pendingTopic: action.value }
+      return {
+        ...current,
+        pendingTopic: action.value,
+      }
     case 'pendingVoteId':
-      return { ...current, pendingVoteId: action.value }
+      return {
+        ...current,
+        pendingVoteId: action.value,
+      }
     case 'clearTopic':
-      return { ...current, topic: '' }
+      return {
+        ...current,
+        topic: '',
+      }
   }
 }
 
@@ -207,19 +224,17 @@ function SessionPage() {
 
   if (!sessionView) {
     return (
-      <div className="shell">
-        <Empty className="surface rounded-2xl p-10">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <GavelIcon />
-            </EmptyMedia>
-            <EmptyTitle>Session not found</EmptyTitle>
-            <EmptyDescription>
-              This share link doesn&rsquo;t match an active AI Arena session.
-              Check the join code and try again.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      <div className="page-frame">
+        <Card className="arena-panel">
+          <CardHeader>
+            <CardTitle className="font-serif text-4xl">
+              Session not found
+            </CardTitle>
+            <CardDescription>
+              This share link does not match an active AI Arena session.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     )
   }
@@ -230,35 +245,20 @@ function SessionPage() {
   const winner = sessionEnded ? sessionView.scoreboard.at(0) : undefined
 
   return (
-    <div className="shell space-y-6">
+    <div className="page-frame space-y-6">
       {winner ? (
-        <section
-          data-reveal
-          className="surface relative overflow-hidden rounded-3xl p-6 sm:p-8"
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-20%,color-mix(in_oklab,var(--arena-amber),transparent_60%),transparent_45%),radial-gradient(circle_at_90%_120%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_45%)]"
-          />
-          <div className="relative grid gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
-            <div className="mx-auto w-full max-w-md lg:mx-0">
-              <WinnerCard session={sessionView.session} winner={winner} />
-            </div>
-            <div className="space-y-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                <CrownIcon className="size-3" />
-                Session champion
-              </span>
-              <h2 className="display text-balance text-3xl sm:text-5xl">
-                {winner.label}{' '}
-                <span className="gradient-text">takes the crown.</span>
-              </h2>
-              <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
-                {winner.roundsPlayed} · {winner.totalVotes} total votes cast.
-                Generate the champion portrait and download or share the card.
-              </p>
-            </div>
+        <section data-reveal className="grid gap-6 lg:grid-cols-[auto_1fr]">
+          <WinnerCard session={sessionView.session} winner={winner} />
+          <div className="space-y-3 py-2">
+            <p className="eyebrow">Session complete</p>
+            <h2 className="font-serif text-4xl text-foreground">
+              {winner.label} takes the crown
+            </h2>
+            <p className="text-base leading-7 text-muted-foreground">
+              {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
+              {winner.roundsPlayed} · {winner.totalVotes} total votes cast.
+              Generate the champion portrait and download or share the card.
+            </p>
           </div>
         </section>
       ) : null}
@@ -266,19 +266,10 @@ function SessionPage() {
       <SessionOverviewSection sessionView={sessionView} />
 
       <Tabs defaultValue="live" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 sm:w-auto">
-          <TabsTrigger value="live">
-            <RadioIcon className="size-3.5" />
-            Live
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            <ScrollTextIcon className="size-3.5" />
-            History
-          </TabsTrigger>
-          <TabsTrigger value="log">
-            <GavelIcon className="size-3.5" />
-            Log
-          </TabsTrigger>
+        <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsTrigger value="live">Live</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="log">Arena Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="live" className="space-y-4">
@@ -317,8 +308,8 @@ function SessionPage() {
           <DialogHeader>
             <DialogTitle>Choose a username to vote</DialogTitle>
             <DialogDescription>
-              Spectators don&rsquo;t need an account. A username is only
-              required when you cast a vote.
+              You can watch the arena without an account. A username is only
+              needed when you cast a vote.
             </DialogDescription>
           </DialogHeader>
           <form className="space-y-4" onSubmit={handleJoinToVote}>
@@ -334,13 +325,12 @@ function SessionPage() {
                     value: event.target.value,
                   })
                 }
-                placeholder="e.g. radu"
-                autoComplete="off"
+                placeholder="Radu"
               />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={state.pendingJoin}>
-                {state.pendingJoin ? 'Saving...' : 'Save username and vote'}
+                {state.pendingJoin ? 'Saving...' : 'Save Username And Vote'}
               </Button>
             </DialogFooter>
           </form>

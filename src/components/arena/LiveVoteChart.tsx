@@ -5,50 +5,47 @@ export function LiveVoteChart({
 }: {
   responses: Array<{ slot: string; votes: number }>
 }) {
-  const total = Math.max(
+  const highestVoteCount = Math.max(
     1,
-    responses.reduce((acc, r) => acc + r.votes, 0),
+    ...responses.map((response) => response.votes),
   )
 
   return (
     <div
-      className="grid gap-2.5"
+      className="grid gap-4"
       role="img"
       aria-label="Live voting distribution across anonymized response slots."
     >
       {responses.map((response) => {
-        const ratio = response.votes / total
-        const widthPercent = response.votes === 0 ? 4 : Math.max(6, ratio * 100)
-        const sharePercent = Math.round(ratio * 100)
+        const widthPercent = `${Math.max(
+          8,
+          Math.round((response.votes / highestVoteCount) * 100),
+        )}%`
 
         return (
           <div
             key={response.slot}
-            className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3"
+            className="grid gap-2 rounded-[1.25rem] border border-border/60 bg-muted/30 p-4"
           >
-            <span className="inline-flex h-6 items-center rounded-full bg-muted px-2 font-mono text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
-              {response.slot}
-            </span>
-
-            <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-mono text-sm tracking-[0.2em] text-muted-foreground uppercase">
+                {response.slot}
+              </div>
+              <div className="text-sm font-semibold text-foreground">
+                {response.votes} {response.votes === 1 ? 'vote' : 'votes'}
+              </div>
+            </div>
+            <div
+              className="h-3 overflow-hidden rounded-full bg-border/60"
+              aria-hidden="true"
+            >
               <div
                 className={cn(
-                  'absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out',
-                  response.votes === 0
-                    ? 'bg-muted-foreground/30'
-                    : 'bg-gradient-to-r from-primary to-primary/70',
+                  'h-full rounded-full bg-[var(--arena-cobalt)] transition-[width] duration-500 ease-out',
+                  response.votes === 0 && 'bg-muted-foreground/40',
                 )}
-                style={{ width: `${widthPercent}%` }}
+                style={{ width: response.votes === 0 ? '8%' : widthPercent }}
               />
-            </div>
-
-            <div className="flex w-20 items-baseline justify-end gap-1.5">
-              <span className="font-mono text-sm tabular-nums">
-                {response.votes}
-              </span>
-              <span className="font-mono text-[0.65rem] tabular-nums text-muted-foreground">
-                {sharePercent}%
-              </span>
             </div>
           </div>
         )

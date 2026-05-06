@@ -1,8 +1,6 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowLeftIcon } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
 import { AdminGuard } from '#/components/AdminGuard'
 import { CreateSessionForm } from '#/components/arena/CreateSessionForm'
-import { Button } from '#/components/ui/button'
 
 export const Route = createFileRoute('/admin/sessions/new')({
   component: NewSessionPage,
@@ -10,31 +8,15 @@ export const Route = createFileRoute('/admin/sessions/new')({
 
 function NewSessionPage() {
   return (
-    <div className="shell space-y-8">
+    <div className="page-frame space-y-6">
       <AdminGuard title="Create a new arena session">
-        <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/admin">
-              <ArrowLeftIcon className="size-4" />
-              Back to console
-            </Link>
-          </Button>
-        </div>
-
-        <header data-reveal>
+        <section className="space-y-3">
           <p className="eyebrow">Session setup</p>
-          <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
+          <h1 className="font-serif text-5xl text-foreground">
             Configure the battle
           </h1>
-          <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
-            Pick a theme, choose the lineup, and we&rsquo;ll mint a join code
-            and share link the moment it&rsquo;s created.
-          </p>
-        </header>
-
-        <section data-reveal className="surface rounded-2xl p-6 sm:p-8">
-          <CreateSessionForm />
         </section>
+        <CreateSessionForm />
       </AdminGuard>
     </div>
   )

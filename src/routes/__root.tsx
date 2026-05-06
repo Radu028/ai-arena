@@ -5,17 +5,15 @@ import {
   createRootRoute,
   useLocation,
 } from '@tanstack/react-router'
-import { TerminalIcon } from 'lucide-react'
-import Footer from '../components/Footer'
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 import { AppProviders, useRuntimeConfig } from '#/components/AppProviders'
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#/components/ui/empty'
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card'
 import { Toaster } from '#/components/ui/sonner'
 import { useGlobalReveal } from '#/hooks/use-global-reveal'
 import appCss from '../styles.css?url'
@@ -29,16 +27,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'AI Arena — Live model battles',
+        title: 'AI Arena',
       },
       {
         name: 'description',
         content:
           'Run live battles between major AI models, with Host and Critic agents, public voting, and realtime results.',
-      },
-      {
-        name: 'theme-color',
-        content: '#16151f',
       },
     ],
     links: [{ rel: 'stylesheet', href: appCss }],
@@ -77,23 +71,22 @@ function RootFrame() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main key={pathname} className="page-enter flex-1 pt-6 pb-16 sm:pt-10">
+      <main key={pathname} className="page-enter flex-1 py-8">
         {runtime.hasConvex ? (
           <Outlet />
         ) : (
-          <div className="shell">
-            <Empty className="surface rounded-2xl p-10">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <TerminalIcon />
-                </EmptyMedia>
-                <EmptyTitle>Convex is not configured yet</EmptyTitle>
-                <EmptyDescription>
-                  Add <code className="font-mono">VITE_CONVEX_URL</code> to your
-                  environment, then restart the dev server.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+          <div className="page-frame">
+            <Card className="arena-panel">
+              <CardHeader>
+                <CardTitle className="font-serif text-3xl">
+                  Convex is not configured yet
+                </CardTitle>
+                <CardDescription>
+                  Add `VITE_CONVEX_URL` to the environment before rendering the
+                  live app.
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         )}
       </main>
