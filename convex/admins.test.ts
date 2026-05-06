@@ -25,6 +25,17 @@ const teammateIdentity = {
 }
 
 describe('admin access control', () => {
+  test('bootstrap Google admin has access without a stored admin row', async () => {
+    const t = convexTest({ schema, modules })
+    const bootstrapAdmin = t.withIdentity(bootstrapAdminIdentity)
+
+    const list = await bootstrapAdmin.query(api.admins.list, {})
+
+    expect(list.isAuthenticated).toBe(true)
+    expect(list.viewerEmail).toBe('radupopa028@gmail.com')
+    expect(list.bootstrapAdmins).toContain('radupopa028@gmail.com')
+  })
+
   test('bootstrap admin can grant admin access by email', async () => {
     const t = convexTest({ schema, modules })
     const bootstrapAdmin = t.withIdentity(bootstrapAdminIdentity)

@@ -30,7 +30,7 @@ function ConvexLayer({ children }: { children: React.ReactNode }) {
       publishableKey={runtimeConfig.clerkPublishableKey}
       afterSignOutUrl="/"
       signInUrl="/login"
-      signUpUrl="/register"
+      signUpUrl="/login"
     >
       <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
         {children}

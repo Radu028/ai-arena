@@ -91,10 +91,7 @@ function ConfiguredAdminGuard({
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/login">More about login →</Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/register">Become an operator →</Link>
+                <Link to="/login">Open the sign-in page →</Link>
               </Button>
             </div>
           </div>

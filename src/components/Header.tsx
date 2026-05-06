@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useAuth, useClerk, useUser } from '@clerk/tanstack-react-start'
 import {
+  ArrowRightIcon,
   ClockIcon,
   HomeIcon,
   LogInIcon,
@@ -10,7 +11,6 @@ import {
   ShieldIcon,
   TrophyIcon,
   UserCircle2Icon,
-  UserPlusIcon,
   XIcon,
 } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
@@ -26,14 +26,20 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { cn } from '#/lib/utils'
+import { AdminOnly } from './AdminOnly'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
   { to: '/join', label: 'Join', icon: LogInIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { to: '/history', label: 'History', icon: ClockIcon },
-  { to: '/admin', label: 'Admin', icon: ShieldIcon },
 ] as const
+
+const ADMIN_NAV_LINK = {
+  to: '/admin',
+  label: 'Admin',
+  icon: ShieldIcon,
+} as const
 
 export default function Header() {
   const runtime = useRuntimeConfig()
@@ -92,6 +98,9 @@ export default function Header() {
               {label}
             </Link>
           ))}
+          <AdminOnly>
+            <HeaderNavLink {...ADMIN_NAV_LINK} />
+          </AdminOnly>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -99,14 +108,16 @@ export default function Header() {
           {runtime.hasClerk ? (
             <HeaderAuth />
           ) : (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="hidden sm:inline-flex"
-            >
-              <Link to="/admin">Admin</Link>
-            </Button>
+            <AdminOnly>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
+                <Link to="/admin">Admin</Link>
+              </Button>
+            </AdminOnly>
           )}
 
           <button
@@ -128,20 +139,22 @@ export default function Header() {
         <div className="border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map(({ to, label, icon: Icon }) => (
-              <Link
+              <HeaderNavLink
                 key={to}
                 to={to}
-                className="nav-link justify-start text-sm"
-                activeOptions={{ exact: to === '/' }}
-                activeProps={{
-                  className: 'nav-link is-active justify-start text-sm',
-                }}
-                onClick={() => setMobileOpen(false)}
-              >
-                <Icon className="size-4" />
-                {label}
-              </Link>
+                label={label}
+                icon={Icon}
+                mobile
+                onNavigate={() => setMobileOpen(false)}
+              />
             ))}
+            <AdminOnly>
+              <HeaderNavLink
+                {...ADMIN_NAV_LINK}
+                mobile
+                onNavigate={() => setMobileOpen(false)}
+              />
+            </AdminOnly>
             {runtime.hasClerk ? (
               <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
             ) : null}
@@ -149,6 +162,35 @@ export default function Header() {
         </div>
       ) : null}
     </header>
+  )
+}
+
+function HeaderNavLink({
+  to,
+  label,
+  icon: Icon,
+  mobile = false,
+  onNavigate,
+}: {
+  to: '/' | '/join' | '/leaderboard' | '/history' | '/admin'
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  mobile?: boolean
+  onNavigate?: () => void
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn('nav-link', mobile && 'justify-start text-sm')}
+      activeOptions={{ exact: to === '/' }}
+      activeProps={{
+        className: cn('nav-link is-active', mobile && 'justify-start text-sm'),
+      }}
+      onClick={onNavigate}
+    >
+      <Icon className={mobile ? 'size-4' : 'size-3.5'} />
+      {label}
+    </Link>
   )
 }
 
@@ -166,14 +208,11 @@ function HeaderAuth() {
 
   if (!isSignedIn) {
     return (
-      <div className="hidden items-center gap-2 sm:flex">
-        <Button asChild size="sm" variant="ghost" className="px-3">
-          <Link to="/login">Login</Link>
-        </Button>
-        <Button asChild size="sm" className="px-3">
-          <Link to="/register">
-            <span>Register</span>
-            <UserPlusIcon className="ml-1.5 size-3.5" />
+      <div className="hidden items-center sm:flex">
+        <Button asChild size="sm" className="group h-9 rounded-full px-4">
+          <Link to="/login" aria-label="Sign in with Google">
+            <span>Sign in</span>
+            <ArrowRightIcon className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </Button>
       </div>
@@ -200,7 +239,7 @@ function HeaderUserMenu() {
           className="group inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 py-1 pl-1 pr-2.5 text-sm transition-colors hover:border-border hover:bg-muted/60"
         >
           <Avatar imageUrl={user?.imageUrl} fallback={initials} />
-          <span className="hidden max-w-[10rem] truncate text-left text-[13px] font-medium text-foreground sm:inline-block">
+          <span className="hidden max-w-40 truncate text-left text-[13px] font-medium text-foreground sm:inline-block">
             {fullName || email || 'Account'}
           </span>
         </button>
@@ -224,12 +263,14 @@ function HeaderUserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/admin" className="cursor-pointer">
-            <ShieldIcon className="size-4" />
-            Admin console
-          </Link>
-        </DropdownMenuItem>
+        <AdminOnly>
+          <DropdownMenuItem asChild>
+            <Link to="/admin" className="cursor-pointer">
+              <ShieldIcon className="size-4" />
+              Admin console
+            </Link>
+          </DropdownMenuItem>
+        </AdminOnly>
         <DropdownMenuItem asChild>
           <Link to="/history" className="cursor-pointer">
             <ClockIcon className="size-4" />
@@ -260,18 +301,15 @@ function MobileAuthLinks({ onNavigate }: { onNavigate: () => void }) {
   if (!isSignedIn) {
     return (
       <div className="mt-2 flex flex-col gap-1.5 border-t border-border/60 pt-3">
-        <Button asChild variant="outline" onClick={onNavigate}>
+        <Button asChild className="w-full" onClick={onNavigate}>
           <Link to="/login">
             <LogInIcon className="size-4" />
-            Login
+            Sign in with Google
           </Link>
         </Button>
-        <Button asChild onClick={onNavigate}>
-          <Link to="/register">
-            <UserPlusIcon className="size-4" />
-            Register
-          </Link>
-        </Button>
+        <p className="px-1 text-[11px] leading-5 text-muted-foreground">
+          Same button creates your account on first visit.
+        </p>
       </div>
     )
   }
@@ -323,7 +361,7 @@ function Avatar({
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--arena-violet),transparent_82%)] text-[var(--arena-violet)]',
+        'inline-flex items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--arena-violet),transparent_82%)] text-(--arena-violet)',
         dim,
       )}
     >
