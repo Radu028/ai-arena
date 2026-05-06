@@ -152,14 +152,22 @@ your real Clerk issuer before relying on admin auth.
 
 Recommended production split:
 
-- frontend/app shell: Cloudflare Pages, built with `pnpm build:cloudflare`
+- frontend/app shell: Vercel, built with `pnpm build`
 - backend/realtime: Convex Cloud
 - auth: Clerk
 
-GitHub Actions runs type-check, lint, tests, and build on every PR. On `main`,
-the deploy job publishes Convex functions when `CONVEX_DEPLOY_KEY` is present
-and uploads Cloudflare Pages when `CLOUDFLARE_API_TOKEN`,
-`CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_PROJECT_NAME` are configured.
+Production frontend:
+
+- https://ai-arena-seven.vercel.app
+
+Production backend:
+
+- https://modest-wren-126.convex.cloud
+
+GitHub Actions runs type-check, lint, tests, and build on every PR. Vercel is
+connected to the GitHub repository and can publish the frontend from `main`.
+Convex functions are published separately with `pnpm exec convex deploy` when a
+production deploy key is available.
 
 ## Docs
 
