@@ -76,7 +76,11 @@ function LeaderboardPage() {
           icon={PercentIcon}
           label="Top win rate"
           value={
-            data && data.rows[0] ? `${data.rows[0].winRate.toFixed(1)}%` : null
+            data
+              ? data.rows[0]
+                ? `${data.rows[0].winRate.toFixed(1)}%`
+                : '0.0%'
+              : null
           }
         />
       </section>

@@ -1,5 +1,5 @@
 import { useReducer, useRef, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
 import { toast } from 'sonner'
@@ -219,6 +219,14 @@ function SessionPage() {
               Check the join code and try again.
             </EmptyDescription>
           </EmptyHeader>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button asChild>
+              <Link to="/join">Join with code</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">Back home</Link>
+            </Button>
+          </div>
         </Empty>
       </div>
     )
