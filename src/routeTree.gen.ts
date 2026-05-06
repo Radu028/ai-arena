@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SsoCallbackRouteImport } from './routes/sso-callback'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
@@ -21,6 +22,11 @@ import { Route as SessionsSlugRouteImport } from './routes/sessions.$slug'
 import { Route as AdminSessionsNewRouteImport } from './routes/admin.sessions.new'
 import { Route as AdminSessionsSessionIdRouteImport } from './routes/admin.sessions.$sessionId'
 
+const SsoCallbackRoute = SsoCallbackRouteImport.update({
+  id: '/sso-callback',
+  path: '/sso-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/sso-callback': typeof SsoCallbackRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/sso-callback': typeof SsoCallbackRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/sso-callback': typeof SsoCallbackRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/login'
     | '/register'
+    | '/sso-callback'
     | '/sessions/$slug'
     | '/admin/'
     | '/admin/sessions/$sessionId'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/login'
     | '/register'
+    | '/sso-callback'
     | '/sessions/$slug'
     | '/admin'
     | '/admin/sessions/$sessionId'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/leaderboard'
     | '/login'
     | '/register'
+    | '/sso-callback'
     | '/sessions/$slug'
     | '/admin/'
     | '/admin/sessions/$sessionId'
@@ -165,11 +177,19 @@ export interface RootRouteChildren {
   LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
+  SsoCallbackRoute: typeof SsoCallbackRoute
   SessionsSlugRoute: typeof SessionsSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sso-callback': {
+      id: '/sso-callback'
+      path: '/sso-callback'
+      fullPath: '/sso-callback'
+      preLoaderRoute: typeof SsoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
+  SsoCallbackRoute: SsoCallbackRoute,
   SessionsSlugRoute: SessionsSlugRoute,
 }
 export const routeTree = rootRouteImport
@@ -279,10 +300,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
