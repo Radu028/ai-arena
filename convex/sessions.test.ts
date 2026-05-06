@@ -24,6 +24,8 @@ describe('sessions flow', () => {
     const created = await admin.mutation(api.sessions.create, {
       title: 'Arena Prime',
       theme: 'comedy',
+      customPrompt: 'Make jokes about final exams and student life.',
+      responseLanguage: 'romanian',
       roundCount: 3,
       modelKeys: [
         'openai-gpt5',
@@ -40,6 +42,11 @@ describe('sessions flow', () => {
 
     expect(waitingView?.session.status).toBe('waiting')
     expect(waitingView?.session.joinCode).toHaveLength(6)
+    expect(waitingView?.session.customPrompt).toBe(
+      'Make jokes about final exams and student life.',
+    )
+    expect(waitingView?.session.responseLanguage).toBe('romanian')
+    expect(waitingView?.session.responseLanguageLabel).toBe('Romana')
 
     await admin.mutation(api.sessions.start, {
       sessionId: created.sessionId,

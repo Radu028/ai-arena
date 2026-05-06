@@ -3,10 +3,12 @@ import { mutation, query } from './_generated/server'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import { v } from 'convex/values'
 import {
+  MAX_CUSTOM_PROMPT_LENGTH,
   MAX_MODELS_PER_SESSION,
   MAX_ROUNDS,
   MIN_MODELS_PER_SESSION,
   MIN_ROUNDS,
+  RESPONSE_LANGUAGE_COPY,
   getThemeCopy,
   statusTone,
 } from '../shared/arena'
@@ -30,6 +32,16 @@ import {
   requireAdminIdentity,
   requireSessionOwner,
 } from './lib'
+import { responseLanguageValidator } from './validators'
+
+function getResponseLanguage(session: Doc<'sessions'>) {
+  return session.responseLanguage ?? 'english'
+}
+
+function getCustomPrompt(session: Doc<'sessions'>) {
+  const prompt = session.customPrompt?.trim()
+  return prompt ? prompt : null
+}
 
 function summarizeRound(
   round: Doc<'rounds'>,
@@ -269,6 +281,10 @@ async function buildSessionView(
       title: session.title,
       theme: session.theme,
       themeLabel: getThemeCopy(session.theme).label,
+      customPrompt: getCustomPrompt(session),
+      responseLanguage: getResponseLanguage(session),
+      responseLanguageLabel:
+        RESPONSE_LANGUAGE_COPY[getResponseLanguage(session)].label,
       status: session.status,
       statusLabel: statusTone(session.status),
       roundCount: session.roundCount,
@@ -338,6 +354,8 @@ export const listAdminSessions = query({
         joinCode: session.joinCode,
         status: session.status,
         theme: session.theme,
+        customPrompt: getCustomPrompt(session),
+        responseLanguage: getResponseLanguage(session),
         roundCount: session.roundCount,
         currentRoundNumber: session.currentRoundNumber,
         createdAt: session.createdAt,
@@ -379,6 +397,10 @@ export const getAdminSession = query({
       joinCode: session.joinCode,
       theme: session.theme,
       themeLabel: getThemeCopy(session.theme).label,
+      customPrompt: getCustomPrompt(session),
+      responseLanguage: getResponseLanguage(session),
+      responseLanguageLabel:
+        RESPONSE_LANGUAGE_COPY[getResponseLanguage(session)].label,
       status: session.status,
       roundCount: session.roundCount,
       currentRoundNumber: session.currentRoundNumber,
@@ -417,6 +439,8 @@ export const create = mutation({
       v.literal('eli5'),
       v.literal('freeform'),
     ),
+    customPrompt: v.optional(v.string()),
+    responseLanguage: v.optional(responseLanguageValidator),
     roundCount: v.number(),
     modelKeys: v.array(v.string()),
     maxParticipants: v.optional(v.number()),
@@ -426,6 +450,12 @@ export const create = mutation({
     const title = args.title.trim()
     if (title.length < 3) {
       throw new Error('Session title must be at least 3 characters.')
+    }
+    const customPrompt = args.customPrompt?.trim() ?? ''
+    if (customPrompt.length > MAX_CUSTOM_PROMPT_LENGTH) {
+      throw new Error(
+        `Custom prompt must stay under ${MAX_CUSTOM_PROMPT_LENGTH} characters.`,
+      )
     }
     if (args.roundCount < MIN_ROUNDS || args.roundCount > MAX_ROUNDS) {
       throw new Error('Round count is out of range.')
@@ -443,6 +473,8 @@ export const create = mutation({
       joinCode: await generateUniqueJoinCode(ctx),
       title,
       theme: args.theme,
+      customPrompt,
+      responseLanguage: args.responseLanguage ?? 'english',
       status: 'waiting',
       createdByIdentity: identity.tokenIdentifier,
       createdByName: identity.name ?? identity.email ?? 'Arena Admin',

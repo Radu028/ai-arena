@@ -71,6 +71,9 @@ export function SessionOverviewSection({
               isLive={isLive}
             />
             <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
+            <Badge variant="secondary">
+              {sessionView.session.responseLanguageLabel}
+            </Badge>
             <Badge variant="outline" className="font-mono text-[0.65rem]">
               code {sessionView.session.joinCode}
             </Badge>
@@ -124,6 +127,14 @@ export function SessionOverviewSection({
               </span>
             ) : null}
           </div>
+          {sessionView.session.customPrompt ? (
+            <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
+              <p className="eyebrow text-[0.65rem]">Arena prompt</p>
+              <p className="mt-2 text-sm leading-6 text-foreground/85">
+                {sessionView.session.customPrompt}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <SessionInviteCard slug={sessionView.session.slug} />

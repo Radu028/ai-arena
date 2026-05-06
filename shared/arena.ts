@@ -1,6 +1,23 @@
 export const SESSION_THEMES = ['comedy', 'debate', 'eli5', 'freeform'] as const
 export type SessionTheme = (typeof SESSION_THEMES)[number]
 
+export const RESPONSE_LANGUAGES = ['english', 'romanian'] as const
+export type ResponseLanguage = (typeof RESPONSE_LANGUAGES)[number]
+
+export const RESPONSE_LANGUAGE_COPY: Record<
+  ResponseLanguage,
+  { label: string; instruction: string }
+> = {
+  english: {
+    label: 'English',
+    instruction: 'Write all user-facing output in English.',
+  },
+  romanian: {
+    label: 'Romana',
+    instruction: 'Write all user-facing output in Romanian.',
+  },
+}
+
 export const SESSION_STATUSES = [
   'waiting',
   'active',
@@ -204,6 +221,7 @@ export const MIN_ROUNDS = 1
 export const MAX_ROUNDS = 10
 export const MAX_TOPIC_LENGTH = 300
 export const MIN_TOPIC_LENGTH = 5
+export const MAX_CUSTOM_PROMPT_LENGTH = 500
 export const PROVIDER_TIMEOUT_MS = 15_000
 export const AGENT_TIMEOUT_MS = 8_000
 export const ROUND_MAX_OUTPUT_TOKENS = 280
