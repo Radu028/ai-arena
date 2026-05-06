@@ -32,11 +32,22 @@ function ConvexLayer({ children }: { children: React.ReactNode }) {
       signInUrl="/login"
       signUpUrl="/login"
     >
-      <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+      <ConvexProviderWithClerk client={convexClient} useAuth={useConvexAuth}>
         {children}
       </ConvexProviderWithClerk>
     </ClerkProvider>
   )
+}
+
+function useConvexAuth() {
+  const auth = useAuth()
+  return {
+    ...auth,
+    // Convex needs the Clerk JWT template named "convex" so ctx.auth can see
+    // mapped claims such as email. If the default session token has aud=convex,
+    // ConvexProviderWithClerk would otherwise skip the template request.
+    sessionClaims: null,
+  }
 }
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
