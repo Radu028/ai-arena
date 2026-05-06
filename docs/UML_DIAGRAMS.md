@@ -1,10 +1,13 @@
 # UML Diagrams
 
-This document contains the MDS-facing UML diagrams for AI Arena. They are
-written in Mermaid, so GitHub renders them visually when this file is opened in
-the repository. The source remains editable and reviewable in pull requests.
+This document contains the MDS-facing UML diagrams for AI Arena. Each diagram is
+shown first as a committed SVG image so it renders consistently in Firefox,
+Zen, Chromium-based browsers, and GitHub previews. The Mermaid source remains
+below each image so the diagrams stay editable and reviewable in pull requests.
 
 ## 1. Use Case Diagram
+
+![Use case diagram](diagrams/svg/01-use-case.svg)
 
 ```mermaid
 flowchart LR
@@ -52,6 +55,8 @@ flowchart LR
 ```
 
 ## 2. Class / Domain Model Diagram
+
+![Class / domain model diagram](diagrams/svg/02-domain-model.svg)
 
 ```mermaid
 classDiagram
@@ -142,6 +147,8 @@ classDiagram
 
 ## 3. Round Sequence Diagram
 
+![Round sequence diagram](diagrams/svg/03-round-sequence.svg)
+
 ```mermaid
 sequenceDiagram
   autonumber
@@ -177,6 +184,8 @@ sequenceDiagram
 
 ## 4. Activity Diagram
 
+![Activity diagram](diagrams/svg/04-activity-flow.svg)
+
 ```mermaid
 flowchart TD
   Start([Open live session]) --> HasTopic{Round has topic?}
@@ -203,6 +212,8 @@ flowchart TD
 
 ## 5. State Machine Diagram
 
+![State machine diagram](diagrams/svg/05-state-machine.svg)
+
 ```mermaid
 stateDiagram-v2
   [*] --> Waiting
@@ -222,6 +233,8 @@ stateDiagram-v2
 ```
 
 ## 6. Deployment Diagram
+
+![Deployment diagram](diagrams/svg/06-deployment.svg)
 
 ```mermaid
 flowchart TB
@@ -257,6 +270,6 @@ Open this file on GitHub:
 https://github.com/Radu028/ai-arena/blob/main/docs/UML_DIAGRAMS.md
 ```
 
-GitHub renders each Mermaid block as a diagram. If an offline image is needed
-for slides, copy a Mermaid block into https://mermaid.live and export it as SVG
-or PNG.
+GitHub renders the committed SVG images in any modern browser. The Mermaid
+blocks are kept as source. If a separate offline image is needed for slides, use
+the SVG files in `docs/diagrams/svg/` directly.

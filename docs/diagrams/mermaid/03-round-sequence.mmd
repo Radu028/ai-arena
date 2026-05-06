@@ -1,0 +1,30 @@
+sequenceDiagram
+  autonumber
+  actor Guest
+  participant UI as React session page
+  participant Convex as Convex mutations/queries
+  participant Scheduler as Convex scheduler
+  participant Orchestrator as orchestration.ts action
+  participant Providers as OpenAI / Anthropic / Gemini
+
+  Guest->>UI: Open QR/session link
+  UI->>Convex: getPublicSessionView(slug)
+  Convex-->>UI: Realtime session snapshot
+  Guest->>UI: Submit topic
+  UI->>Convex: submitTopic(slug, token, topic)
+  Convex->>Scheduler: run generateRound
+  Scheduler->>Orchestrator: generateRound(sessionId, roundId)
+  Orchestrator->>Providers: Host intro + parallel model answers
+  Providers-->>Orchestrator: Answers, latency, token usage
+  Orchestrator->>Convex: save responses and open voting
+  Orchestrator->>Providers: AI judge prompts
+  Providers-->>Orchestrator: AI votes + rationales
+  Orchestrator->>Convex: save AI votes
+  Guest->>UI: Vote
+  UI->>Convex: castHumanVote(slug, token, responseId)
+  Scheduler->>Convex: finalizeRound after voting window
+  Convex->>Scheduler: run afterRoundFinalized
+  Scheduler->>Orchestrator: afterRoundFinalized
+  Orchestrator->>Providers: Critic + Stats + Host transition/recap
+  Orchestrator->>Convex: save artifacts
+  Convex-->>UI: Winner reveal and agent summaries
