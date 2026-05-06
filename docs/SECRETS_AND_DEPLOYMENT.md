@@ -48,8 +48,8 @@ cheapest available Sonnet model before running a live demo.
 
 ## GitHub Secret For Convex CD
 
-The GitHub Actions workflow already deploys Convex functions on pushes to
-`main` when the repository secret exists:
+The GitHub Actions workflow deploys Convex functions on pushes to `main` using
+the repository secret:
 
 ```bash
 gh secret set CONVEX_DEPLOY_KEY
@@ -58,9 +58,9 @@ gh secret set CONVEX_DEPLOY_KEY
 Paste the deploy key into the interactive prompt. Do not pass it as `--body`
 because that can expose it in local process or command logs.
 
-After adding the secret, push a documentation-only commit to `main` and verify
-that the `Deploy Convex functions` step runs instead of the `Deployment skipped`
-step.
+This is configured for the hosted repository. The `Deploy Convex functions` step
+should run on pushes to `main`; if it is skipped, re-check that the secret exists
+in GitHub Actions.
 
 ## Vercel Frontend Deployment
 
@@ -74,6 +74,7 @@ The frontend needs these public/non-provider values in Vercel:
 - `VITE_CONVEX_URL`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` from the Clerk Vercel Marketplace
   integration, or `VITE_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`, managed by the Clerk Vercel Marketplace integration
 - Do not set `VITE_ALLOW_DEMO_ADMIN` in hosted environments unless demo admin
   access is intentionally enabled for a throwaway preview.
 

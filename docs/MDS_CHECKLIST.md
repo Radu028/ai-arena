@@ -25,25 +25,23 @@ together with the repository link.
 
 ## B. AI-Assisted Software Development Process
 
-| Requirement                                | Points | Status       | Evidence                                                                                                                                                                                                                 |
-| ------------------------------------------ | -----: | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| User stories and backlog, minimum 10       |      2 | Ready        | `docs/LINEAR_TODOS.md` contains AIA-1 through AIA-17 plus epics, statuses, priorities, milestones, labels, and acceptance criteria.                                                                                      |
-| Diagrams                                   |      1 | Ready        | `docs/ARCHITECTURE.md` contains Mermaid diagrams for component architecture, ER model, session lifecycle, round lifecycle, sequence flow, agent workflow, and public/admin surfaces.                                     |
-| Git source control, branches, PRs, commits |      1 | Ready        | GitHub PRs #2 and #3 are merged; CI runs are green; `git log` contains the project history. Each student should verify they have at least 5 commits authored under their own Git identity.                               |
-| Automated tests, including agent evals     |      2 | Ready        | `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts`, and `shared/agent-evals.test.ts`; CI runs `pnpm test`.                                                                                  |
-| Bug report and fix through pull request    |      1 | Ready        | GitHub issue #1 documents the bug; PR #2 fixes it; PR #3 records deployment evidence.                                                                                                                                    |
-| CI/CD pipeline                             |      1 | Mostly ready | `.github/workflows/ci.yml` runs typecheck, lint, test, and build on PR/push. Frontend deploy is handled by Vercel Git integration. Convex deploy is automated when `CONVEX_DEPLOY_KEY` is configured as a GitHub secret. |
-| AI tools usage report                      |      2 | Ready        | `docs/AI_TOOLS_REPORT.md` documents AI usage in planning, architecture, implementation, testing, and reflection.                                                                                                         |
+| Requirement                                | Points | Status | Evidence                                                                                                                                                                                                       |
+| ------------------------------------------ | -----: | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User stories and backlog, minimum 10       |      2 | Ready  | `docs/LINEAR_TODOS.md` contains AIA-1 through AIA-17 plus epics, statuses, priorities, milestones, labels, and acceptance criteria.                                                                            |
+| Diagrams                                   |      1 | Ready  | `docs/ARCHITECTURE.md` contains Mermaid diagrams for component architecture, ER model, session lifecycle, round lifecycle, sequence flow, agent workflow, and public/admin surfaces.                           |
+| Git source control, branches, PRs, commits |      1 | Ready  | GitHub PRs #2 and #3 are merged; CI runs are green; `git log` contains the project history. Each student should verify they have at least 5 commits authored under their own Git identity.                     |
+| Automated tests, including agent evals     |      2 | Ready  | `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts`, and `shared/agent-evals.test.ts`; CI runs `pnpm test`.                                                                        |
+| Bug report and fix through pull request    |      1 | Ready  | GitHub issue #1 documents the bug; PR #2 fixes it; PR #3 records deployment evidence.                                                                                                                          |
+| CI/CD pipeline                             |      1 | Ready  | `.github/workflows/ci.yml` runs typecheck, lint, test, and build on PR/push. Frontend deploy is handled by Vercel Git integration. Convex deploy runs on `main` through the `CONVEX_DEPLOY_KEY` GitHub secret. |
+| AI tools usage report                      |      2 | Ready  | `docs/AI_TOOLS_REPORT.md` documents AI usage in planning, architecture, implementation, testing, and reflection.                                                                                               |
 
 ## Remaining Manual Submission Steps
 
-1. Rotate the API keys that were shared in chat, then configure the fresh keys
-   in Convex using the commands in `docs/SECRETS_AND_DEPLOYMENT.md`.
-2. Add `CONVEX_DEPLOY_KEY` as a GitHub Actions secret so backend deploys run
-   automatically on pushes to `main`.
-3. Record the offline demo using `docs/DEMO_RUNBOOK.md`, upload it, and add the
+1. Register the bootstrap admin account with `radupopa028@gmail.com` through the
+   production `/register` page and verify the email in Clerk.
+2. Record the offline demo using `docs/DEMO_RUNBOOK.md`, upload it, and add the
    public link to this file and to the README before sending the repository.
-4. Confirm each team member has at least 5 commits authored with their GitHub
+3. Confirm each team member has at least 5 commits authored with their GitHub
    identity.
 
 ## Recommended Demo Path
