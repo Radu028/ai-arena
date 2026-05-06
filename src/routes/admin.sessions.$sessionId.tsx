@@ -13,6 +13,7 @@ import { api } from '@convex/_generated/api'
 import { AdminGuard } from '#/components/AdminGuard'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { SessionInviteCard } from '#/components/arena/SessionInviteCard'
 import {
   Empty,
   EmptyDescription,
@@ -169,6 +170,12 @@ function AdminSessionDetailPage() {
                     </Link>
                   </Button>
                 </div>
+
+                <SessionInviteCard
+                  slug={session.slug}
+                  title="Session invitation"
+                  description="Use this link or QR code during the demo so spectators can open the public live room directly."
+                />
               </div>
             </section>
 

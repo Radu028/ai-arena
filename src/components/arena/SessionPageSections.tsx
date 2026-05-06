@@ -1,9 +1,6 @@
-import { useState } from 'react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   CalendarClockIcon,
-  CheckIcon,
-  CopyIcon,
   GavelIcon,
   HourglassIcon,
   MicVocalIcon,
@@ -24,7 +21,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '#/components/ui/empty'
-import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { ScrollArea } from '#/components/ui/scroll-area'
 import { Separator } from '#/components/ui/separator'
@@ -33,6 +29,7 @@ import { cn } from '#/lib/utils'
 import { LiveVoteChart } from '#/components/arena/LiveVoteChart'
 import { MeasuredEditorialText } from '#/components/arena/MeasuredEditorialText'
 import { RoundResponseCard } from '#/components/arena/RoundResponseCard'
+import { SessionInviteCard } from '#/components/arena/SessionInviteCard'
 
 export type PublicSessionView = NonNullable<
   FunctionReturnType<typeof api.sessions.getPublicSessionView>
@@ -53,20 +50,6 @@ export function SessionOverviewSection({
 }: {
   sessionView: PublicSessionView
 }) {
-  const joinPath = `/sessions/${sessionView.session.slug}`
-  const shareUrl =
-    typeof window === 'undefined'
-      ? joinPath
-      : new URL(joinPath, window.location.origin).toString()
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=12&data=${encodeURIComponent(shareUrl)}`
-  const [copied, setCopied] = useState(false)
-
-  async function copyShareUrl() {
-    await navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
   const isLive = sessionView.session.status === 'active'
 
   return (
@@ -143,48 +126,7 @@ export function SessionOverviewSection({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/40 p-5">
-          <div className="flex items-start gap-4">
-            <img
-              src={qrUrl}
-              alt={`QR code for ${shareUrl}`}
-              className="size-32 shrink-0 rounded-xl border border-border/60 bg-white p-2"
-            />
-            <div className="flex flex-1 flex-col gap-2">
-              <Label
-                htmlFor="shareUrl"
-                className="text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground"
-              >
-                Public join link
-              </Label>
-              <Input
-                id="shareUrl"
-                value={shareUrl}
-                readOnly
-                className="h-9 font-mono text-xs"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={copyShareUrl}
-                className="w-full"
-              >
-                {copied ? (
-                  <>
-                    <CheckIcon className="size-3.5" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <CopyIcon className="size-3.5" />
-                    Copy link
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <SessionInviteCard slug={sessionView.session.slug} />
       </div>
     </section>
   )
@@ -294,7 +236,7 @@ function LiveRoundCard({
     <section className="surface relative overflow-hidden rounded-2xl">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/60 to-transparent"
       />
 
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
@@ -536,13 +478,13 @@ export function SessionEventLogTab({
           </EmptyHeader>
         </Empty>
       ) : (
-        <ScrollArea className="h-[28rem]">
+        <ScrollArea className="h-112">
           <ol className="relative ml-6 mr-6 my-6 space-y-5 border-l border-border/60 pl-6">
             {events.map((event) => (
               <li key={event._id} className="relative">
                 <span
                   aria-hidden
-                  className="absolute -left-[31px] top-1.5 size-2.5 rounded-full bg-primary ring-4 ring-background"
+                  className="absolute left-[-31px] top-1.5 size-2.5 rounded-full bg-primary ring-4 ring-background"
                 />
                 <p className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
                   {formatClock(event.createdAt)}
