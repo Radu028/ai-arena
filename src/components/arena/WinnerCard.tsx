@@ -13,28 +13,18 @@ interface WinnerCardProps {
 }
 
 const MODEL_PERSONAS: Record<string, string> = {
-  'gpt-4o':
-    'sharp Silicon Valley tech visionary in a modern navy suit, confident smirk, award ceremony stage',
-  'gpt-4o-mini':
-    'nimble young tech prodigy in a hoodie and sneakers, energetic pose, neon-lit stage',
-  'claude-opus-4-5':
-    'wise philosopher-scientist with round glasses and elegant coat, warm amber lighting, library backdrop',
-  'claude-sonnet-4-5':
-    'creative polymath in a modern blazer holding a glowing pen, warm studio lighting',
-  'gemini-2-0-flash':
-    'vibrant innovator with colorful prismatic glasses and bold jacket, rainbow-spectrum stage',
-  'gemini-2-5-pro-preview-05-06':
-    'brilliant futurist in an iridescent suit with cosmic energy, deep space backdrop',
-  'mistral-large-latest':
-    'sophisticated French intellectual in a perfectly tailored suit, Parisian salon lighting',
-  'grok-3':
-    'rebellious tech maverick in all-black with a confident grin, dark dramatic spotlight',
+  'gpt-4o': 'sharp Silicon Valley tech visionary in a modern navy suit, confident smirk, award ceremony stage',
+  'gpt-4o-mini': 'nimble young tech prodigy in a hoodie and sneakers, energetic pose, neon-lit stage',
+  'claude-opus-4-5': 'wise philosopher-scientist with round glasses and elegant coat, warm amber lighting, library backdrop',
+  'claude-sonnet-4-5': 'creative polymath in a modern blazer holding a glowing pen, warm studio lighting',
+  'gemini-2-0-flash': 'vibrant innovator with colorful prismatic glasses and bold jacket, rainbow-spectrum stage',
+  'gemini-2-5-pro-preview-05-06': 'brilliant futurist in an iridescent suit with cosmic energy, deep space backdrop',
+  'mistral-large-latest': 'sophisticated French intellectual in a perfectly tailored suit, Parisian salon lighting',
+  'grok-3': 'rebellious tech maverick in all-black with a confident grin, dark dramatic spotlight',
 }
 
 function buildPortraitUrl(modelKey: string, modelLabel: string): string {
-  const persona =
-    MODEL_PERSONAS[modelKey] ??
-    'triumphant AI champion in futuristic suit, award ceremony stage'
+  const persona = MODEL_PERSONAS[modelKey] ?? 'triumphant AI champion in futuristic suit, award ceremony stage'
   const prompt =
     `Photorealistic award ceremony portrait: ${persona}, ` +
     `holding a large gleaming gold trophy HIGH above their head with both hands clearly visible, ` +
@@ -59,14 +49,8 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
     setLoading(true)
     const url = buildPortraitUrl(winner.modelKey, winner.label)
     const img = new Image()
-    img.onload = () => {
-      setPortraitUrl(url)
-      setLoading(false)
-    }
-    img.onerror = () => {
-      setPortraitUrl(url)
-      setLoading(false)
-    }
+    img.onload = () => { setPortraitUrl(url); setLoading(false) }
+    img.onerror = () => { setPortraitUrl(url); setLoading(false) }
     img.src = url
   }
 
@@ -186,12 +170,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
               <img
                 src={portraitUrl}
                 alt={`${winner.label} champion portrait`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 crossOrigin="anonymous"
               />
               {/* Bottom fade overlay */}
@@ -227,22 +206,9 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
         </div>
 
         {/* Winner info */}
-        <div
-          style={{
-            padding: '0 20px 20px',
-            marginTop: portraitUrl ? -32 : 0,
-            position: 'relative',
-          }}
-        >
+        <div style={{ padding: '0 20px 20px', marginTop: portraitUrl ? -32 : 0, position: 'relative' }}>
           {/* Trophy + model name */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 4,
-            }}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <TrophyIcon size={18} color="#fbbf24" />
             <span
               style={{
@@ -289,10 +255,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
             }}
           >
             {[
-              {
-                label: 'Rounds won',
-                value: `${winner.wins}/${winner.roundsPlayed}`,
-              },
+              { label: 'Rounds won', value: `${winner.wins}/${winner.roundsPlayed}` },
               { label: 'Win rate', value: `${winRate}%` },
               { label: 'Total votes', value: String(winner.totalVotes) },
             ].map((stat) => (
@@ -306,9 +269,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
                   padding: '8px 10px',
                 }}
               >
-                <div
-                  style={{ color: '#ffffff', fontSize: 18, fontWeight: 700 }}
-                >
+                <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 700 }}>
                   {stat.value}
                 </div>
                 <div
@@ -339,11 +300,7 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
           disabled={loading}
         >
           <ImageIcon className="size-4" />
-          {loading
-            ? 'Generating portrait…'
-            : portraitUrl
-              ? 'Regenerate portrait'
-              : 'Generate AI portrait'}
+          {loading ? 'Generating portrait…' : portraitUrl ? 'Regenerate portrait' : 'Generate AI portrait'}
         </Button>
 
         {portraitUrl && (

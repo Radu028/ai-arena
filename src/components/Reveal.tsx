@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 interface RevealProps {
   children: ReactNode

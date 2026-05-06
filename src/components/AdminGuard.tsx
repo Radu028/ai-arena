@@ -1,5 +1,5 @@
 import { SignInButton, useAuth } from '@clerk/tanstack-react-start'
-import { ShieldAlertIcon, ShieldCheckIcon } from 'lucide-react'
+import { ShieldCheckIcon } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { Button } from '#/components/ui/button'
 import {
@@ -19,22 +19,6 @@ export function AdminGuard({
 }) {
   const runtime = useRuntimeConfig()
   if (!runtime.hasClerk) {
-    if (!runtime.hasDemoAdmin) {
-      return (
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-serif text-2xl">
-              <ShieldAlertIcon className="size-5 text-[var(--arena-signal)]" />
-              Clerk is not configured
-            </CardTitle>
-            <CardDescription>
-              Add Clerk environment variables, or set demo admin mode explicitly
-              for non-production demos.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      )
-    }
     return <>{children}</>
   }
 

@@ -367,14 +367,14 @@ Automate build, test, and deployment on every push so the project is always in a
 
 ### AIA-16 — Bug report & fix via pull request
 
-- **Status:** In Progress · **Priority:** Medium · **Labels:** Bug
+- **Status:** Backlog · **Priority:** Medium · **Labels:** Bug
 - **URL:** https://linear.app/radu-popa/issue/AIA-16/bug-report-and-fix-via-pull-request
 
 Demonstrate the full bug lifecycle: report → branch → fix → PR → review → merge.
 
-- [x] Open a GitHub Issue with steps to reproduce, expected vs actual behaviour — https://github.com/Radu028/ai-arena/issues/1
-- [x] Fix on a `fix/<name>` branch; commit message references the issue — `fix/admin-demo-ci`
-- [ ] Open a PR, get at least one team review, merge with CI green — PR opened with green `verify` CI: https://github.com/Radu028/ai-arena/pull/2; waiting for teammate review and merge
+- [ ] Open a GitHub Issue with steps to reproduce, expected vs actual behaviour
+- [ ] Fix on a `fix/<name>` branch; commit message references the issue
+- [ ] Open a PR, get at least one team review, merge with CI green
 - [ ] Verify the fix is live in the deployed app
 
 ---
@@ -405,7 +405,7 @@ Write `/docs/AI_TOOLS_REPORT.md` documenting how AI was used throughout the proj
 ## Status rollup
 
 - **Done:** 18 / 20
-- **In Progress:** 2 (AIA-15, AIA-16)
-- **Backlog:** 0
+- **In Progress:** 1 (AIA-15)
+- **Backlog:** 1 (AIA-16)
 
-Rămas de finalizat pentru barem complet: configurarea secretelor reale pentru deploy (AIA-15) + review/merge/deploy live pentru bug report-to-PR (AIA-16).
+Rămas de finalizat pentru barem complet: configurarea secretelor reale pentru deploy (AIA-15) + bug report-to-PR ca exercițiu de proces (AIA-16).

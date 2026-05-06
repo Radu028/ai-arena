@@ -82,7 +82,7 @@ export function CreateSessionForm() {
     },
     {
       title: 'Friday Night Arena',
-      theme: 'comedy',
+      theme: 'comedy' as keyof typeof THEME_COPY,
       roundCount: 3,
       maxParticipants: 200,
       selectedModels: AVAILABLE_MODELS.slice(0, 4).map((model) => model.key),

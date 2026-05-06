@@ -7,7 +7,6 @@ import {
   getModelByKey,
   getThemeCopy,
 } from '../shared/arena'
-import { requireAdminIdentity } from './lib'
 
 const MAX_SESSIONS_SCAN = 200
 const MAX_RESPONSES_PER_ROUND = 16
@@ -358,10 +357,8 @@ export const listCompletedSessions = query({
 export const getAdminCostSummary = query({
   args: {},
   handler: async (ctx) => {
-    let identity: Awaited<ReturnType<typeof requireAdminIdentity>>
-    try {
-      identity = await requireAdminIdentity(ctx)
-    } catch {
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) {
       return {
         isAuthenticated: false,
         sessions: [],
