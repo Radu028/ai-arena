@@ -124,7 +124,7 @@ export const AVAILABLE_MODELS = [
     key: 'google-gemini-31-pro',
     providerKey: 'google',
     label: 'Gemini 3.1 Pro',
-    modelId: 'gemini-3.1-pro',
+    modelId: 'gemini-3.1-pro-preview',
     description: 'Deeper comparative reasoning with broad synthesis.',
     tagline: 'Deep and analytical.',
     accent: 'var(--arena-google)',
