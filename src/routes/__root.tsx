@@ -1,5 +1,6 @@
 import {
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   createRootRoute,
@@ -17,6 +18,7 @@ import {
   EmptyTitle,
 } from '#/components/ui/empty'
 import { Toaster } from '#/components/ui/sonner'
+import { Button } from '#/components/ui/button'
 import { useGlobalReveal } from '#/hooks/use-global-reveal'
 import appCss from '../styles.css?url'
 
@@ -45,6 +47,7 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
   component: RootLayout,
+  notFoundComponent: NotFoundPage,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -99,6 +102,33 @@ function RootFrame() {
       </main>
       <Footer />
       <Toaster richColors position="top-right" />
+    </div>
+  )
+}
+
+function NotFoundPage() {
+  return (
+    <div className="shell">
+      <Empty className="surface rounded-2xl p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <TerminalIcon />
+          </EmptyMedia>
+          <EmptyTitle>Page not found</EmptyTitle>
+          <EmptyDescription>
+            This link does not match an AI Arena page. Use the join screen if
+            you have a code, or return to the home page.
+          </EmptyDescription>
+        </EmptyHeader>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link to="/join">Join with code</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back home</Link>
+          </Button>
+        </div>
+      </Empty>
     </div>
   )
 }
