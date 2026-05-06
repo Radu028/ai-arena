@@ -142,7 +142,24 @@ function allowDemoAdminMode() {
 
 function normalizeEmail(email: string | null | undefined) {
   const trimmed = email?.trim().toLowerCase()
-  return trimmed || null
+  if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return null
+  }
+  return trimmed
+}
+
+export function getIdentityEmail(identity: {
+  email?: string | null
+  preferredUsername?: string | null
+  nickname?: string | null
+  name?: string | null
+}) {
+  return (
+    normalizeEmail(identity.email) ??
+    normalizeEmail(identity.preferredUsername) ??
+    normalizeEmail(identity.nickname) ??
+    normalizeEmail(identity.name)
+  )
 }
 
 function configuredBootstrapAdminEmails() {
@@ -156,9 +173,14 @@ function configuredBootstrapAdminEmails() {
 
 export async function isAdminIdentity(
   ctx: QueryCtx | MutationCtx,
-  identity: { email?: string | null },
+  identity: {
+    email?: string | null
+    preferredUsername?: string | null
+    nickname?: string | null
+    name?: string | null
+  },
 ) {
-  const email = normalizeEmail(identity.email)
+  const email = getIdentityEmail(identity)
   if (!email) {
     return false
   }

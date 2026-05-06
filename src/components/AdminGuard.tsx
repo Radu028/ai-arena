@@ -4,6 +4,7 @@ import { Loader2Icon, LockKeyholeIcon, ShieldAlertIcon } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
+import { currentAuthRedirect } from '#/lib/authRedirect'
 import {
   Empty,
   EmptyDescription,
@@ -52,6 +53,7 @@ function ConfiguredAdminGuard({
   title: string
 }) {
   const { isLoaded, isSignedIn } = useAuth()
+  const returnTo = currentAuthRedirect()
 
   if (!isLoaded) {
     return (
@@ -91,7 +93,9 @@ function ConfiguredAdminGuard({
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Button asChild variant="ghost" size="sm">
-                <Link to="/login">Open the sign-in page →</Link>
+                <Link to="/login" search={{ redirect: returnTo }}>
+                  Open the sign-in page →
+                </Link>
               </Button>
             </div>
           </div>
@@ -99,7 +103,7 @@ function ConfiguredAdminGuard({
           <div className="rounded-2xl border border-border/60 bg-background/70 p-5">
             <p className="eyebrow mb-3 text-[0.65rem]">Quick sign-in</p>
             <GoogleSignInButton
-              redirectTo="/admin"
+              redirectTo={returnTo}
               label="Sign in with Google"
             />
             <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
