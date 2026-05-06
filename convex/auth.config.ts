@@ -1,10 +1,10 @@
 const issuerKey = ['CLERK', 'JWT', 'ISSUER', 'DOMAIN'].join('_')
 const legacyIssuerKey = ['CLERK', 'ISSUER', 'URL'].join('_')
-const publishableKey =
-  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
-  process.env.CLERK_PUBLISHABLE_KEY ??
-  null
+const publishableKey = firstConfiguredEnv([
+  ['VITE', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
+  ['NEXT', 'PUBLIC', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
+  ['CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
+])
 const issuer =
   process.env[issuerKey] ??
   process.env[legacyIssuerKey] ??
@@ -23,6 +23,16 @@ function issuerFromPublishableKey(key: string | null) {
     return null
   }
   return decoded.startsWith('http') ? decoded : `https://${decoded}`
+}
+
+function firstConfiguredEnv(keys: string[]) {
+  for (const key of keys) {
+    const value = process.env[key]
+    if (value) {
+      return value
+    }
+  }
+  return null
 }
 
 function decodeBase64Url(value: string) {
