@@ -77,7 +77,7 @@ export const generateWinnerPortrait = action({
       style: 'vivid',
     })
 
-    const url = response.data[0]?.url
+    const url = response.data?.[0]?.url
     if (!url) {
       throw new Error('DALL-E returned no image URL.')
     }
