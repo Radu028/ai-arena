@@ -109,6 +109,21 @@ function makeFallbackCopy(
   return `${modelLabel} missed the live API call, so AI Arena is using a house fallback on the topic "${topic}". The safest version is: stay clear, be specific, and land one memorable line.`
 }
 
+function cleanModelResponseText(text: string) {
+  return text
+    .trim()
+    .replace(/^```(?:\w+)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .replace(
+      /^(sigur|desigur|bineinteles|bineînțeles|sure|of course|certainly)[,!\s:.–-]*(uite|iat[ăa]|here(?:'s| is))?[^:\n]{0,80}:\s*/i,
+      '',
+    )
+    .replace(/^\s*(?:[-*_]\s*){3,}$/gm, '')
+    .replace(/^[*_#\s-]*(glum[ăa]|joke)\s*:\s*/i, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 function getAgentFallback(
   role: 'host' | 'critic' | 'stats',
   language: ResponseLanguage,
@@ -168,6 +183,8 @@ function buildRoundPrompt(args: {
     `Topic: ${args.topic}`,
     languageInstruction(args.responseLanguage),
     `Write one strong answer. Keep it concise, high-signal, audience-ready, and original.`,
+    `Return only the final audience-facing text. Do not preface it with "sure", "here is", explanations, labels, markdown fences, horizontal rules, or decorative separators.`,
+    `If this is a comedy prompt, output only the joke itself.`,
     `Do not mention your model name.`,
   ]
   if (args.customPrompt) {
@@ -430,13 +447,45 @@ async function generateWithGoogle(
   maxOutputTokens: number,
 ) {
   const client = new GoogleGenAI({ apiKey })
-  const response = await client.models.generateContent({
-    model: modelId,
-    contents: prompt,
-    config: {
-      maxOutputTokens,
-    },
-  })
+  let response:
+    | Awaited<ReturnType<typeof client.models.generateContent>>
+    | null = null
+  try {
+    response = await client.models.generateContent({
+      model: modelId,
+      contents: prompt,
+      config: {
+        maxOutputTokens,
+      },
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (!/not found|NOT_FOUND|404/i.test(message)) {
+      throw error
+    }
+    let fallbackError: unknown = error
+    for (const fallbackModel of googleModelFallbacks(modelId)) {
+      try {
+        response = await client.models.generateContent({
+          model: fallbackModel,
+          contents: prompt,
+          config: {
+            maxOutputTokens,
+          },
+        })
+        fallbackError = null
+        break
+      } catch (candidateError) {
+        fallbackError = candidateError
+      }
+    }
+    if (fallbackError) {
+      throw fallbackError
+    }
+  }
+  if (!response) {
+    throw new Error('Gemini did not return a response.')
+  }
   return {
     text: response.text ?? '',
     usage: {
@@ -444,6 +493,16 @@ async function generateWithGoogle(
       output: response.usageMetadata?.candidatesTokenCount ?? null,
     },
   }
+}
+
+function googleModelFallbacks(modelId: string) {
+  if (modelId.includes('3.1') || modelId.includes('31')) {
+    return ['gemini-2.5-pro', 'gemini-pro-latest']
+  }
+  if (modelId.includes('flash')) {
+    return ['gemini-2.5-flash', 'gemini-flash-latest']
+  }
+  return ['gemini-2.5-flash']
 }
 
 async function generateWithMistral(
@@ -605,7 +664,7 @@ async function callProvider(
 
     return {
       status: 'success',
-      text: result.text,
+      text: cleanModelResponseText(result.text),
       usage: result.usage,
       errorCode: null,
       errorMessage: null,

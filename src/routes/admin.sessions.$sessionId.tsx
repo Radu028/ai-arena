@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import {
   ArrowLeftIcon,
+  EyeIcon,
   ExternalLinkIcon,
   PlayIcon,
   SquareIcon,
@@ -39,6 +40,7 @@ function AdminSessionDetailPage() {
   const startSession = useMutation(api.sessions.start)
   const stopSession = useMutation(api.sessions.stop)
   const endVotingEarly = useMutation(api.rounds.endVotingEarly)
+  const revealLatestScoredRound = useMutation(api.rounds.revealLatestScoredRound)
 
   async function handleStart() {
     if (!session) return
@@ -74,6 +76,18 @@ function AdminSessionDetailPage() {
         error instanceof Error
           ? error.message
           : 'Could not close voting early.',
+      )
+    }
+  }
+
+  async function handleReveal() {
+    if (!session) return
+    try {
+      await revealLatestScoredRound({ sessionId: session.id })
+      toast.success('Model names revealed.')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Could not reveal models.',
       )
     }
   }
@@ -164,6 +178,14 @@ function AdminSessionDetailPage() {
                   >
                     <TimerOffIcon className="size-4" />
                     End voting early
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleReveal}
+                    disabled={!session.hasUnrevealedScoredRound}
+                  >
+                    <EyeIcon className="size-4" />
+                    Reveal models
                   </Button>
                   <Button
                     variant="destructive"

@@ -9,7 +9,6 @@ import {
   MAX_ROUNDS,
   MIN_ROUNDS,
   RESPONSE_LANGUAGE_COPY,
-  THEME_COPY,
 } from '@shared/arena'
 import { createSessionSchema } from '@shared/validation'
 import { Button } from '#/components/ui/button'
@@ -28,7 +27,6 @@ import { cn } from '#/lib/utils'
 
 type State = {
   title: string
-  theme: keyof typeof THEME_COPY
   customPrompt: string
   responseLanguage: keyof typeof RESPONSE_LANGUAGE_COPY
   roundCount: number
@@ -43,7 +41,6 @@ type Action =
       type: 'field'
       field:
         | 'title'
-        | 'theme'
         | 'customPrompt'
         | 'responseLanguage'
         | 'roundCount'
@@ -77,7 +74,6 @@ export function CreateSessionForm() {
     },
     {
       title: 'Friday Night Arena',
-      theme: 'comedy',
       customPrompt: '',
       responseLanguage: 'romanian',
       roundCount: 3,
@@ -100,7 +96,7 @@ export function CreateSessionForm() {
     event.preventDefault()
     const parsed = createSessionSchema.safeParse({
       title: state.title,
-      theme: state.theme,
+      theme: 'comedy',
       customPrompt: state.customPrompt,
       responseLanguage: state.responseLanguage,
       roundCount: state.roundCount,
@@ -132,8 +128,8 @@ export function CreateSessionForm() {
     <form className="space-y-8" onSubmit={handleSubmit}>
       <FormSection
         eyebrow="Step 1"
-        title="Name, prompt, and language"
-        description="The title is public. The custom prompt tells the AI what the jokes, debate, or explanations should be about."
+        title="Name, arena prompt, and language"
+        description="The title is public. The arena prompt is the single brief used for every generated round."
       >
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
@@ -150,30 +146,6 @@ export function CreateSessionForm() {
               }
               className="h-10"
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
-            <Select
-              value={state.theme}
-              onValueChange={(value) =>
-                dispatch({
-                  type: 'field',
-                  field: 'theme',
-                  value: value as keyof typeof THEME_COPY,
-                })
-              }
-            >
-              <SelectTrigger id="theme" className="h-10">
-                <SelectValue placeholder="Select a theme" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(THEME_COPY).map(([key, copy]) => (
-                  <SelectItem key={key} value={key}>
-                    {copy.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="responseLanguage">Response language</Label>
@@ -200,7 +172,7 @@ export function CreateSessionForm() {
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="customPrompt">Custom arena prompt</Label>
+            <Label htmlFor="customPrompt">Arena prompt</Label>
             <Textarea
               id="customPrompt"
               value={state.customPrompt}
@@ -211,12 +183,12 @@ export function CreateSessionForm() {
                   value: e.target.value,
                 })
               }
-              placeholder="Ex: Fa glume despre sesiune, examene si viata de student. Pastreaza tonul prietenos si potrivit pentru demo."
+              placeholder="Ex: Scrie glume scurte despre sesiune, examene si viata de student. Pastreaza tonul prietenos si potrivit pentru demo."
               className="min-h-24 resize-y"
             />
             <p className="text-xs leading-5 text-muted-foreground">
-              Leave blank for an open prompt. This brief is sent to the Host,
-              competing models, Critic, Stats Analyst, and AI judges.
+              This is the prompt the admin prepares before the match starts.
+              Spectators can watch and vote, but cannot change the topic.
             </p>
           </div>
         </div>

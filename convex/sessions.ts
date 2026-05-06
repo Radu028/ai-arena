@@ -1,3 +1,4 @@
+import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import type { MutationCtx, QueryCtx } from './_generated/server'
@@ -15,6 +16,7 @@ import {
 import {
   appendSessionEvent,
   autoDisplayName,
+  buildAnonymizedSlots,
   clampParticipantLimit,
   countParticipantsForSession,
   defaultVotingWindowSeconds,
@@ -41,6 +43,10 @@ function getResponseLanguage(session: Doc<'sessions'>) {
 function getCustomPrompt(session: Doc<'sessions'>) {
   const prompt = session.customPrompt?.trim()
   return prompt ? prompt : null
+}
+
+function getRoundTopic(session: Doc<'sessions'>) {
+  return getCustomPrompt(session) ?? session.title
 }
 
 function summarizeRound(
@@ -240,7 +246,7 @@ async function buildSessionView(
         humanVotes,
         aiVotes,
         artifacts,
-        round.status === 'scored',
+        round.revealAt !== null,
       ),
     )
   }
@@ -305,11 +311,7 @@ async function buildSessionView(
           canVote: Boolean(
             currentRound && currentRound.status === 'voting' && !viewerHasVoted,
           ),
-          canSubmitTopic: Boolean(
-            currentRound &&
-            currentRound.status === 'collecting_topic' &&
-            session.status === 'active',
-          ),
+          canSubmitTopic: false,
         }
       : null,
     participants: participants.map((participant) => ({
@@ -390,6 +392,9 @@ export const getAdminSession = query({
             (round) => round.roundNumber === session.currentRoundNumber,
           ) ?? null)
         : null
+    const hasUnrevealedScoredRound = rounds.some(
+      (round) => round.status === 'scored' && round.revealAt === null,
+    )
     return {
       id: session._id,
       slug: session.slug,
@@ -405,6 +410,7 @@ export const getAdminSession = query({
       roundCount: session.roundCount,
       currentRoundNumber: session.currentRoundNumber,
       currentRoundStatus: currentRound?.status ?? null,
+      hasUnrevealedScoredRound,
       selectedModels: session.selectedModelsSnapshot,
       maxParticipants: session.maxParticipants,
       createdAt: session.createdAt,
@@ -555,17 +561,52 @@ export const start = mutation({
       currentRoundNumber: 1,
       startedAt: now(),
     })
+    const topic = getRoundTopic(session)
+    const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+    const startedAt = now()
     await ctx.db.patch(firstRound._id, {
-      status: 'collecting_topic',
+      status: 'generating',
+      topic,
+      topicSubmittedByParticipantId: null,
+      topicLockedAt: startedAt,
+      generatingStartedAt: startedAt,
     })
+
+    for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+      await ctx.db.insert('roundResponses', {
+        sessionId: session._id,
+        roundId: firstRound._id,
+        providerKey: model.providerKey,
+        modelKey: model.key,
+        modelId: model.modelId,
+        modelLabel: model.label,
+        anonymizedSlot: slots[index],
+        promptVersion: 'v2',
+        responseText: null,
+        status: 'pending',
+        latencyMs: null,
+        tokenUsageInput: null,
+        tokenUsageOutput: null,
+        costMicrosUsd: null,
+        errorCode: null,
+        errorMessage: null,
+        createdAt: startedAt,
+        completedAt: null,
+      })
+    }
 
     await appendSessionEvent(ctx, {
       sessionId: session._id,
       roundId: firstRound._id,
       type: 'session_started',
       title: 'Session started',
-      description: 'Round 1 is live and waiting for the first topic.',
+      description: 'Round 1 started from the admin prompt.',
       meta: {},
+    })
+
+    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
+      sessionId: session._id,
+      roundId: firstRound._id,
     })
 
     return {

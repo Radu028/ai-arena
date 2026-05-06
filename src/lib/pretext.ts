@@ -12,25 +12,28 @@ type LayoutMetrics = {
   lineCount: number
 }
 
+type PretextOptions = Parameters<typeof prepare>[2]
+
 const preparedCache = new Map<string, ReturnType<typeof prepare>>()
 
-function getPrepared(text: string, font: string) {
-  const cacheKey = `${font}::${text}`
+function getPrepared(text: string, font: string, options?: PretextOptions) {
+  const cacheKey = `${font}::${JSON.stringify(options ?? {})}::${text}`
   const cached = preparedCache.get(cacheKey)
   if (cached) {
     return cached
   }
-  const preparedText = prepare(text, font)
+  const preparedText = prepare(text, font, options)
   preparedCache.set(cacheKey, preparedText)
   return preparedText
 }
 
-export function usePretextBlock(
+export function usePretextBlock<TElement extends HTMLElement = HTMLDivElement>(
   text: string | null,
   font: string,
   lineHeight: number,
+  options?: PretextOptions,
 ) {
-  const ref = useRef<HTMLDivElement | null>(null)
+  const ref = useRef<TElement | null>(null)
   const deferredText = useDeferredValue(text)
   const [metrics, setMetrics] = useState<LayoutMetrics | null>(null)
 
@@ -44,7 +47,7 @@ export function usePretextBlock(
     if (!width) {
       return
     }
-    const preparedText = getPrepared(deferredText, font)
+    const preparedText = getPrepared(deferredText, font, options)
     setMetrics(layout(preparedText, width, lineHeight))
   })
 
@@ -60,7 +63,7 @@ export function usePretextBlock(
     return () => {
       observer.disconnect()
     }
-  }, [deferredText, font, lineHeight, measure])
+  }, [deferredText, font, lineHeight, measure, options])
 
   return {
     ref,

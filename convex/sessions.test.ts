@@ -58,10 +58,13 @@ describe('sessions flow', () => {
     })
 
     expect(liveView?.session.status).toBe('active')
-    expect(liveView?.currentRound?.status).toBe('collecting_topic')
+    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.topic).toBe(
+      'Make jokes about final exams and student life.',
+    )
   })
 
-  test('the first submitted topic locks the round', async () => {
+  test('starting a session locks the admin prompt for the round', async () => {
     const t = convexTest({ schema, modules })
     const admin = t.withIdentity(adminIdentity)
 
@@ -84,23 +87,10 @@ describe('sessions flow', () => {
       existingToken: null,
     })
 
-    const guestTwo = await t.mutation(api.sessions.joinBySlug, {
-      slug: created.slug,
-      displayName: 'Mara',
-      email: null,
-      existingToken: null,
-    })
-
-    await t.mutation(api.rounds.submitTopic, {
-      slug: created.slug,
-      participantToken: guestOne.accessToken,
-      topic: 'Explain version control like I am five.',
-    })
-
     await expect(
       t.mutation(api.rounds.submitTopic, {
         slug: created.slug,
-        participantToken: guestTwo.accessToken,
+        participantToken: guestOne.accessToken,
         topic: 'This should not win.',
       }),
     ).rejects.toThrow('already has a locked topic')
@@ -110,9 +100,7 @@ describe('sessions flow', () => {
       participantToken: guestOne.accessToken,
     })
 
-    expect(liveView?.currentRound?.topic).toBe(
-      'Explain version control like I am five.',
-    )
+    expect(liveView?.currentRound?.topic).toBe('Topic Lock Test')
     expect(liveView?.currentRound?.status).toBe('generating')
   })
 

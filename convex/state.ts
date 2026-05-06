@@ -5,6 +5,7 @@ import { v } from 'convex/values'
 import { getThemeCopy } from '../shared/arena'
 import {
   appendSessionEvent,
+  buildAnonymizedSlots,
   getEligibleResponses,
   getRoundByNumber,
   now,
@@ -281,6 +282,14 @@ export const saveAiVote = internalMutation({
     if (!round || round.status !== 'voting') {
       return null
     }
+    const response = await ctx.db.get(args.responseId)
+    if (
+      !response ||
+      response.roundId !== args.roundId ||
+      response.modelKey === args.voterModelKey
+    ) {
+      return null
+    }
     const existing = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_voter_model_key', (query) =>
@@ -421,7 +430,7 @@ export const finalizeRound = internalMutation({
     await ctx.db.patch(round._id, {
       status: 'scored',
       closedAt,
-      revealAt: closedAt,
+      revealAt: null,
       resultStatus,
       winnerResponseIds,
     })
@@ -441,13 +450,45 @@ export const finalizeRound = internalMutation({
         round.roundNumber + 1,
       )
       if (nextRound) {
+        const topic = session.customPrompt?.trim() || session.title
+        const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
         await ctx.db.patch(nextRound._id, {
-          status: 'collecting_topic',
+          status: 'generating',
+          topic,
+          topicSubmittedByParticipantId: null,
+          topicLockedAt: closedAt,
+          generatingStartedAt: closedAt,
         })
+        for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+          await ctx.db.insert('roundResponses', {
+            sessionId: session._id,
+            roundId: nextRound._id,
+            providerKey: model.providerKey,
+            modelKey: model.key,
+            modelId: model.modelId,
+            modelLabel: model.label,
+            anonymizedSlot: slots[index],
+            promptVersion: 'v2',
+            responseText: null,
+            status: 'pending',
+            latencyMs: null,
+            tokenUsageInput: null,
+            tokenUsageOutput: null,
+            costMicrosUsd: null,
+            errorCode: null,
+            errorMessage: null,
+            createdAt: closedAt,
+            completedAt: null,
+          })
+        }
         await ctx.db.patch(session._id, {
           currentRoundNumber: nextRound.roundNumber,
         })
         nextRoundId = nextRound._id
+        await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
+          sessionId: session._id,
+          roundId: nextRound._id,
+        })
       }
     }
 
@@ -460,8 +501,8 @@ export const finalizeRound = internalMutation({
         resultStatus === 'aborted'
           ? 'No valid responses made it through the round.'
           : resultStatus === 'tie'
-            ? 'The round ended in a tie at the top of the board.'
-            : 'A winner has been locked in and revealed.',
+            ? 'The round ended in a tie. The admin can reveal model names when ready.'
+            : 'A winner has been locked in. The admin can reveal model names when ready.',
       meta: {
         triggeredBy: args.triggeredBy,
       },

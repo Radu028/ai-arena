@@ -130,3 +130,44 @@ export const endVotingEarly = mutation({
     })
   },
 })
+
+export const revealLatestScoredRound = mutation({
+  args: {
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const { session } = await requireSessionOwner(ctx, args.sessionId)
+    const rounds = await ctx.db
+      .query('rounds')
+      .withIndex('by_session_id_and_round_number', (query) =>
+        query.eq('sessionId', session._id),
+      )
+      .take(session.roundCount + 1)
+    const round = rounds
+      .filter((candidate) => candidate.status === 'scored')
+      .sort((left, right) => right.roundNumber - left.roundNumber)
+      .find((candidate) => candidate.revealAt === null)
+
+    if (!round) {
+      throw new Error('There is no scored round waiting to be revealed.')
+    }
+
+    const revealedAt = now()
+    await ctx.db.patch(round._id, {
+      revealAt: revealedAt,
+    })
+    await appendSessionEvent(ctx, {
+      sessionId: session._id,
+      roundId: round._id,
+      type: 'models_revealed',
+      title: `Round ${round.roundNumber} models revealed`,
+      description: 'The admin revealed the model names for this round.',
+      meta: {},
+    })
+
+    return {
+      ok: true,
+      roundId: round._id,
+    }
+  },
+})
