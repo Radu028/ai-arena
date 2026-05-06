@@ -92,6 +92,13 @@ function getAgentFallback(role: 'host' | 'critic' | 'stats') {
   return 'Critic temporarily offline. The round result still stands without analysis.'
 }
 
+function truncateForPrompt(value: string, maxChars: number) {
+  if (value.length <= maxChars) {
+    return value
+  }
+  return `${value.slice(0, maxChars).trimEnd()}...`
+}
+
 function narrowModelSnapshots(
   snapshots: Doc<'sessions'>['selectedModelsSnapshot'],
 ): SessionModelSnapshot[] {
@@ -173,7 +180,7 @@ function buildCriticPrompt(args: {
     `Responses:`,
     ...args.responses.map(
       (response) =>
-        `[${response.slot}] ${response.modelLabel}: ${response.text}`,
+        `[${response.slot}] ${response.modelLabel}: ${truncateForPrompt(response.text, 800)}`,
     ),
     `Write one compact analysis that covers every response, why the winner worked, and what the others lacked.`,
   ].join('\n')
@@ -228,7 +235,8 @@ function buildJudgePrompt(args: {
     `Choose the best response among the candidates.`,
     `Return strict JSON like {"slot":"A","rationale":"..."} and nothing else.`,
     ...args.candidates.map(
-      (candidate) => `[${candidate.slot}] ${candidate.text}`,
+      (candidate) =>
+        `[${candidate.slot}] ${truncateForPrompt(candidate.text, 700)}`,
     ),
   ].join('\n')
 }

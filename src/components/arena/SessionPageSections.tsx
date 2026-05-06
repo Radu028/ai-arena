@@ -25,32 +25,36 @@ export type PublicSessionView = NonNullable<
 
 type SessionPageState = {
   displayName: string
-  email: string
   topic: string
   pendingJoin: boolean
   pendingTopic: boolean
   pendingVoteId: string | null
 }
 
-type SessionField = 'displayName' | 'email' | 'topic'
+type SessionField = 'displayName' | 'topic'
 
 export function SessionOverviewSection({
   sessionView,
-  state,
-  onJoinSubmit,
-  onFieldChange,
 }: {
   sessionView: PublicSessionView
-  state: SessionPageState
-  onJoinSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
-  onFieldChange: (field: SessionField, value: string) => void
 }) {
+  const joinPath = `/sessions/${sessionView.session.slug}`
+  const shareUrl =
+    typeof window === 'undefined'
+      ? joinPath
+      : new URL(joinPath, window.location.origin).toString()
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=12&data=${encodeURIComponent(shareUrl)}`
+
+  async function copyShareUrl() {
+    await navigator.clipboard.writeText(shareUrl)
+  }
+
   return (
     <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
       <Card className="hero-shell">
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full bg-[var(--arena-signal)] text-white">
+            <Badge className="rounded-full bg-(--arena-signal) text-white">
               {sessionView.session.statusLabel}
             </Badge>
             <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
@@ -70,43 +74,30 @@ export function SessionOverviewSection({
 
       <Card className="arena-panel">
         <CardHeader>
-          <CardTitle className="font-serif text-3xl">Lobby</CardTitle>
+          <CardTitle className="font-serif text-3xl">Share session</CardTitle>
           <CardDescription>
             {sessionView.viewer
               ? `You joined as ${sessionView.viewer.displayName}.`
-              : 'Join the room to submit topics and vote.'}
+              : 'Anyone can watch. A username is only requested when they vote.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!sessionView.viewer ? (
-            <form className="space-y-4" onSubmit={onJoinSubmit}>
+          <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
+            <img
+              src={qrUrl}
+              alt={`QR code for ${shareUrl}`}
+              className="size-44 rounded-[1.25rem] border border-border/70 bg-white p-2"
+            />
+            <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="displayName">Display name</Label>
-                <Input
-                  id="displayName"
-                  value={state.displayName}
-                  onChange={(event) =>
-                    onFieldChange('displayName', event.target.value)
-                  }
-                  placeholder="Radu or leave blank for an auto-name"
-                />
+                <Label htmlFor="shareUrl">Public join link</Label>
+                <Input id="shareUrl" value={shareUrl} readOnly />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email (optional)</Label>
-                <Input
-                  id="email"
-                  value={state.email}
-                  onChange={(event) =>
-                    onFieldChange('email', event.target.value)
-                  }
-                  placeholder="radu@example.com"
-                />
-              </div>
-              <Button type="submit" size="lg" disabled={state.pendingJoin}>
-                {state.pendingJoin ? 'Joining…' : 'Join Session'}
+              <Button type="button" variant="outline" onClick={copyShareUrl}>
+                Copy Link
               </Button>
-            </form>
-          ) : null}
+            </div>
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {sessionView.participants.slice(0, 10).map((participant) => (
@@ -241,7 +232,8 @@ export function LiveSessionTab({
                   response={response}
                   revealed={liveRound.status === 'scored'}
                   showVoteButton={
-                    liveRound.status === 'voting' && sessionView.viewer?.canVote
+                    liveRound.status === 'voting' &&
+                    !sessionView.viewer?.hasVotedCurrentRound
                   }
                   disabled={state.pendingVoteId !== null}
                   onVote={onVote}
@@ -354,7 +346,7 @@ export function SessionEventLogTab({
         <CardTitle className="font-serif text-3xl">Live event log</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[32rem] pr-4">
+        <ScrollArea className="h-128 pr-4">
           <div className="space-y-3">
             {events.map((event) => (
               <div

@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useQuery } from 'convex/react'
-import { CoinsIcon } from 'lucide-react'
+import { useState } from 'react'
+import { useMutation, useQuery } from 'convex/react'
+import { CoinsIcon, ShieldCheckIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { formatMicrosUsd } from '@shared/arena'
 import { AdminGuard } from '#/components/AdminGuard'
@@ -12,6 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import {
   Table,
   TableBody,
@@ -29,10 +33,56 @@ export const Route = createFileRoute('/admin')({
 function AdminDashboard() {
   const data = useQuery(api.sessions.listAdminSessions, {})
   const costs = useQuery(api.stats.getAdminCostSummary, {})
+  const adminUsers = useQuery(api.admins.list, {})
+  const grantAdmin = useMutation(api.admins.grant)
+  const [adminEmail, setAdminEmail] = useState('')
+  const [grantingAdmin, setGrantingAdmin] = useState(false)
+  const hasAdminAccess = data?.isAuthenticated !== false
+
+  async function handleGrantAdmin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const email = adminEmail.trim().toLowerCase()
+    if (!email) {
+      toast.error('Enter an email address.')
+      return
+    }
+    setGrantingAdmin(true)
+    try {
+      const result = await grantAdmin({ email })
+      setAdminEmail('')
+      toast.success(
+        result.alreadyAdmin
+          ? `${result.email} is already an admin.`
+          : `Admin access granted to ${result.email}.`,
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not grant admin access.',
+      )
+    } finally {
+      setGrantingAdmin(false)
+    }
+  }
 
   return (
     <div className="page-frame space-y-6">
       <AdminGuard title="Admin console">
+        {data && !data.isAuthenticated ? (
+          <Card className="arena-panel">
+            <CardHeader>
+              <CardTitle className="font-serif text-3xl">
+                Admin access required
+              </CardTitle>
+              <CardDescription>
+                You are signed in, but this email is not on the admin allowlist.
+                Ask `radupopa028@gmail.com` to grant access from this page.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
         <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="eyebrow">Admin console</p>
@@ -42,18 +92,20 @@ function AdminDashboard() {
               when you want to cut off provider spend.
             </p>
           </div>
-          <Button asChild size="lg">
-            <Link to="/admin/sessions/new">Create Session</Link>
-          </Button>
+          {hasAdminAccess ? (
+            <Button asChild size="lg">
+              <Link to="/admin/sessions/new">Create Session</Link>
+            </Button>
+          ) : null}
         </section>
 
-        {costs && costs.isAuthenticated ? (
+        {hasAdminAccess && costs && costs.isAuthenticated ? (
           <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <Card className="arena-panel">
               <CardHeader>
                 <CardTitle className="font-serif text-3xl">
                   <span className="inline-flex items-center gap-3">
-                    <CoinsIcon className="size-5 text-[var(--arena-signal)]" />
+                    <CoinsIcon className="size-5 text-(--arena-signal)" />
                     Cost tracking
                   </span>
                 </CardTitle>
@@ -148,60 +200,132 @@ function AdminDashboard() {
           </section>
         ) : null}
 
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="font-serif text-3xl">
-              Recent sessions
-            </CardTitle>
-            <CardDescription>
-              Sessions appear here once you are authenticated through Clerk.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data && data.sessions.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Theme</TableHead>
-                    <TableHead>Rounds</TableHead>
-                    <TableHead>Join code</TableHead>
-                    <TableHead>Created</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.sessions.map((session) => (
-                    <TableRow key={session.id}>
-                      <TableCell>
-                        <Link
-                          to="/admin/sessions/$sessionId"
-                          params={{ sessionId: session.id }}
-                          className="font-medium text-[var(--arena-cobalt)] no-underline"
-                        >
-                          {session.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="capitalize">
-                        {session.status}
-                      </TableCell>
-                      <TableCell className="capitalize">
-                        {session.theme}
-                      </TableCell>
-                      <TableCell>{session.roundCount}</TableCell>
-                      <TableCell>{session.joinCode}</TableCell>
-                      <TableCell>{formatDateTime(session.createdAt)}</TableCell>
+        {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
+          <Card className="arena-panel">
+            <CardHeader>
+              <CardTitle className="font-serif text-3xl">
+                <span className="inline-flex items-center gap-3">
+                  <ShieldCheckIcon className="size-5 text-(--arena-cobalt)" />
+                  Admin access
+                </span>
+              </CardTitle>
+              <CardDescription>
+                `radupopa028@gmail.com` is the bootstrap admin. Add teammates by
+                email after they sign in with Clerk.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form
+                className="grid gap-3 md:grid-cols-[1fr_auto]"
+                onSubmit={handleGrantAdmin}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">New admin email</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    value={adminEmail}
+                    onChange={(event) => setAdminEmail(event.target.value)}
+                    placeholder="teammate@example.com"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="self-end"
+                  disabled={grantingAdmin}
+                >
+                  {grantingAdmin ? 'Granting...' : 'Grant Admin'}
+                </Button>
+              </form>
+
+              <div className="rounded-[1.2rem] border border-border/70 bg-background/65">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Source</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="rounded-[1.2rem] border border-dashed border-border/80 bg-muted/40 px-4 py-8 text-center text-muted-foreground">
-                No admin sessions yet.
+                  </TableHeader>
+                  <TableBody>
+                    {adminUsers.bootstrapAdmins.map((email) => (
+                      <TableRow key={email}>
+                        <TableCell>{email}</TableCell>
+                        <TableCell>Bootstrap admin</TableCell>
+                      </TableRow>
+                    ))}
+                    {adminUsers.admins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>
+                          Granted by {admin.grantedByEmail ?? 'admin'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {hasAdminAccess ? (
+          <Card className="arena-panel">
+            <CardHeader>
+              <CardTitle className="font-serif text-3xl">
+                Recent sessions
+              </CardTitle>
+              <CardDescription>
+                Sessions appear here once you are authenticated through Clerk.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data && data.sessions.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Theme</TableHead>
+                      <TableHead>Rounds</TableHead>
+                      <TableHead>Join code</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.sessions.map((session) => (
+                      <TableRow key={session.id}>
+                        <TableCell>
+                          <Link
+                            to="/admin/sessions/$sessionId"
+                            params={{ sessionId: session.id }}
+                            className="font-medium text-(--arena-cobalt) no-underline"
+                          >
+                            {session.title}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {session.status}
+                        </TableCell>
+                        <TableCell className="capitalize">
+                          {session.theme}
+                        </TableCell>
+                        <TableCell>{session.roundCount}</TableCell>
+                        <TableCell>{session.joinCode}</TableCell>
+                        <TableCell>
+                          {formatDateTime(session.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="rounded-[1.2rem] border border-dashed border-border/80 bg-muted/40 px-4 py-8 text-center text-muted-foreground">
+                  No admin sessions yet.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
       </AdminGuard>
     </div>
   )

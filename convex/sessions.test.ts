@@ -12,7 +12,7 @@ const adminIdentity = {
   issuer: 'https://placeholder.clerk.accounts.dev',
   subject: 'admin_1',
   tokenIdentifier: 'test|admin_1',
-  email: 'admin@example.com',
+  email: 'radupopa028@gmail.com',
   name: 'Arena Admin',
 }
 
@@ -153,7 +153,7 @@ describe('sessions flow', () => {
     const secondJoin = await admin.mutation(api.sessions.joinBySlug, {
       slug: created.slug,
       displayName: 'Arena Admin Updated',
-      email: 'admin@example.com',
+      email: 'radupopa028@gmail.com',
       existingToken: null,
     })
 

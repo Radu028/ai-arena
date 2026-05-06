@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admins from "../admins.js";
 import type * as lib from "../lib.js";
 import type * as orchestration from "../orchestration.js";
 import type * as rounds from "../rounds.js";
@@ -24,6 +25,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admins: typeof admins;
   lib: typeof lib;
   orchestration: typeof orchestration;
   rounds: typeof rounds;

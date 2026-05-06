@@ -102,6 +102,10 @@ The code now enforces conservative output limits on every paid generation path:
 - Stats Analyst agent: 180 output tokens, using Gemini 3 Flash by default.
 - AI judge decisions: 80 output tokens.
 
+Input spend is also bounded: Critic and Judge prompts truncate model responses
+before sending them to another provider, while Stats Analyst prompts use saved
+vote/latency numbers instead of full response text.
+
 The default competition roster is GPT 5.5, Claude Sonnet 4.5, Gemini 3 Flash,
 and Gemini 3.1 Pro. The Stats Analyst uses the cheaper Gemini 3 Flash model by
 default. Anthropic remains on Sonnet, not Opus.
