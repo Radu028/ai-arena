@@ -13,6 +13,10 @@ export const sessionThemeValidator = v.union(
   v.literal('eli5'),
   v.literal('freeform'),
 )
+export const responseLanguageValidator = v.union(
+  v.literal('english'),
+  v.literal('romanian'),
+)
 export const sessionStatusValidator = v.union(
   v.literal('waiting'),
   v.literal('active'),

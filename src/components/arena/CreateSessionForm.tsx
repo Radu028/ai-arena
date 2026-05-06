@@ -8,6 +8,7 @@ import {
   AVAILABLE_MODELS,
   MAX_ROUNDS,
   MIN_ROUNDS,
+  RESPONSE_LANGUAGE_COPY,
   THEME_COPY,
 } from '@shared/arena'
 import { createSessionSchema } from '@shared/validation'
@@ -22,11 +23,14 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import { Separator } from '#/components/ui/separator'
+import { Textarea } from '#/components/ui/textarea'
 import { cn } from '#/lib/utils'
 
 type State = {
   title: string
   theme: keyof typeof THEME_COPY
+  customPrompt: string
+  responseLanguage: keyof typeof RESPONSE_LANGUAGE_COPY
   roundCount: number
   maxParticipants: number
   selectedModels: string[]
@@ -37,7 +41,13 @@ type State = {
 type Action =
   | {
       type: 'field'
-      field: 'title' | 'theme' | 'roundCount' | 'maxParticipants'
+      field:
+        | 'title'
+        | 'theme'
+        | 'customPrompt'
+        | 'responseLanguage'
+        | 'roundCount'
+        | 'maxParticipants'
       value: string | number
     }
   | { type: 'toggleModel'; modelKey: string }
@@ -68,6 +78,8 @@ export function CreateSessionForm() {
     {
       title: 'Friday Night Arena',
       theme: 'comedy',
+      customPrompt: '',
+      responseLanguage: 'romanian',
       roundCount: 3,
       maxParticipants: 200,
       selectedModels: AVAILABLE_MODELS.slice(0, 4).map((m) => m.key),
@@ -89,6 +101,8 @@ export function CreateSessionForm() {
     const parsed = createSessionSchema.safeParse({
       title: state.title,
       theme: state.theme,
+      customPrompt: state.customPrompt,
+      responseLanguage: state.responseLanguage,
       roundCount: state.roundCount,
       modelKeys: state.selectedModels,
       maxParticipants: state.maxParticipants,
@@ -118,8 +132,8 @@ export function CreateSessionForm() {
     <form className="space-y-8" onSubmit={handleSubmit}>
       <FormSection
         eyebrow="Step 1"
-        title="Name and theme"
-        description="The title is what spectators see. Theme tunes Host tone, Critic angle, and judge bar."
+        title="Name, prompt, and language"
+        description="The title is public. The custom prompt tells the AI what the jokes, debate, or explanations should be about."
       >
         <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
@@ -160,6 +174,50 @@ export function CreateSessionForm() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="responseLanguage">Response language</Label>
+            <Select
+              value={state.responseLanguage}
+              onValueChange={(value) =>
+                dispatch({
+                  type: 'field',
+                  field: 'responseLanguage',
+                  value: value as keyof typeof RESPONSE_LANGUAGE_COPY,
+                })
+              }
+            >
+              <SelectTrigger id="responseLanguage" className="h-10">
+                <SelectValue placeholder="Select response language" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(RESPONSE_LANGUAGE_COPY).map(([key, copy]) => (
+                  <SelectItem key={key} value={key}>
+                    {copy.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="customPrompt">Custom arena prompt</Label>
+            <Textarea
+              id="customPrompt"
+              value={state.customPrompt}
+              onChange={(e) =>
+                dispatch({
+                  type: 'field',
+                  field: 'customPrompt',
+                  value: e.target.value,
+                })
+              }
+              placeholder="Ex: Fa glume despre sesiune, examene si viata de student. Pastreaza tonul prietenos si potrivit pentru demo."
+              className="min-h-24 resize-y"
+            />
+            <p className="text-xs leading-5 text-muted-foreground">
+              Leave blank for an open prompt. This brief is sent to the Host,
+              competing models, Critic, Stats Analyst, and AI judges.
+            </p>
           </div>
         </div>
       </FormSection>
@@ -241,7 +299,7 @@ export function CreateSessionForm() {
                 className={cn(
                   'group flex items-start gap-3 rounded-xl border p-4 text-left transition-all',
                   checked
-                    ? 'border-primary/40 bg-primary/[0.04] ring-1 ring-primary/30'
+                    ? 'border-primary/40 bg-primary/4 ring-1 ring-primary/30'
                     : 'border-border/60 bg-card hover:border-border hover:bg-muted/40',
                 )}
               >

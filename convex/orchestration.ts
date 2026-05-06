@@ -16,10 +16,15 @@ import {
   JUDGE_MAX_OUTPUT_TOKENS,
   PROVIDER_TIMEOUT_MS,
   ROUND_MAX_OUTPUT_TOKENS,
+  RESPONSE_LANGUAGE_COPY,
   STATS_AGENT_DEFAULT_MODEL,
   getModelByKey,
 } from '../shared/arena'
-import type { SessionModelSnapshot, ThemeCopy } from '../shared/arena'
+import type {
+  ResponseLanguage,
+  SessionModelSnapshot,
+  ThemeCopy,
+} from '../shared/arena'
 
 type UsageShape = {
   input: number | null
@@ -78,11 +83,45 @@ function providerTimeout<T>(promise: Promise<T>, ms: number) {
   })
 }
 
-function makeFallbackCopy(topic: string, modelLabel: string) {
+function getSessionResponseLanguage(
+  session: Doc<'sessions'>,
+): ResponseLanguage {
+  return session.responseLanguage ?? 'english'
+}
+
+function getSessionCustomPrompt(session: Doc<'sessions'>) {
+  const prompt = session.customPrompt?.trim()
+  return prompt ? truncateForPrompt(prompt, 500) : null
+}
+
+function languageInstruction(language: ResponseLanguage) {
+  return RESPONSE_LANGUAGE_COPY[language].instruction
+}
+
+function makeFallbackCopy(
+  topic: string,
+  modelLabel: string,
+  language: ResponseLanguage,
+) {
+  if (language === 'romanian') {
+    return `${modelLabel} nu a putut apela API-ul live, asa ca AI Arena foloseste un raspuns fallback pentru tema "${topic}". Varianta sigura este: fii clar, concret si termina cu o poanta memorabila.`
+  }
   return `${modelLabel} missed the live API call, so AI Arena is using a house fallback on the topic "${topic}". The safest version is: stay clear, be specific, and land one memorable line.`
 }
 
-function getAgentFallback(role: 'host' | 'critic' | 'stats') {
+function getAgentFallback(
+  role: 'host' | 'critic' | 'stats',
+  language: ResponseLanguage,
+) {
+  if (language === 'romanian') {
+    if (role === 'host') {
+      return 'Hostul este temporar offline. Runda continua fara comentariu.'
+    }
+    if (role === 'stats') {
+      return 'Stats Analyst este temporar offline. Totalurile voturilor salvate raman sursa de adevar.'
+    }
+    return 'Criticul este temporar offline. Rezultatul rundei ramane valid fara analiza.'
+  }
   if (role === 'host') {
     return 'Host temporarily offline. The round continues without commentary.'
   }
@@ -118,16 +157,28 @@ function buildRoundPrompt(args: {
   theme: ThemeCopy
   topic: string
   model: SessionModelSnapshot
+  customPrompt: string | null
+  responseLanguage: ResponseLanguage
 }) {
-  return [
+  const lines = [
     `You are competing in an AI Arena round.`,
     `Theme: ${args.theme.label}.`,
     `Theme guidance: focus on ${args.theme.criticAngle}.`,
     `Your style brief: ${args.model.description}.`,
     `Topic: ${args.topic}`,
+    languageInstruction(args.responseLanguage),
     `Write one strong answer. Keep it concise, high-signal, audience-ready, and original.`,
     `Do not mention your model name.`,
-  ].join('\n')
+  ]
+  if (args.customPrompt) {
+    lines.splice(
+      5,
+      0,
+      `Custom arena brief: ${args.customPrompt}`,
+      `Follow the custom brief when choosing examples, jokes, framing, and tone.`,
+    )
+  }
+  return lines.join('\n')
 }
 
 function buildHostPrompt(args: {
@@ -138,12 +189,18 @@ function buildHostPrompt(args: {
   models?: string[]
   winnerSummary?: string
   scoreboardSummary?: string
+  customPrompt: string | null
+  responseLanguage: ResponseLanguage
 }) {
   const lines = [
     `You are the Host / MC for a live AI Arena.`,
     `Adopt a ${args.hostTone} voice.`,
     `Theme: ${args.themeLabel}.`,
+    languageInstruction(args.responseLanguage),
   ]
+  if (args.customPrompt) {
+    lines.push(`Custom arena brief: ${args.customPrompt}`)
+  }
   if (args.phase === 'intro' && args.topic) {
     lines.push(`Introduce the round topic: ${args.topic}`)
     lines.push(
@@ -170,12 +227,15 @@ function buildCriticPrompt(args: {
   topic: string
   responses: Array<{ slot: string; modelLabel: string; text: string }>
   winnerSlots: string[]
+  customPrompt: string | null
+  responseLanguage: ResponseLanguage
 }) {
-  return [
+  const lines = [
     `You are the Critic for AI Arena.`,
     `Theme: ${args.themeLabel}.`,
     `Explain the result in terms of ${args.criticAngle}.`,
     `Topic: ${args.topic}`,
+    languageInstruction(args.responseLanguage),
     `Winning slot(s): ${args.winnerSlots.join(', ') || 'none'}.`,
     `Responses:`,
     ...args.responses.map(
@@ -183,7 +243,11 @@ function buildCriticPrompt(args: {
         `[${response.slot}] ${response.modelLabel}: ${truncateForPrompt(response.text, 800)}`,
     ),
     `Write one compact analysis that covers every response, why the winner worked, and what the others lacked.`,
-  ].join('\n')
+  ]
+  if (args.customPrompt) {
+    lines.splice(4, 0, `Custom arena brief: ${args.customPrompt}`)
+  }
+  return lines.join('\n')
 }
 
 function buildStatsPrompt(args: {
@@ -200,11 +264,14 @@ function buildStatsPrompt(args: {
   }>
   humanVotes: number
   aiVotes: number
+  customPrompt: string | null
+  responseLanguage: ResponseLanguage
 }) {
-  return [
+  const lines = [
     `You are the Stats Analyst agent for AI Arena.`,
     `Round: ${args.roundNumber}.`,
     `Topic: ${args.topic}`,
+    languageInstruction(args.responseLanguage),
     `Human votes: ${args.humanVotes}. AI judge votes: ${args.aiVotes}.`,
     `Winner(s): ${args.winnerLabels.join(', ') || 'none'}.`,
     `Rows:`,
@@ -218,7 +285,11 @@ function buildStatsPrompt(args: {
       ].join(' | '),
     ),
     `Write 2-3 concise sentences with the key voting/statistical takeaway. Do not critique writing quality; focus on numbers, winners, vote split, and reliability.`,
-  ].join('\n')
+  ]
+  if (args.customPrompt) {
+    lines.splice(3, 0, `Custom arena brief: ${args.customPrompt}`)
+  }
+  return lines.join('\n')
 }
 
 function buildJudgePrompt(args: {
@@ -226,19 +297,26 @@ function buildJudgePrompt(args: {
   judgeStyle: string
   topic: string
   candidates: Array<{ slot: string; text: string }>
+  customPrompt: string | null
+  responseLanguage: ResponseLanguage
 }) {
-  return [
+  const lines = [
     `You are judging an AI Arena round.`,
     `Theme: ${args.themeLabel}.`,
     `Judge style: ${args.judgeStyle}.`,
     `Topic: ${args.topic}`,
+    languageInstruction(args.responseLanguage),
     `Choose the best response among the candidates.`,
     `Return strict JSON like {"slot":"A","rationale":"..."} and nothing else.`,
     ...args.candidates.map(
       (candidate) =>
         `[${candidate.slot}] ${truncateForPrompt(candidate.text, 700)}`,
     ),
-  ].join('\n')
+  ]
+  if (args.customPrompt) {
+    lines.splice(4, 0, `Custom arena brief: ${args.customPrompt}`)
+  }
+  return lines.join('\n')
 }
 
 function summarizeScoreboard(
@@ -258,11 +336,15 @@ function buildStatsFallback(args: {
   humanVotes: number
   aiVotes: number
   rows: Array<{ modelLabel: string; votes: number; isWinner: boolean }>
+  responseLanguage: ResponseLanguage
 }) {
   const winners = args.winnerLabels.join(', ') || 'No winner'
   const voteSplit = args.rows
     .map((row) => `${row.modelLabel}: ${row.votes}`)
     .join(' | ')
+  if (args.responseLanguage === 'romanian') {
+    return `Stats Analyst: Runda ${args.roundNumber} s-a incheiat cu ${args.humanVotes} vot(uri) umane si ${args.aiVotes} vot(uri) AI. Castigator: ${winners}. Impartirea voturilor: ${voteSplit}.`
+  }
   return `Stats Analyst: Round ${args.roundNumber} finished with ${args.humanVotes} human vote(s) and ${args.aiVotes} AI judge vote(s). Winner: ${winners}. Vote split: ${voteSplit}.`
 }
 
@@ -401,6 +483,7 @@ async function callProvider(
   model: SessionModelSnapshot,
   prompt: string,
   topic: string,
+  responseLanguage: ResponseLanguage,
   purpose: 'round' | 'judge' = 'round',
 ): Promise<TextResult> {
   const start = Date.now()
@@ -409,7 +492,7 @@ async function callProvider(
     if (demoMode) {
       return {
         status: 'success',
-        text: makeFallbackCopy(topic, model.label),
+        text: makeFallbackCopy(topic, model.label, responseLanguage),
         usage: { input: null, output: null },
         errorCode: null,
         errorMessage: null,
@@ -427,7 +510,7 @@ async function callProvider(
         if (!apiKey) {
           return {
             status: 'skipped',
-            text: makeFallbackCopy(topic, model.label),
+            text: makeFallbackCopy(topic, model.label, responseLanguage),
             usage: { input: null, output: null },
             errorCode: 'OPENAI_KEY_MISSING',
             errorMessage: 'OPENAI_API_KEY is not configured.',
@@ -445,7 +528,7 @@ async function callProvider(
         if (!apiKey) {
           return {
             status: 'skipped',
-            text: makeFallbackCopy(topic, model.label),
+            text: makeFallbackCopy(topic, model.label, responseLanguage),
             usage: { input: null, output: null },
             errorCode: 'XAI_KEY_MISSING',
             errorMessage: 'XAI_API_KEY is not configured.',
@@ -469,7 +552,7 @@ async function callProvider(
         if (!apiKey) {
           return {
             status: 'skipped',
-            text: makeFallbackCopy(topic, model.label),
+            text: makeFallbackCopy(topic, model.label, responseLanguage),
             usage: { input: null, output: null },
             errorCode: 'ANTHROPIC_KEY_MISSING',
             errorMessage: 'ANTHROPIC_API_KEY is not configured.',
@@ -487,7 +570,7 @@ async function callProvider(
         if (!apiKey) {
           return {
             status: 'skipped',
-            text: makeFallbackCopy(topic, model.label),
+            text: makeFallbackCopy(topic, model.label, responseLanguage),
             usage: { input: null, output: null },
             errorCode: 'GOOGLE_KEY_MISSING',
             errorMessage: 'GOOGLE_AI_API_KEY is not configured.',
@@ -505,7 +588,7 @@ async function callProvider(
         if (!apiKey) {
           return {
             status: 'skipped',
-            text: makeFallbackCopy(topic, model.label),
+            text: makeFallbackCopy(topic, model.label, responseLanguage),
             usage: { input: null, output: null },
             errorCode: 'MISTRAL_KEY_MISSING',
             errorMessage: 'MISTRAL_API_KEY is not configured.',
@@ -675,6 +758,8 @@ export const generateRound = internalAction({
     ) {
       return null
     }
+    const responseLanguage = getSessionResponseLanguage(context.session)
+    const customPrompt = getSessionCustomPrompt(context.session)
 
     const hostPrompt = buildHostPrompt({
       phase: 'intro',
@@ -684,11 +769,13 @@ export const generateRound = internalAction({
       models: narrowModelSnapshots(context.session.selectedModelsSnapshot).map(
         (model) => model.label,
       ),
+      customPrompt,
+      responseLanguage,
     })
     const hostCopy = await generateAgentCopy({
       role: 'host',
       prompt: hostPrompt,
-      fallback: getAgentFallback('host'),
+      fallback: getAgentFallback('host', responseLanguage),
     })
     await ctx.runMutation(internal.state.saveArtifact, {
       sessionId: context.session._id,
@@ -710,11 +797,14 @@ export const generateRound = internalAction({
           theme: context.themeCopy,
           topic: context.round.topic ?? 'Untitled topic',
           model,
+          customPrompt,
+          responseLanguage,
         })
         const result = await callProvider(
           model,
           prompt,
           context.round.topic ?? 'Untitled topic',
+          responseLanguage,
         )
         await ctx.runMutation(internal.state.saveModelResponse, {
           sessionId: context.session._id,
@@ -765,6 +855,10 @@ export const generateRound = internalAction({
     if (!reviewContext || reviewContext.round.status !== 'voting') {
       return null
     }
+    const reviewResponseLanguage = getSessionResponseLanguage(
+      reviewContext.session,
+    )
+    const reviewCustomPrompt = getSessionCustomPrompt(reviewContext.session)
 
     const candidates: JudgeCandidate[] = reviewContext.responses
       .filter(
@@ -811,12 +905,15 @@ export const generateRound = internalAction({
               slot: candidate.slot,
               text: candidate.text,
             })),
+            customPrompt: reviewCustomPrompt,
+            responseLanguage: reviewResponseLanguage,
           })
 
           const decision = await callProvider(
             voterModel,
             judgePrompt,
             reviewContext.round.topic ?? 'Untitled topic',
+            reviewResponseLanguage,
             'judge',
           )
           const parsed = decision.text
@@ -868,6 +965,8 @@ export const afterRoundFinalized = internalAction({
     if (!reviewContext) {
       return null
     }
+    const responseLanguage = getSessionResponseLanguage(reviewContext.session)
+    const customPrompt = getSessionCustomPrompt(reviewContext.session)
 
     const winnerSlots = reviewContext.responses
       .filter((response) =>
@@ -879,6 +978,8 @@ export const afterRoundFinalized = internalAction({
       criticAngle: reviewContext.themeCopy.criticAngle,
       topic: reviewContext.round.topic ?? 'Untitled topic',
       winnerSlots,
+      customPrompt,
+      responseLanguage,
       responses: reviewContext.responses
         .filter(
           (response) =>
@@ -894,7 +995,7 @@ export const afterRoundFinalized = internalAction({
     const criticCopy = await generateAgentCopy({
       role: 'critic',
       prompt: criticPrompt,
-      fallback: getAgentFallback('critic'),
+      fallback: getAgentFallback('critic', responseLanguage),
     })
 
     await ctx.runMutation(internal.state.saveArtifact, {
@@ -947,6 +1048,8 @@ export const afterRoundFinalized = internalAction({
         rows: statsRows,
         humanVotes: reviewContext.humanVotes.length,
         aiVotes: reviewContext.aiVotes.length,
+        customPrompt,
+        responseLanguage,
       }),
       fallback: buildStatsFallback({
         roundNumber: reviewContext.round.roundNumber,
@@ -954,6 +1057,7 @@ export const afterRoundFinalized = internalAction({
         humanVotes: reviewContext.humanVotes.length,
         aiVotes: reviewContext.aiVotes.length,
         rows: statsRows,
+        responseLanguage,
       }),
     })
     await ctx.runMutation(internal.state.saveArtifact, {
@@ -980,9 +1084,13 @@ export const afterRoundFinalized = internalAction({
           themeLabel: reviewContext.themeCopy.label,
           hostTone: reviewContext.themeCopy.hostTone,
           scoreboardSummary: summarizeScoreboard(scoreboard),
+          customPrompt,
+          responseLanguage,
         }),
         fallback:
-          'Host recap unavailable. Check the final scoreboard for the official result.',
+          responseLanguage === 'romanian'
+            ? 'Recapitularea hostului este indisponibila. Verifica scoreboard-ul final pentru rezultatul oficial.'
+            : 'Host recap unavailable. Check the final scoreboard for the official result.',
       })
       await ctx.runMutation(internal.state.saveArtifact, {
         sessionId: args.sessionId,
@@ -1014,8 +1122,13 @@ export const afterRoundFinalized = internalAction({
               : winningLabels.length > 0
                 ? `${winningLabels[0]} won round ${reviewContext.round.roundNumber}.`
                 : `Round ${reviewContext.round.roundNumber} had no valid winner.`,
+          customPrompt,
+          responseLanguage,
         }),
-        fallback: 'Host transition unavailable. Next round is ready.',
+        fallback:
+          responseLanguage === 'romanian'
+            ? 'Tranzitia hostului este indisponibila. Urmatoarea runda este gata.'
+            : 'Host transition unavailable. Next round is ready.',
       })
       await ctx.runMutation(internal.state.saveArtifact, {
         sessionId: args.sessionId,

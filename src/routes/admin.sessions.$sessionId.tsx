@@ -104,6 +104,9 @@ function AdminSessionDetailPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <SessionStatusPill status={session.status} />
                   <Badge variant="outline">{session.themeLabel}</Badge>
+                  <Badge variant="secondary">
+                    {session.responseLanguageLabel}
+                  </Badge>
                   <Badge variant="outline" className="font-mono text-[0.65rem]">
                     code {session.joinCode}
                   </Badge>
@@ -134,6 +137,15 @@ function AdminSessionDetailPage() {
                     value={formatDateTime(session.endedAt)}
                   />
                 </dl>
+
+                {session.customPrompt ? (
+                  <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
+                    <p className="eyebrow text-[0.65rem]">Arena prompt</p>
+                    <p className="mt-2 text-sm leading-6 text-foreground/85">
+                      {session.customPrompt}
+                    </p>
+                  </div>
+                ) : null}
 
                 <Separator className="opacity-60" />
 

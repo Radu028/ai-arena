@@ -1,11 +1,13 @@
 import { z } from 'zod'
 import {
+  MAX_CUSTOM_PROMPT_LENGTH,
   MAX_MODELS_PER_SESSION,
   MAX_ROUNDS,
   MAX_TOPIC_LENGTH,
   MIN_MODELS_PER_SESSION,
   MIN_ROUNDS,
   MIN_TOPIC_LENGTH,
+  RESPONSE_LANGUAGES,
   SESSION_THEMES,
 } from './arena'
 
@@ -16,6 +18,16 @@ export const createSessionSchema = z.object({
     .min(3, 'Give the session a clear title.')
     .max(80, 'Keep the session title under 80 characters.'),
   theme: z.enum(SESSION_THEMES),
+  customPrompt: z
+    .string()
+    .trim()
+    .max(
+      MAX_CUSTOM_PROMPT_LENGTH,
+      `Keep the custom prompt under ${MAX_CUSTOM_PROMPT_LENGTH} characters.`,
+    )
+    .optional()
+    .default(''),
+  responseLanguage: z.enum(RESPONSE_LANGUAGES).default('english'),
   roundCount: z.coerce.number().int().min(MIN_ROUNDS).max(MAX_ROUNDS),
   modelKeys: z
     .array(z.string().min(1))
