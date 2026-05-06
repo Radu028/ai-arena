@@ -86,8 +86,8 @@ export const AVAILABLE_MODELS = [
   {
     key: 'anthropic-claude-sonnet-4',
     providerKey: 'anthropic',
-    label: 'Claude Sonnet 4.5',
-    modelId: 'claude-sonnet-4-5-20250929',
+    label: 'Claude Sonnet 4.6',
+    modelId: 'claude-sonnet-4-6',
     description: 'Balanced reasoning with strong nuance and tone control.',
     tagline: 'Nuanced and composed.',
     accent: 'var(--arena-anthropic)',

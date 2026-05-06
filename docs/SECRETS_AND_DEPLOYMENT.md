@@ -41,7 +41,7 @@ pnpm exec convex env set --prod AI_ARENA_DEMO_MODE true
 Do not configure an Opus model for this project. The model list uses Sonnet:
 
 - `anthropic-claude-sonnet-4`
-- `claude-sonnet-4-20250514`
+- `claude-sonnet-4-6`
 
 If this model is not available on the Anthropic account, replace it with the
 cheapest available Sonnet model before running a live demo.
@@ -110,6 +110,6 @@ Input spend is also bounded: Critic and Judge prompts truncate model responses
 before sending them to another provider, while Stats Analyst prompts use saved
 vote/latency numbers instead of full response text.
 
-The default competition roster is GPT 5.5, Claude Sonnet 4.5, Gemini 3 Flash,
+The default competition roster is GPT 5.5, Claude Sonnet 4.6, Gemini 3 Flash,
 and Gemini 3.1 Pro. The Stats Analyst uses the cheaper Gemini 3 Flash model by
 default. Anthropic remains on Sonnet, not Opus.
