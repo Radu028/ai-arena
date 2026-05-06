@@ -15,13 +15,16 @@ AI Arena is a live battle platform for major AI models, built with:
 The current base includes:
 
 - public guest join by share link or join code
+- QR code sharing for live sessions
 - admin session creation, start, stop, and early vote close
+- email-based admin allowlist with `radupopa028@gmail.com` as bootstrap admin
 - Host / MC agent artifacts
 - Critic agent analysis
 - Stats Analyst agent summaries after finalized rounds
 - realtime public session view via Convex subscriptions
 - anonymous response cards and reveal after scoring
 - human voting plus AI model judging
+- spectator-first voting: viewers only choose a username when they vote
 - session history, scoreboard, and event log
 
 ## Product structure

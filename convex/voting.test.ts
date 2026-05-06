@@ -12,7 +12,7 @@ const adminIdentity = {
   issuer: 'https://placeholder.clerk.accounts.dev',
   subject: 'admin_voting',
   tokenIdentifier: 'test|admin_voting',
-  email: 'admin@example.com',
+  email: 'radupopa028@gmail.com',
   name: 'Voting Admin',
 }
 

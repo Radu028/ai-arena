@@ -15,6 +15,14 @@ import {
 } from './validators'
 
 export default defineSchema({
+  adminUsers: defineTable({
+    email: v.string(),
+    grantedByIdentity: nullableStringValidator,
+    grantedByEmail: nullableStringValidator,
+    createdAt: v.number(),
+    revokedAt: nullableNumberValidator,
+  }).index('by_email', ['email']),
+
   sessions: defineTable({
     slug: v.string(),
     joinCode: v.string(),

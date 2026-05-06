@@ -1,13 +1,9 @@
-import { useReducer } from 'react'
+import { useReducer, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
-import {
-  joinSessionSchema,
-  normalizeOptionalEmail,
-  topicSchema,
-} from '@shared/validation'
+import { joinSessionSchema, topicSchema } from '@shared/validation'
 import {
   LiveSessionTab,
   SessionEventLogTab,
@@ -22,6 +18,17 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
+import { Button } from '#/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 
 export const Route = createFileRoute('/sessions/$slug')({
@@ -30,7 +37,6 @@ export const Route = createFileRoute('/sessions/$slug')({
 
 type SessionPageState = {
   displayName: string
-  email: string
   topic: string
   pendingJoin: boolean
   pendingTopic: boolean
@@ -40,7 +46,7 @@ type SessionPageState = {
 type SessionPageAction =
   | {
       type: 'field'
-      field: 'displayName' | 'email' | 'topic'
+      field: 'displayName' | 'topic'
       value: string
     }
   | { type: 'pendingJoin'; value: boolean }
@@ -50,7 +56,6 @@ type SessionPageAction =
 
 const INITIAL_STATE: SessionPageState = {
   displayName: '',
-  email: '',
   topic: '',
   pendingJoin: false,
   pendingTopic: false,
@@ -101,38 +106,8 @@ function SessionPage() {
   const submitTopic = useMutation(api.rounds.submitTopic)
   const castVote = useMutation(api.votes.castHumanVote)
   const [state, dispatch] = useReducer(sessionPageReducer, INITIAL_STATE)
-
-  async function handleJoin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const parsed = joinSessionSchema.safeParse({
-      displayName: state.displayName,
-      email: state.email,
-    })
-    if (!parsed.success) {
-      toast.error(
-        parsed.error.issues[0]?.message ?? 'Join details are invalid.',
-      )
-      return
-    }
-
-    dispatch({ type: 'pendingJoin', value: true })
-    try {
-      const result = await joinSession({
-        slug,
-        displayName: parsed.data.displayName,
-        email: normalizeOptionalEmail(parsed.data.email),
-        existingToken: participantToken,
-      })
-      setParticipantToken(result.accessToken)
-      toast.success('Joined the live room.')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not join the session.',
-      )
-    } finally {
-      dispatch({ type: 'pendingJoin', value: false })
-    }
-  }
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false)
+  const voteAfterJoinIdRef = useRef<string | null>(null)
 
   async function handleTopicSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -165,8 +140,9 @@ function SessionPage() {
   }
 
   async function handleVote(responseId: string) {
-    if (!participantToken) {
-      toast.error('Join the session before voting.')
+    if (!participantToken || !sessionView?.viewer) {
+      voteAfterJoinIdRef.current = responseId
+      setJoinDialogOpen(true)
       return
     }
     dispatch({ type: 'pendingVoteId', value: responseId })
@@ -182,6 +158,66 @@ function SessionPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Vote failed.')
     } finally {
+      dispatch({ type: 'pendingVoteId', value: null })
+    }
+  }
+
+  async function handleJoinToVote(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const displayName = state.displayName.trim()
+    if (!displayName) {
+      toast.error('Choose a username before voting.')
+      return
+    }
+    const parsed = joinSessionSchema.safeParse({
+      displayName,
+      email: '',
+    })
+    if (!parsed.success) {
+      toast.error(
+        parsed.error.issues[0]?.message ?? 'Join details are invalid.',
+      )
+      return
+    }
+
+    dispatch({ type: 'pendingJoin', value: true })
+    const voteAfterJoinId = voteAfterJoinIdRef.current
+    if (voteAfterJoinId) {
+      dispatch({ type: 'pendingVoteId', value: voteAfterJoinId })
+    }
+    try {
+      const result = await joinSession({
+        slug,
+        displayName: parsed.data.displayName,
+        email: null,
+        existingToken: participantToken,
+      })
+      setParticipantToken(result.accessToken)
+
+      if (voteAfterJoinId) {
+        const voteResult = await castVote({
+          slug,
+          participantToken: result.accessToken,
+          responseId: voteAfterJoinId as never,
+        })
+        toast.success(
+          voteResult.accepted
+            ? 'Username saved and vote locked in.'
+            : 'Username saved. Your vote was already counted.',
+        )
+      } else {
+        toast.success('Username saved.')
+      }
+      voteAfterJoinIdRef.current = null
+      setJoinDialogOpen(false)
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not join and vote right now.',
+      )
+    } finally {
+      dispatch({ type: 'pendingJoin', value: false })
       dispatch({ type: 'pendingVoteId', value: null })
     }
   }
@@ -227,14 +263,7 @@ function SessionPage() {
         </section>
       ) : null}
 
-      <SessionOverviewSection
-        sessionView={sessionView}
-        state={state}
-        onJoinSubmit={handleJoin}
-        onFieldChange={(field, value) =>
-          dispatch({ type: 'field', field, value })
-        }
-      />
+      <SessionOverviewSection sessionView={sessionView} />
 
       <Tabs defaultValue="live" className="space-y-4">
         <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -265,6 +294,48 @@ function SessionPage() {
           <SessionEventLogTab events={sessionView.events} />
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={joinDialogOpen}
+        onOpenChange={(open) => {
+          setJoinDialogOpen(open)
+          if (!open) {
+            voteAfterJoinIdRef.current = null
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose a username to vote</DialogTitle>
+            <DialogDescription>
+              You can watch the arena without an account. A username is only
+              needed when you cast a vote.
+            </DialogDescription>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleJoinToVote}>
+            <div className="space-y-2">
+              <Label htmlFor="voteDisplayName">Username</Label>
+              <Input
+                id="voteDisplayName"
+                value={state.displayName}
+                onChange={(event) =>
+                  dispatch({
+                    type: 'field',
+                    field: 'displayName',
+                    value: event.target.value,
+                  })
+                }
+                placeholder="Radu"
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={state.pendingJoin}>
+                {state.pendingJoin ? 'Saving...' : 'Save Username And Vote'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

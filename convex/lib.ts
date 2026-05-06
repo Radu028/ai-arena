@@ -32,6 +32,7 @@ const DISPLAY_NOUNS = [
   'Tiger',
   'Signal',
 ]
+const BOOTSTRAP_ADMIN_EMAILS = ['radupopa028@gmail.com']
 
 export function now() {
   return Date.now()
@@ -147,6 +148,38 @@ function allowDemoAdminMode() {
   )
 }
 
+function normalizeEmail(email: string | null | undefined) {
+  const trimmed = email?.trim().toLowerCase()
+  return trimmed || null
+}
+
+function configuredBootstrapAdminEmails() {
+  const configured = process.env.ADMIN_EMAILS?.split(',') ?? []
+  return new Set(
+    [...BOOTSTRAP_ADMIN_EMAILS, ...configured]
+      .map((email) => normalizeEmail(email))
+      .filter((email): email is string => Boolean(email)),
+  )
+}
+
+export async function isAdminIdentity(
+  ctx: QueryCtx | MutationCtx,
+  identity: { email?: string | null },
+) {
+  const email = normalizeEmail(identity.email)
+  if (!email) {
+    return false
+  }
+  if (configuredBootstrapAdminEmails().has(email)) {
+    return true
+  }
+  const admin = await ctx.db
+    .query('adminUsers')
+    .withIndex('by_email', (query) => query.eq('email', email))
+    .unique()
+  return Boolean(admin && admin.revokedAt === null)
+}
+
 export async function requireAdminIdentity(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity()
   if (!identity) {
@@ -158,8 +191,12 @@ export async function requireAdminIdentity(ctx: QueryCtx | MutationCtx) {
       subject: 'demo-admin',
       issuer: 'demo',
       name: 'Demo Admin',
-      email: 'demo@localhost',
+      email: BOOTSTRAP_ADMIN_EMAILS[0],
     }
+  }
+  const isAdmin = await isAdminIdentity(ctx, identity)
+  if (!isAdmin) {
+    throw new Error('You are signed in, but this email is not an admin.')
   }
   return identity
 }
