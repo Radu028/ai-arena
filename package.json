@@ -26,6 +26,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.91.0",
     "@chenglou/pretext": "0.0.6",
+    "html-to-image": "^1.11.11",
     "@clerk/tanstack-react-start": "1.1.5",
     "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/manrope": "^5.2.8",

@@ -14,6 +14,7 @@ import {
   SessionHistoryTab,
   SessionOverviewSection,
 } from '#/components/arena/SessionPageSections'
+import { WinnerCard } from '#/components/arena/WinnerCard'
 import { useParticipantToken } from '#/hooks/use-participant-token'
 import {
   Card,
@@ -202,8 +203,30 @@ function SessionPage() {
     )
   }
 
+  const sessionEnded =
+    sessionView.session.status === 'ended' ||
+    sessionView.session.status === 'stopped'
+  const winner = sessionView.scoreboard[0] ?? null
+
   return (
     <div className="page-frame space-y-6">
+      {sessionEnded && winner && (
+        <section data-reveal className="grid gap-6 lg:grid-cols-[auto_1fr]">
+          <WinnerCard session={sessionView.session} winner={winner} />
+          <div className="space-y-3 py-2">
+            <p className="eyebrow">Session complete</p>
+            <h2 className="font-serif text-4xl text-foreground">
+              {winner.label} takes the crown
+            </h2>
+            <p className="text-base leading-7 text-muted-foreground">
+              {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
+              {winner.roundsPlayed} · {winner.totalVotes} total votes cast.
+              Generate the champion portrait and download or share the card.
+            </p>
+          </div>
+        </section>
+      )}
+
       <SessionOverviewSection
         sessionView={sessionView}
         state={state}
