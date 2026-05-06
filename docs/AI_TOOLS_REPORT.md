@@ -119,9 +119,8 @@ checks both passing and failing examples for:
 - Structural prompt invariants enforced by unit tests (`getThemeCopy` returns
   non-empty `label`, `hostTone`, `criticAngle` for every theme — so Host and
   Critic prompt builders cannot silently produce empty strings).
-- Runtime fallbacks: if an agent call fails or demo mode is active, a canned
-  `getAgentFallback('host' | 'critic')` message is saved with `status:
-'fallback'` so the round still completes.
+- Runtime fallbacks: if an agent call fails or demo mode is active, a fallback
+  message is saved with `status: 'fallback'` so the round still completes.
 
 ## 5. Reflection — what worked, what did not
 
