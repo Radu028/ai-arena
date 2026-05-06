@@ -132,12 +132,25 @@ export async function getSessionByJoinCode(
     .unique()
 }
 
+function configuredClerkIssuer() {
+  return (
+    process.env.CLERK_JWT_ISSUER_DOMAIN ?? process.env.CLERK_ISSUER_URL ?? null
+  )
+}
+
+function allowDemoAdminMode() {
+  const issuer = configuredClerkIssuer()
+  return (
+    process.env.ALLOW_DEMO_ADMIN === 'true' ||
+    process.env.VITE_ALLOW_DEMO_ADMIN === 'true' ||
+    issuer?.includes('placeholder') === true
+  )
+}
+
 export async function requireAdminIdentity(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity()
   if (!identity) {
-    const clerkDomain = process.env.CLERK_JWT_ISSUER_DOMAIN
-    const isDemoMode = !clerkDomain || clerkDomain.includes('placeholder')
-    if (!isDemoMode) {
+    if (!allowDemoAdminMode()) {
       throw new Error('You must be signed in as an admin to do that.')
     }
     return {

@@ -56,10 +56,7 @@ export function ArenaLogo({ size = 40 }: { size?: number }) {
       />
 
       {/* Lightning bolt — center spark */}
-      <path
-        d="M22 10L15 22H20.5L19 30L27 18H21.5L22 10Z"
-        fill="white"
-      />
+      <path d="M22 10L15 22H20.5L19 30L27 18H21.5L22 10Z" fill="white" />
     </svg>
   )
 }

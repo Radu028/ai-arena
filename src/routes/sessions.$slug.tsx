@@ -206,11 +206,11 @@ function SessionPage() {
   const sessionEnded =
     sessionView.session.status === 'ended' ||
     sessionView.session.status === 'stopped'
-  const winner = sessionView.scoreboard[0] ?? null
+  const winner = sessionEnded ? sessionView.scoreboard.at(0) : undefined
 
   return (
     <div className="page-frame space-y-6">
-      {sessionEnded && winner && (
+      {winner ? (
         <section data-reveal className="grid gap-6 lg:grid-cols-[auto_1fr]">
           <WinnerCard session={sessionView.session} winner={winner} />
           <div className="space-y-3 py-2">
@@ -225,7 +225,7 @@ function SessionPage() {
             </p>
           </div>
         </section>
-      )}
+      ) : null}
 
       <SessionOverviewSection
         sessionView={sessionView}

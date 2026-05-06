@@ -13,6 +13,7 @@ import {
   CRITIC_AGENT_DEFAULT_MODEL,
   HOST_AGENT_DEFAULT_MODEL,
   PROVIDER_TIMEOUT_MS,
+  getModelByKey,
 } from '../shared/arena'
 import type { SessionModelSnapshot, ThemeCopy } from '../shared/arena'
 
@@ -82,6 +83,21 @@ function getAgentFallback(role: 'host' | 'critic') {
     return 'Host temporarily offline. The round continues without commentary.'
   }
   return 'Critic temporarily offline. The round result still stands without analysis.'
+}
+
+function narrowModelSnapshots(
+  snapshots: Doc<'sessions'>['selectedModelsSnapshot'],
+): SessionModelSnapshot[] {
+  return snapshots.map((snapshot) => {
+    const model = getModelByKey(snapshot.key)
+    if (!model || model.providerKey !== snapshot.providerKey) {
+      throw new Error(`Unsupported model snapshot: ${snapshot.key}`)
+    }
+    return {
+      ...snapshot,
+      providerKey: model.providerKey,
+    }
+  })
 }
 
 function buildRoundPrompt(args: {
@@ -525,10 +541,10 @@ export const generateRound = internalAction({
     roundId: v.id('rounds'),
   },
   handler: async (ctx, args) => {
-    const context = (await ctx.runQuery(
+    const context: RoundGenerationContext | null = await ctx.runQuery(
       internal.state.getRoundGenerationContext,
       args,
-    )) as RoundGenerationContext | null
+    )
     if (
       !context ||
       context.session.status !== 'active' ||
@@ -542,9 +558,9 @@ export const generateRound = internalAction({
       themeLabel: context.themeCopy.label,
       hostTone: context.themeCopy.hostTone,
       topic: context.round.topic ?? 'Untitled topic',
-      models: (
-        context.session.selectedModelsSnapshot as SessionModelSnapshot[]
-      ).map((model) => model.label),
+      models: narrowModelSnapshots(context.session.selectedModelsSnapshot).map(
+        (model) => model.label,
+      ),
     })
     const hostCopy = await generateAgentCopy({
       role: 'host',
@@ -561,8 +577,9 @@ export const generateRound = internalAction({
       failureReason: hostCopy.failureReason,
     })
 
-    const sessionModels = context.session
-      .selectedModelsSnapshot as SessionModelSnapshot[]
+    const sessionModels = narrowModelSnapshots(
+      context.session.selectedModelsSnapshot,
+    )
 
     await Promise.all(
       sessionModels.map(async (model) => {
@@ -591,10 +608,10 @@ export const generateRound = internalAction({
       }),
     )
 
-    const refreshed = (await ctx.runQuery(
+    const refreshed: RoundGenerationContext | null = await ctx.runQuery(
       internal.state.getRoundGenerationContext,
       args,
-    )) as RoundGenerationContext | null
+    )
     if (!refreshed) {
       return null
     }
@@ -618,10 +635,10 @@ export const generateRound = internalAction({
       roundId: refreshed.round._id,
     })
 
-    const reviewContext = (await ctx.runQuery(
+    const reviewContext: RoundReviewContext | null = await ctx.runQuery(
       internal.state.getRoundReviewContext,
       args,
-    )) as RoundReviewContext | null
+    )
     if (!reviewContext || reviewContext.round.status !== 'voting') {
       return null
     }
@@ -645,8 +662,9 @@ export const generateRound = internalAction({
             response.status === 'success' && Boolean(response.responseText),
         )
         .map(async (voter) => {
-          const reviewModels = reviewContext.session
-            .selectedModelsSnapshot as SessionModelSnapshot[]
+          const reviewModels = narrowModelSnapshots(
+            reviewContext.session.selectedModelsSnapshot,
+          )
           const voterModel = reviewModels.find(
             (model) => model.key === voter.modelKey,
           )
@@ -716,13 +734,13 @@ export const afterRoundFinalized = internalAction({
     isLastRound: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const reviewContext = (await ctx.runQuery(
+    const reviewContext: RoundReviewContext | null = await ctx.runQuery(
       internal.state.getRoundReviewContext,
       {
         sessionId: args.sessionId,
         roundId: args.roundId,
       },
-    )) as RoundReviewContext | null
+    )
     if (!reviewContext) {
       return null
     }
