@@ -37,7 +37,11 @@ function HomePage() {
     <div className="shell space-y-20 sm:space-y-24">
       <Hero
         completedSessions={stats?.sessionsIncluded ?? 0}
-        modelsTracked={stats?.rows.length ?? AVAILABLE_MODELS.length}
+        modelsTracked={
+          stats && stats.rows.length > 0
+            ? stats.rows.length
+            : AVAILABLE_MODELS.length
+        }
       />
 
       <FlowSection />
@@ -186,7 +190,7 @@ function FlowSection() {
         description="Every round runs on the same clean four-step loop, with anonymous reveals and explicit ties. No magic, no leaderboard farming."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s) => (
           <Card
             key={s.step}
@@ -261,7 +265,7 @@ function FeatureSection() {
         description="Every artifact you see — host introductions, critic notes, stats summaries — comes from a dedicated agent that only ships when a round actually finalises."
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {features.map((f) => (
           <Card
             key={f.title}
@@ -301,7 +305,7 @@ function RosterSection() {
         description="The lineup is snapshotted at session creation, so historical sessions stay reproducible even when providers ship new versions."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {AVAILABLE_MODELS.map((model) => (
           <Card
             key={model.key}
@@ -339,7 +343,7 @@ function ThemeSection() {
         description="Each preset rewires Host tone, Critic framing, and the quality bar judges hold every model to. Pick one, then run the round."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(THEME_COPY).map(([key, copy]) => (
           <Card
             key={key}
