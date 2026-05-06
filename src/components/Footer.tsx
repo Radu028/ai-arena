@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ArenaLogo } from './ArenaLogo'
+import { AdminOnly } from './AdminOnly'
 
 export default function Footer() {
   return (
@@ -11,7 +12,10 @@ export default function Footer() {
             <span className="text-sm font-semibold tracking-tight">
               AI Arena
             </span>
-            <span className="text-[0.7rem] text-muted-foreground">
+            <span
+              suppressHydrationWarning
+              className="text-[0.7rem] text-muted-foreground"
+            >
               Live model battles · {new Date().getFullYear()}
             </span>
           </div>
@@ -25,7 +29,9 @@ export default function Footer() {
           </FooterCol>
           <FooterCol title="Stage">
             <FooterLink to="/history">History</FooterLink>
-            <FooterLink to="/admin">Admin</FooterLink>
+            <AdminOnly>
+              <FooterLink to="/admin">Admin</FooterLink>
+            </AdminOnly>
           </FooterCol>
           <FooterCol title="Built with">
             <span className="text-muted-foreground">TanStack Start</span>

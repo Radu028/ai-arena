@@ -33,14 +33,14 @@ function LoginPage() {
         <AuthHeroPanel />
         <div className="mx-auto w-full max-w-md">
           {runtime.hasClerk ? (
-            <ConfiguredLoginCard />
+            <AuthCard />
           ) : (
             <Empty className="surface rounded-2xl border border-border/60 p-10">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <LockKeyholeIcon />
                 </EmptyMedia>
-                <EmptyTitle>Login is not configured</EmptyTitle>
+                <EmptyTitle>Authentication is not configured</EmptyTitle>
                 <EmptyDescription>
                   Add the Clerk environment variables before connecting a real
                   Google account.
@@ -57,7 +57,7 @@ function LoginPage() {
   )
 }
 
-function ConfiguredLoginCard() {
+function AuthCard() {
   const { isLoaded, isSignedIn } = useAuth()
   const navigate = useNavigate()
 
@@ -75,7 +75,7 @@ function ConfiguredLoginCard() {
         <div className="flex items-center gap-3">
           <ArenaLogo size={36} className="rounded-[10px]" />
           <div className="leading-tight">
-            <p className="eyebrow">Admin login</p>
+            <p className="eyebrow">Sign in</p>
             <p className="text-sm font-medium text-foreground">
               AI&nbsp;Arena console
             </p>
@@ -83,53 +83,46 @@ function ConfiguredLoginCard() {
         </div>
 
         <h1 className="display mt-7 text-balance text-3xl sm:text-4xl">
-          Welcome back.
+          Step into the arena.
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Continue with your Google account to manage live sessions, control
-          provider spend, and operate the arena.
+          One click with Google gets you in — first time or returning, it's the
+          same door. We'll set up your operator profile if it's your first
+          visit.
         </p>
 
         <div className="mt-8">
-          <GoogleSignInButton redirectTo="/admin" label="Sign in with Google" />
+          <GoogleSignInButton
+            redirectTo="/admin"
+            label="Continue with Google"
+          />
         </div>
 
         <div className="mt-6 flex items-center gap-3 text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
-          <span>One method, zero friction</span>
+          <span>What you get</span>
           <span className="h-px flex-1 bg-border" />
         </div>
 
         <ul className="mt-6 space-y-2.5 text-sm">
-          <BenefitRow>No password to remember — Google handles 2FA.</BenefitRow>
-          <BenefitRow>
-            Only emails on the admin allow-list can run sessions.
-          </BenefitRow>
-          <BenefitRow>
-            Sign-in works for both first-time and returning admins.
-          </BenefitRow>
+          <Benefit>No password to remember — Google handles 2FA.</Benefit>
+          <Benefit>Profile is bootstrapped on first sign-in.</Benefit>
+          <Benefit>
+            Allow-listed admins unlock session creation immediately.
+          </Benefit>
         </ul>
 
-        <p className="mt-8 text-xs text-muted-foreground">
-          New to AI&nbsp;Arena?{' '}
-          <Link
-            to="/register"
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Create your operator account →
-          </Link>
-        </p>
-
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-8 text-xs leading-5 text-muted-foreground">
           By continuing you agree this preview is a non-production demo and that
-          provider usage is recorded for cost analytics.
+          provider usage is recorded for cost analytics. We never see your
+          Google password.
         </p>
       </div>
     </div>
   )
 }
 
-function BenefitRow({ children }: { children: React.ReactNode }) {
+function Benefit({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2.5 text-foreground/85">
       <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-(--arena-violet)" />
@@ -138,7 +131,7 @@ function BenefitRow({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function AuthHeroPanel() {
+function AuthHeroPanel() {
   return (
     <div data-reveal className="hidden lg:block">
       <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-linear-to-br from-[color-mix(in_oklab,var(--arena-violet),transparent_82%)] via-background to-[color-mix(in_oklab,var(--arena-amber),transparent_88%)] p-10">
@@ -158,30 +151,29 @@ export function AuthHeroPanel() {
           </span>
 
           <h2 className="display mt-6 text-balance text-4xl leading-[1.05] xl:text-5xl">
-            <span className="gradient-text">One sign-in</span> to run every
-            arena.
+            <span className="gradient-text">One door</span> into every arena.
           </h2>
           <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">
-            AI&nbsp;Arena rooms are spun up, monitored, and shut down from a
-            single console. Bring your Google account — we handle identity,
-            session tokens, and admin allow-lists for you.
+            Bring your Google account and we'll handle identity, session tokens,
+            and admin allow-lists for you. New here? You'll be set up
+            automatically. Coming back? Same button, no friction.
           </p>
 
           <ul className="mt-8 space-y-4 text-sm">
             <HeroFeature
+              icon={SparklesIcon}
+              title="Single sign-in for everything"
+              body="Login and registration are the same flow. No separate forms, no second tab."
+            />
+            <HeroFeature
               icon={ShieldCheckIcon}
               title="Allow-list enforced"
-              body="Only verified admins can create arenas or grant teammates."
+              body="Only verified admin emails can create arenas or grant teammates access."
             />
             <HeroFeature
               icon={ZapIcon}
-              title="Realtime everything"
+              title="Realtime out of the box"
               body="Live votes, round transitions, and provider costs stream over Convex."
-            />
-            <HeroFeature
-              icon={SparklesIcon}
-              title="No bespoke passwords"
-              body="Google's identity layer is the source of truth. Faster onboarding, fewer leaks."
             />
           </ul>
         </div>
