@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -19,6 +21,16 @@ import { Route as SessionsSlugRouteImport } from './routes/sessions.$slug'
 import { Route as AdminSessionsNewRouteImport } from './routes/admin.sessions.new'
 import { Route as AdminSessionsSessionIdRouteImport } from './routes/admin.sessions.$sessionId'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -81,6 +95,8 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -93,6 +109,8 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/join': typeof JoinRoute
   '/leaderboard': typeof LeaderboardRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/sessions/$slug': typeof SessionsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/sessions/$sessionId': typeof AdminSessionsSessionIdRoute
@@ -106,6 +124,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/join'
     | '/leaderboard'
+    | '/login'
+    | '/register'
     | '/sessions/$slug'
     | '/admin/'
     | '/admin/sessions/$sessionId'
@@ -116,6 +136,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/join'
     | '/leaderboard'
+    | '/login'
+    | '/register'
     | '/sessions/$slug'
     | '/admin'
     | '/admin/sessions/$sessionId'
@@ -127,6 +149,8 @@ export interface FileRouteTypes {
     | '/history'
     | '/join'
     | '/leaderboard'
+    | '/login'
+    | '/register'
     | '/sessions/$slug'
     | '/admin/'
     | '/admin/sessions/$sessionId'
@@ -139,11 +163,27 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   JoinRoute: typeof JoinRoute
   LeaderboardRoute: typeof LeaderboardRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
   SessionsSlugRoute: typeof SessionsSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/leaderboard': {
       id: '/leaderboard'
       path: '/leaderboard'
@@ -230,6 +270,8 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   JoinRoute: JoinRoute,
   LeaderboardRoute: LeaderboardRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   SessionsSlugRoute: SessionsSlugRoute,
 }
 export const routeTree = rootRouteImport

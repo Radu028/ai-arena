@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { SignInButton, UserButton, useAuth } from '@clerk/tanstack-react-start'
+import {
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useAuth,
+} from '@clerk/tanstack-react-start'
 import {
   ClockIcon,
   HomeIcon,
@@ -19,6 +24,7 @@ import { cn } from '#/lib/utils'
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
   { to: '/join', label: 'Join', icon: LogInIcon },
+  { to: '/login', label: 'Login', icon: LogInIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { to: '/history', label: 'History', icon: ClockIcon },
   { to: '/admin', label: 'Admin', icon: ShieldIcon },
@@ -54,7 +60,7 @@ export default function Header() {
           <span className="relative inline-flex">
             <ArenaLogo
               size={32}
-              className="rounded-[10px] transition-transform group-hover:rotate-[6deg]"
+              className="rounded-[10px] transition-transform group-hover:rotate-6"
             />
             <span className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 transition-opacity group-hover:opacity-100 group-hover:[box-shadow:0_0_24px_-4px_color-mix(in_oklab,var(--arena-violet),transparent_40%)]" />
           </span>
@@ -151,9 +157,16 @@ function HeaderAuth() {
 
   if (!isSignedIn) {
     return (
-      <SignInButton mode="modal">
-        <Button size="sm">Sign in</Button>
-      </SignInButton>
+      <div className="hidden items-center gap-2 sm:flex">
+        <SignInButton mode="modal">
+          <Button size="sm" variant="outline">
+            Login
+          </Button>
+        </SignInButton>
+        <SignUpButton mode="modal">
+          <Button size="sm">Register</Button>
+        </SignUpButton>
+      </div>
     )
   }
 

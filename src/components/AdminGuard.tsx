@@ -1,4 +1,8 @@
-import { SignInButton, useAuth } from '@clerk/tanstack-react-start'
+import {
+  SignInButton,
+  SignUpButton,
+  useAuth,
+} from '@clerk/tanstack-react-start'
 import { LockKeyholeIcon, ShieldAlertIcon } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { Button } from '#/components/ui/button'
@@ -75,9 +79,16 @@ function ConfiguredAdminGuard({
             costs.
           </EmptyDescription>
         </EmptyHeader>
-        <SignInButton mode="modal">
-          <Button size="lg">Sign in as admin</Button>
-        </SignInButton>
+        <div className="flex flex-wrap justify-center gap-2">
+          <SignInButton mode="modal">
+            <Button size="lg">Sign in as admin</Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button size="lg" variant="outline">
+              Register
+            </Button>
+          </SignUpButton>
+        </div>
       </Empty>
     )
   }
