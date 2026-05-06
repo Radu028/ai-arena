@@ -47,7 +47,7 @@ export function RoundResponseCard({
   return (
     <div
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all',
+        'group relative flex min-h-full flex-col overflow-visible rounded-2xl border bg-card transition-all',
         response.isWinner && revealed
           ? 'border-amber-400/50 ring-amber-400/30 ring-amber-glow [box-shadow:0_24px_60px_-24px_color-mix(in_oklab,var(--arena-amber),transparent_55%),inset_0_0_0_1px_color-mix(in_oklab,var(--arena-amber),transparent_70%)]'
           : 'border-border/60 hover:border-border',
@@ -108,13 +108,10 @@ export function RoundResponseCard({
           ) : (
             <div
               ref={ref}
-              style={
-                metrics?.height
-                  ? { minHeight: `${Math.max(metrics.height, 28)}px` }
-                  : undefined
-              }
+              data-line-count={metrics?.lineCount}
+              className="overflow-visible"
             >
-              <p className="font-editorial whitespace-pre-wrap text-[0.95rem] leading-7 text-foreground/95">
+              <p className="font-editorial whitespace-pre-wrap wrap-anywhere text-[0.95rem] leading-7 text-foreground/95">
                 {response.text}
               </p>
             </div>
