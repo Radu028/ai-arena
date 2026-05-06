@@ -353,13 +353,13 @@ Automate build, test, and deployment on every push so the project is always in a
 
 **CD — on merge to** `main`
 
-- [x] Deploy frontend to Cloudflare Pages (_workflow scaffolded; requires repository secrets_)
-- [x] Push Convex functions to production (_workflow scaffolded; requires `CONVEX_DEPLOY_KEY`_)
+- [x] Deploy frontend to Vercel — https://ai-arena-seven.vercel.app
+- [x] Push Convex functions to production — https://modest-wren-126.convex.cloud
 
 **Setup**
 
 - [x] GitHub Actions workflow under `.github/workflows/`
-- [ ] Required secrets configured (Cloudflare token, Convex deploy key)
+- [ ] Required secret configured for automated backend deploy (`CONVEX_DEPLOY_KEY`); latest backend deploy was completed manually with Convex CLI
 - [x] CI status badge in `README.md`
 - [x] Initial workflow YAML scaffolded with AI — prompt documentat în `docs/AI_TOOLS_REPORT.md`
 
@@ -375,7 +375,7 @@ Demonstrate the full bug lifecycle: report → branch → fix → PR → review 
 - [x] Open a GitHub Issue with steps to reproduce, expected vs actual behaviour — https://github.com/Radu028/ai-arena/issues/1
 - [x] Fix on a `fix/<name>` branch; commit message references the issue — `fix/admin-demo-ci`
 - [ ] Open a PR, get at least one team review, merge with CI green — PR opened with green `verify` CI: https://github.com/Radu028/ai-arena/pull/2; waiting for teammate review and merge
-- [ ] Verify the fix is live in the deployed app
+- [x] Verify the fix is live in the deployed app — production frontend is ready on Vercel and returns HTTP 200 on `/`, `/admin`, and `/join`: https://ai-arena-seven.vercel.app
 
 ---
 
@@ -408,4 +408,4 @@ Write `/docs/AI_TOOLS_REPORT.md` documenting how AI was used throughout the proj
 - **In Progress:** 2 (AIA-15, AIA-16)
 - **Backlog:** 0
 
-Rămas de finalizat pentru barem complet: configurarea secretelor reale pentru deploy (AIA-15) + review/merge/deploy live pentru bug report-to-PR (AIA-16).
+Rămas de finalizat pentru barem complet: configurarea secretului real pentru deploy backend (AIA-15) + review/merge pentru bug report-to-PR (AIA-16).
