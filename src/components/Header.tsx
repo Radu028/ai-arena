@@ -1,30 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { SignInButton, UserButton, useAuth } from '@clerk/tanstack-react-start'
 import {
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useAuth,
-} from '@clerk/tanstack-react-start'
-import {
-  ClockIcon,
   HomeIcon,
   LogInIcon,
-  MenuIcon,
-  ShieldIcon,
   TrophyIcon,
+  ClockIcon,
+  ShieldIcon,
+  MenuIcon,
   XIcon,
 } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
-import { ArenaLogo } from './ArenaLogo'
 import ThemeToggle from './ThemeToggle'
+import { ArenaLogo } from './ArenaLogo'
 import { Button } from '#/components/ui/button'
-import { cn } from '#/lib/utils'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
   { to: '/join', label: 'Join', icon: LogInIcon },
-  { to: '/login', label: 'Login', icon: LogInIcon },
   { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { to: '/history', label: 'History', icon: ClockIcon },
   { to: '/admin', label: 'Admin', icon: ShieldIcon },
@@ -33,81 +26,57 @@ const NAV_LINKS = [
 export default function Header() {
   const runtime = useRuntimeConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-50 transition-all duration-200',
-        scrolled
-          ? 'border-b border-border/60 bg-background/85 backdrop-blur-xl'
-          : 'border-b border-transparent bg-background/40 backdrop-blur-md',
-      )}
-    >
-      <nav className="shell flex items-center gap-3 py-3">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+      <nav className="page-frame flex items-center gap-3 py-3">
+        {/* Logo */}
         <Link
           to="/"
-          className="group inline-flex items-center gap-2.5"
+          className="inline-flex items-center gap-2.5 rounded-xl px-1 py-1 no-underline transition-opacity hover:opacity-80"
           onClick={() => setMobileOpen(false)}
         >
-          <span className="relative inline-flex">
-            <ArenaLogo
-              size={32}
-              className="rounded-[10px] transition-transform group-hover:rotate-6"
-            />
-            <span className="pointer-events-none absolute -inset-2 rounded-2xl opacity-0 transition-opacity group-hover:opacity-100 group-hover:[box-shadow:0_0_24px_-4px_color-mix(in_oklab,var(--arena-violet),transparent_40%)]" />
-          </span>
-          <span className="flex flex-col leading-none">
-            <span className="text-[0.95rem] font-semibold tracking-tight whitespace-nowrap">
+          <ArenaLogo size={36} />
+          <span className="hidden sm:block">
+            <span className="block font-serif text-base leading-none text-foreground">
               AI Arena
             </span>
-            <span className="mt-0.5 hidden text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground sm:inline-block">
-              live model battles
+            <span className="block text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
+              Live model battles
             </span>
           </span>
         </Link>
 
-        <div className="ml-2 hidden items-center gap-1 md:flex">
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-1 md:flex ml-2">
           {NAV_LINKS.map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}
-              className="nav-link"
-              activeOptions={{ exact: to === '/' }}
-              activeProps={{ className: 'nav-link is-active' }}
+              className="nav-pill group"
+              activeProps={{ className: 'nav-pill is-active' }}
             >
-              <Icon className="size-3.5" />
+              <Icon className="size-3.5 transition-transform group-hover:scale-110" />
               {label}
             </Link>
           ))}
         </div>
 
+        {/* Right side */}
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
           {runtime.hasClerk ? (
             <HeaderAuth />
           ) : (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="hidden sm:inline-flex"
-            >
+            <Button asChild variant="outline" size="sm">
               <Link to="/admin">Admin</Link>
             </Button>
           )}
 
+          {/* Mobile hamburger */}
           <button
-            type="button"
-            className="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
+            className="inline-flex items-center justify-center rounded-lg border border-border/60 bg-card p-2 md:hidden"
+            onClick={() => setMobileOpen((o) => !o)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileOpen ? (
@@ -119,18 +88,16 @@ export default function Header() {
         </div>
       </nav>
 
-      {mobileOpen ? (
-        <div className="border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden">
+      {/* Mobile nav drawer */}
+      {mobileOpen && (
+        <div className="border-t border-border/60 bg-background/95 px-4 py-3 md:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
-                className="nav-link justify-start text-sm"
-                activeOptions={{ exact: to === '/' }}
-                activeProps={{
-                  className: 'nav-link is-active justify-start text-sm',
-                }}
+                className="nav-pill justify-start"
+                activeProps={{ className: 'nav-pill is-active justify-start' }}
                 onClick={() => setMobileOpen(false)}
               >
                 <Icon className="size-4" />
@@ -139,7 +106,7 @@ export default function Header() {
             ))}
           </div>
         </div>
-      ) : null}
+      )}
     </header>
   )
 }
@@ -149,24 +116,17 @@ function HeaderAuth() {
 
   if (!isLoaded) {
     return (
-      <Button variant="ghost" size="sm" disabled>
-        ...
+      <Button variant="outline" size="sm" disabled>
+        Loading
       </Button>
     )
   }
 
   if (!isSignedIn) {
     return (
-      <div className="hidden items-center gap-2 sm:flex">
-        <SignInButton mode="modal">
-          <Button size="sm" variant="outline">
-            Login
-          </Button>
-        </SignInButton>
-        <SignUpButton mode="modal">
-          <Button size="sm">Register</Button>
-        </SignUpButton>
-      </div>
+      <SignInButton mode="modal">
+        <Button size="sm">Sign In</Button>
+      </SignInButton>
     )
   }
 
