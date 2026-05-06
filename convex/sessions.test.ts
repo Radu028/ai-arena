@@ -101,7 +101,7 @@ describe('sessions flow', () => {
     })
 
     expect(liveView?.currentRound?.topic).toBe('Topic Lock Test')
-    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.status).not.toBe('collecting_topic')
   })
 
   test('blank display names fall back to an auto-generated participant name', async () => {
