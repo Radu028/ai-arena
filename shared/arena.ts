@@ -95,10 +95,10 @@ export const AVAILABLE_MODELS = [
   {
     key: 'google-gemini-25-pro',
     providerKey: 'google',
-    label: 'Gemini 2.5 Pro',
-    modelId: 'gemini-2.5-pro',
-    description: 'Wide-angle synthesis with confident explanation.',
-    tagline: 'Big-picture and expressive.',
+    label: 'Gemini Flash',
+    modelId: 'gemini-flash-latest',
+    description: 'Fast, low-cost synthesis with confident explanation.',
+    tagline: 'Fast and budget-aware.',
     accent: 'var(--arena-google)',
     judgeStyle: 'broad, insightful, and comparative',
   },
@@ -182,6 +182,9 @@ export const MAX_TOPIC_LENGTH = 300
 export const MIN_TOPIC_LENGTH = 5
 export const PROVIDER_TIMEOUT_MS = 15_000
 export const AGENT_TIMEOUT_MS = 8_000
+export const ROUND_MAX_OUTPUT_TOKENS = 280
+export const AGENT_MAX_OUTPUT_TOKENS = 180
+export const JUDGE_MAX_OUTPUT_TOKENS = 80
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 
@@ -203,8 +206,8 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     outputUsdPerMillionTokens: 15,
   },
   'google-gemini-25-pro': {
-    inputUsdPerMillionTokens: 1.25,
-    outputUsdPerMillionTokens: 5,
+    inputUsdPerMillionTokens: 0.35,
+    outputUsdPerMillionTokens: 1.05,
   },
   'xai-grok-41-fast': {
     inputUsdPerMillionTokens: 0.5,

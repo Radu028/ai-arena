@@ -171,6 +171,12 @@ production deploy key is available.
 
 ## Docs
 
+- [`docs/MDS_CHECKLIST.md`](docs/MDS_CHECKLIST.md) — final grading checklist
+  with repository evidence for each MDS requirement
+- [`docs/DEMO_RUNBOOK.md`](docs/DEMO_RUNBOOK.md) — live demo and offline
+  recording script with low-cost provider guardrails
+- [`docs/SECRETS_AND_DEPLOYMENT.md`](docs/SECRETS_AND_DEPLOYMENT.md) — safe
+  production secret setup and deployment checklist
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component, data model,
   session/round lifecycles, sequence and agent workflow diagrams
 - [`docs/AI_TOOLS_REPORT.md`](docs/AI_TOOLS_REPORT.md) — how AI tools were

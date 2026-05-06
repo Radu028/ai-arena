@@ -109,15 +109,18 @@ prompts.
 
 **Agent evals (lightweight)**
 
-Because the Host and Critic prompts run against live providers, the project
-does not ship a synthetic eval harness. Instead we rely on:
+Because the Host and Critic prompts can run against live paid providers, the
+project keeps the committed evals deterministic and no-cost. The eval suite
+checks both passing and failing examples for:
 
+- Host copy: non-empty output, topic reference, and theme-appropriate tone.
+- Critic copy: all model labels mentioned, winner mentioned, and rationale
+  present.
 - Structural prompt invariants enforced by unit tests (`getThemeCopy` returns
   non-empty `label`, `hostTone`, `criticAngle` for every theme — so Host and
   Critic prompt builders cannot silently produce empty strings).
-- Runtime fallbacks: if an agent call fails or demo mode is active, a canned
-  `getAgentFallback('host' | 'critic')` message is saved with
-  `status: 'fallback'` so the round still completes.
+- Runtime fallbacks: if an agent call fails or demo mode is active, a fallback
+  message is saved with `status: 'fallback'` so the round still completes.
 
 ## 5. Reflection — what worked, what did not
 
