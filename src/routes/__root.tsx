@@ -3,6 +3,7 @@ import {
   Outlet,
   Scripts,
   createRootRoute,
+  useLocation,
 } from '@tanstack/react-router'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -14,6 +15,7 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import { Toaster } from '#/components/ui/sonner'
+import { useGlobalReveal } from '#/hooks/use-global-reveal'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -63,11 +65,13 @@ function RootLayout() {
 
 function RootFrame() {
   const runtime = useRuntimeConfig()
+  const { pathname } = useLocation()
+  useGlobalReveal()
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 py-8">
+      <main key={pathname} className="page-enter flex-1 py-8">
         {runtime.hasConvex ? (
           <Outlet />
         ) : (

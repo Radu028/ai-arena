@@ -21,6 +21,14 @@ export default function ThemeToggle() {
       <SunMoonIcon className="size-4" />
     )
 
+  function handleToggle() {
+    document.documentElement.classList.add('theme-switching')
+    setTheme(nextTheme)
+    setTimeout(() => {
+      document.documentElement.classList.remove('theme-switching')
+    }, 450)
+  }
+
   return (
     <Button
       type="button"
@@ -28,7 +36,7 @@ export default function ThemeToggle() {
       size="icon-sm"
       suppressHydrationWarning
       className="rounded-full border-border/70 bg-background/70 backdrop-blur-sm"
-      onClick={() => setTheme(nextTheme)}
+      onClick={handleToggle}
       title={`Theme: ${currentTheme}`}
       aria-label={`Theme: ${currentTheme}`}
     >

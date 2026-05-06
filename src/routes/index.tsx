@@ -15,15 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import { Reveal } from '#/components/Reveal'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
   return (
     <div className="page-frame space-y-8">
-      <Reveal>
-      <section className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12">
+      <section
+        data-reveal
+        className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12"
+      >
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div className="space-y-6">
             <Badge className="rounded-full bg-[var(--arena-signal)] px-4 py-1.5 text-white">
@@ -95,10 +96,8 @@ function HomePage() {
           </Card>
         </div>
       </section>
-      </Reveal>
 
-      <Reveal delay={80}>
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section data-reveal className="grid gap-4 lg:grid-cols-4">
         {[
           {
             title: 'Host / MC',
@@ -134,10 +133,8 @@ function HomePage() {
           </Card>
         ))}
       </section>
-      </Reveal>
 
-      <Reveal delay={80}>
-      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+      <section data-reveal className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <Card className="arena-panel">
           <CardHeader>
             <CardTitle className="font-serif text-3xl">Battle roster</CardTitle>
@@ -196,7 +193,6 @@ function HomePage() {
           </CardContent>
         </Card>
       </section>
-      </Reveal>
     </div>
   )
 }

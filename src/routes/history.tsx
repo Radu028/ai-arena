@@ -53,7 +53,7 @@ function HistoryPage() {
 
   return (
     <div className="page-frame space-y-6">
-      <section className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12">
+      <section data-reveal className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12">
         <div className="space-y-4">
           <Badge className="rounded-full bg-[var(--arena-signal)] px-4 py-1.5 text-white">
             Public archive
@@ -69,7 +69,7 @@ function HistoryPage() {
         </div>
       </section>
 
-      <Card className="arena-panel">
+      <Card data-reveal className="arena-panel">
         <CardHeader>
           <CardTitle className="font-serif text-3xl">
             <span className="inline-flex items-center gap-3">

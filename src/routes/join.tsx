@@ -106,7 +106,7 @@ function JoinPage() {
 
   return (
     <div className="page-frame">
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div data-reveal className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="arena-panel">
           <CardHeader>
             <CardTitle className="font-serif text-4xl">
