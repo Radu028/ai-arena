@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react'
-import { useAction } from 'convex/react'
 import { toPng } from 'html-to-image'
 import { DownloadIcon, ImageIcon, ShareIcon, TrophyIcon } from 'lucide-react'
-import { api } from '@convex/_generated/api'
 import { ArenaLogo } from '#/components/ArenaLogo'
 import { Button } from '#/components/ui/button'
 import type { PublicSessionView } from './SessionPageSections'
@@ -14,29 +12,46 @@ interface WinnerCardProps {
   winner: Winner
 }
 
+const MODEL_PERSONAS: Record<string, string> = {
+  'gpt-4o': 'sharp Silicon Valley tech visionary in a modern navy suit, confident smirk, award ceremony stage',
+  'gpt-4o-mini': 'nimble young tech prodigy in a hoodie and sneakers, energetic pose, neon-lit stage',
+  'claude-opus-4-5': 'wise philosopher-scientist with round glasses and elegant coat, warm amber lighting, library backdrop',
+  'claude-sonnet-4-5': 'creative polymath in a modern blazer holding a glowing pen, warm studio lighting',
+  'gemini-2-0-flash': 'vibrant innovator with colorful prismatic glasses and bold jacket, rainbow-spectrum stage',
+  'gemini-2-5-pro-preview-05-06': 'brilliant futurist in an iridescent suit with cosmic energy, deep space backdrop',
+  'mistral-large-latest': 'sophisticated French intellectual in a perfectly tailored suit, Parisian salon lighting',
+  'grok-3': 'rebellious tech maverick in all-black with a confident grin, dark dramatic spotlight',
+}
+
+function buildPortraitUrl(modelKey: string, modelLabel: string): string {
+  const persona = MODEL_PERSONAS[modelKey] ?? 'triumphant AI champion in futuristic suit, award ceremony stage'
+  const prompt =
+    `Photorealistic award ceremony portrait: ${persona}, ` +
+    `holding a large gleaming gold trophy HIGH above their head with both hands clearly visible, ` +
+    `triumphant victorious expression, full body visible from head to toe showing hands and feet, ` +
+    `confetti falling, crowd cheering blurred in background, professional sports photography, ` +
+    `85mm lens shallow depth of field, dramatic studio lighting, 4K photorealistic. ` +
+    `Subject represents AI model "${modelLabel}".`
+
+  return (
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
+    `?width=1024&height=1024&model=flux&nologo=true&seed=${Date.now()}`
+  )
+}
+
 export function WinnerCard({ session, winner }: WinnerCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [portraitUrl, setPortraitUrl] = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const generatePortrait = useAction(api.portraits.generateWinnerPortrait)
-
-  async function handleGenerate() {
-    setGenerating(true)
-    setError(null)
-    try {
-      const result = await generatePortrait({
-        modelKey: winner.modelKey,
-        modelLabel: winner.label,
-      })
-      setPortraitUrl(result.url)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate portrait.')
-    } finally {
-      setGenerating(false)
-    }
+  function handleGenerate() {
+    setLoading(true)
+    const url = buildPortraitUrl(winner.modelKey, winner.label)
+    const img = new Image()
+    img.onload = () => { setPortraitUrl(url); setLoading(false) }
+    img.onerror = () => { setPortraitUrl(url); setLoading(false) }
+    img.src = url
   }
 
   async function handleDownload() {
@@ -276,20 +291,16 @@ export function WinnerCard({ session, winner }: WinnerCardProps) {
       </div>
 
       {/* Action buttons — outside the exportable card */}
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={handleGenerate}
-          disabled={generating}
+          disabled={loading}
         >
           <ImageIcon className="size-4" />
-          {generating ? 'Generating portrait…' : portraitUrl ? 'Regenerate portrait' : 'Generate AI portrait'}
+          {loading ? 'Generating portrait…' : portraitUrl ? 'Regenerate portrait' : 'Generate AI portrait'}
         </Button>
 
         {portraitUrl && (
