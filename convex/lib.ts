@@ -134,9 +134,7 @@ export async function getSessionByJoinCode(
 
 function configuredClerkIssuer() {
   return (
-    process.env.CLERK_JWT_ISSUER_DOMAIN ??
-    process.env.CLERK_ISSUER_URL ??
-    null
+    process.env.CLERK_JWT_ISSUER_DOMAIN ?? process.env.CLERK_ISSUER_URL ?? null
   )
 }
 

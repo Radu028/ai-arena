@@ -107,7 +107,7 @@ body {
       180deg,
       oklch(0.145 0.03 264) 0%,
       oklch(0.12 0.028 264) 42%,
-      oklch(0.10 0.025 264) 100%
+      oklch(0.1 0.025 264) 100%
     );
 }
 
@@ -274,11 +274,7 @@ code {
 
 .dark .arena-panel {
   border-color: oklch(1 0 0 / 7%);
-  background: linear-gradient(
-    180deg,
-    oklch(1 0 0 / 4%),
-    oklch(1 0 0 / 2%)
-  );
+  background: linear-gradient(180deg, oklch(1 0 0 / 4%), oklch(1 0 0 / 2%));
   box-shadow:
     0 1px 0 oklch(1 0 0 / 5%) inset,
     0 20px 42px oklch(0 0 0 / 28%);
@@ -451,10 +447,18 @@ code {
     transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.reveal-target[data-reveal-direction='up'] { transform: translateY(28px); }
-.reveal-target[data-reveal-direction='down'] { transform: translateY(-28px); }
-.reveal-target[data-reveal-direction='left'] { transform: translateX(28px); }
-.reveal-target[data-reveal-direction='right'] { transform: translateX(-28px); }
+.reveal-target[data-reveal-direction='up'] {
+  transform: translateY(28px);
+}
+.reveal-target[data-reveal-direction='down'] {
+  transform: translateY(-28px);
+}
+.reveal-target[data-reveal-direction='left'] {
+  transform: translateX(28px);
+}
+.reveal-target[data-reveal-direction='right'] {
+  transform: translateX(-28px);
+}
 
 .reveal-target[data-revealed='true'] {
   opacity: 1;
