@@ -11,8 +11,11 @@ import { v } from 'convex/values'
 import {
   AGENT_TIMEOUT_MS,
   CRITIC_AGENT_DEFAULT_MODEL,
+  AGENT_MAX_OUTPUT_TOKENS,
   HOST_AGENT_DEFAULT_MODEL,
+  JUDGE_MAX_OUTPUT_TOKENS,
   PROVIDER_TIMEOUT_MS,
+  ROUND_MAX_OUTPUT_TOKENS,
   getModelByKey,
 } from '../shared/arena'
 import type { SessionModelSnapshot, ThemeCopy } from '../shared/arena'
@@ -206,6 +209,7 @@ async function generateWithOpenAI(
   modelId: string,
   apiKey: string,
   prompt: string,
+  maxOutputTokens: number,
   baseURL?: string,
 ) {
   const client = new OpenAI({
@@ -215,6 +219,7 @@ async function generateWithOpenAI(
   const response = await client.responses.create({
     model: modelId,
     input: prompt,
+    max_output_tokens: maxOutputTokens,
   })
   return {
     text: response.output_text,
@@ -229,6 +234,7 @@ async function generateWithOpenAICompatibleChat(
   modelId: string,
   apiKey: string,
   prompt: string,
+  maxOutputTokens: number,
   baseURL: string,
 ) {
   const client = new OpenAI({
@@ -238,6 +244,7 @@ async function generateWithOpenAICompatibleChat(
   const response = await client.chat.completions.create({
     model: modelId,
     messages: [{ role: 'user', content: prompt }],
+    max_completion_tokens: maxOutputTokens,
     temperature: 0.8,
   })
   return {
@@ -253,11 +260,12 @@ async function generateWithAnthropic(
   modelId: string,
   apiKey: string,
   prompt: string,
+  maxOutputTokens: number,
 ) {
   const client = new Anthropic({ apiKey })
   const response = await client.messages.create({
     model: modelId,
-    max_tokens: 400,
+    max_tokens: maxOutputTokens,
     messages: [{ role: 'user', content: prompt }],
   })
   const blocks = response.content
@@ -276,11 +284,15 @@ async function generateWithGoogle(
   modelId: string,
   apiKey: string,
   prompt: string,
+  maxOutputTokens: number,
 ) {
   const client = new GoogleGenAI({ apiKey })
   const response = await client.models.generateContent({
     model: modelId,
     contents: prompt,
+    config: {
+      maxOutputTokens,
+    },
   })
   return {
     text: response.text ?? '',
@@ -295,11 +307,13 @@ async function generateWithMistral(
   modelId: string,
   apiKey: string,
   prompt: string,
+  maxOutputTokens: number,
 ) {
   const client = new Mistral({ apiKey })
   const response = await client.chat.complete({
     model: modelId,
     messages: [{ role: 'user', content: prompt }],
+    maxTokens: maxOutputTokens,
     responseFormat: { type: 'text' },
   })
   const content = response.choices[0]?.message?.content
@@ -326,6 +340,7 @@ async function callProvider(
   model: SessionModelSnapshot,
   prompt: string,
   topic: string,
+  purpose: 'round' | 'judge' = 'round',
 ): Promise<TextResult> {
   const start = Date.now()
   try {
@@ -342,6 +357,8 @@ async function callProvider(
     }
 
     let result: { text: string; usage: UsageShape } | null = null
+    const maxOutputTokens =
+      purpose === 'judge' ? JUDGE_MAX_OUTPUT_TOKENS : ROUND_MAX_OUTPUT_TOKENS
 
     switch (model.providerKey) {
       case 'openai': {
@@ -357,7 +374,7 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithOpenAI(model.modelId, apiKey, prompt),
+          generateWithOpenAI(model.modelId, apiKey, prompt, maxOutputTokens),
           PROVIDER_TIMEOUT_MS,
         )
         break
@@ -379,6 +396,7 @@ async function callProvider(
             model.modelId,
             apiKey,
             prompt,
+            maxOutputTokens,
             'https://api.x.ai/v1',
           ),
           PROVIDER_TIMEOUT_MS,
@@ -398,7 +416,7 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithAnthropic(model.modelId, apiKey, prompt),
+          generateWithAnthropic(model.modelId, apiKey, prompt, maxOutputTokens),
           PROVIDER_TIMEOUT_MS,
         )
         break
@@ -416,7 +434,7 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithGoogle(model.modelId, apiKey, prompt),
+          generateWithGoogle(model.modelId, apiKey, prompt, maxOutputTokens),
           PROVIDER_TIMEOUT_MS,
         )
         break
@@ -434,7 +452,7 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithMistral(model.modelId, apiKey, prompt),
+          generateWithMistral(model.modelId, apiKey, prompt, maxOutputTokens),
           PROVIDER_TIMEOUT_MS,
         )
         break
@@ -499,7 +517,7 @@ async function generateAgentCopy(args: {
 
   try {
     const result = await providerTimeout(
-      generateWithOpenAI(modelId, apiKey, args.prompt),
+      generateWithOpenAI(modelId, apiKey, args.prompt, AGENT_MAX_OUTPUT_TOKENS),
       AGENT_TIMEOUT_MS,
     )
     return {
@@ -694,6 +712,7 @@ export const generateRound = internalAction({
             voterModel,
             judgePrompt,
             reviewContext.round.topic ?? 'Untitled topic',
+            'judge',
           )
           const parsed = decision.text
             ? parseJudgeDecision(
