@@ -42,10 +42,10 @@ describe('agent evals', () => {
 
   test('critic copy mentions every model and gives a rationale for the winner', () => {
     const evaluation = evaluateCriticCopy({
-      modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.5', 'Gemini 3.1 Pro'],
-      winnerLabels: ['Claude Sonnet 4.5'],
+      modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.6', 'Gemini 3.1 Pro'],
+      winnerLabels: ['Claude Sonnet 4.6'],
       output:
-        'Claude Sonnet 4.5 worked best because it made the clearest case. OpenAI GPT-5.5 was strong but less focused, while Gemini 3.1 Pro lacked enough detail.',
+        'Claude Sonnet 4.6 worked best because it made the clearest case. OpenAI GPT-5.5 was strong but less focused, while Gemini 3.1 Pro lacked enough detail.',
     })
 
     expect(evaluation.passed).toBe(true)
@@ -60,7 +60,7 @@ describe('agent evals', () => {
 
   test('critic eval fails when a model is omitted or no rationale is given', () => {
     const evaluation = evaluateCriticCopy({
-      modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.5', 'Gemini 3.1 Pro'],
+      modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.6', 'Gemini 3.1 Pro'],
       winnerLabels: ['Gemini 3.1 Pro'],
       output:
         'Gemini 3.1 Pro wins. OpenAI GPT-5.5 gets second place. Final result recorded.',
