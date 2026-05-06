@@ -374,7 +374,7 @@ Demonstrate the full bug lifecycle: report → branch → fix → PR → review 
 
 - [x] Open a GitHub Issue with steps to reproduce, expected vs actual behaviour — https://github.com/Radu028/ai-arena/issues/1
 - [x] Fix on a `fix/<name>` branch; commit message references the issue — `fix/admin-demo-ci`
-- [ ] Open a PR, get at least one team review, merge with CI green — PR opened: https://github.com/Radu028/ai-arena/pull/2; waiting for review, green remote CI, and merge
+- [ ] Open a PR, get at least one team review, merge with CI green — PR opened with green `verify` CI: https://github.com/Radu028/ai-arena/pull/2; waiting for teammate review and merge
 - [ ] Verify the fix is live in the deployed app
 
 ---
