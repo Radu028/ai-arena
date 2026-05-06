@@ -1,79 +1,69 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { SignInButton, UserButton, useAuth } from '@clerk/tanstack-react-start'
-import { RadioTowerIcon } from 'lucide-react'
+import {
+  HomeIcon,
+  LogInIcon,
+  TrophyIcon,
+  ClockIcon,
+  ShieldIcon,
+  MenuIcon,
+  XIcon,
+} from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import ThemeToggle from './ThemeToggle'
-import { Badge } from '#/components/ui/badge'
+import { ArenaLogo } from './ArenaLogo'
 import { Button } from '#/components/ui/button'
+
+const NAV_LINKS = [
+  { to: '/', label: 'Home', icon: HomeIcon, exact: true },
+  { to: '/join', label: 'Join', icon: LogInIcon },
+  { to: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { to: '/history', label: 'History', icon: ClockIcon },
+  { to: '/admin', label: 'Admin', icon: ShieldIcon },
+] as const
 
 export default function Header() {
   const runtime = useRuntimeConfig()
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-      <nav className="page-frame flex flex-wrap items-center gap-3 py-4">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-xl">
+      <nav className="page-frame flex items-center gap-3 py-3">
+        {/* Logo */}
         <Link
           to="/"
-          className="inline-flex items-center gap-3 rounded-full border border-border/70 bg-card px-4 py-2 no-underline shadow-[0_12px_28px_rgba(20,28,44,0.08)]"
+          className="inline-flex items-center gap-2.5 rounded-xl px-1 py-1 no-underline transition-opacity hover:opacity-80"
+          onClick={() => setMobileOpen(false)}
         >
-          <span className="flex size-9 items-center justify-center rounded-full bg-[radial-gradient(circle_at_30%_30%,white,var(--arena-signal))] text-white">
-            <RadioTowerIcon className="size-4" />
-          </span>
-          <span>
-            <span className="block font-serif text-lg leading-none text-foreground">
+          <ArenaLogo size={36} />
+          <span className="hidden sm:block">
+            <span className="block font-serif text-base leading-none text-foreground">
               AI Arena
             </span>
-            <span className="block text-[0.7rem] uppercase tracking-[0.24em] text-muted-foreground">
+            <span className="block text-[0.6rem] uppercase tracking-[0.22em] text-muted-foreground">
               Live model battles
             </span>
           </span>
         </Link>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Link
-            to="/"
-            className="nav-pill"
-            activeProps={{ className: 'nav-pill is-active' }}
-          >
-            Home
-          </Link>
-          <Link
-            to="/join"
-            className="nav-pill"
-            activeProps={{ className: 'nav-pill is-active' }}
-          >
-            Join
-          </Link>
-          <Link
-            to="/leaderboard"
-            className="nav-pill"
-            activeProps={{ className: 'nav-pill is-active' }}
-          >
-            Leaderboard
-          </Link>
-          <Link
-            to="/history"
-            className="nav-pill"
-            activeProps={{ className: 'nav-pill is-active' }}
-          >
-            History
-          </Link>
-          <Link
-            to="/admin"
-            className="nav-pill"
-            activeProps={{ className: 'nav-pill is-active' }}
-          >
-            Admin
-          </Link>
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-1 md:flex ml-2">
+          {NAV_LINKS.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="nav-pill"
+              activeProps={{ className: 'nav-pill is-active' }}
+            >
+              <Icon className="size-3.5" />
+              {label}
+            </Link>
+          ))}
         </div>
 
+        {/* Right side */}
         <div className="ml-auto flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className="hidden rounded-full border-border/70 px-3 py-1 sm:inline-flex"
-          >
-            {runtime.hasClerk ? 'Clerk admin auth' : 'Guest mode only'}
-          </Badge>
           <ThemeToggle />
           {runtime.hasClerk ? (
             <HeaderAuth />
@@ -82,8 +72,41 @@ export default function Header() {
               <Link to="/admin">Admin</Link>
             </Button>
           )}
+
+          {/* Mobile hamburger */}
+          <button
+            className="inline-flex items-center justify-center rounded-lg border border-border/60 bg-card p-2 md:hidden"
+            onClick={() => setMobileOpen((o) => !o)}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          >
+            {mobileOpen ? (
+              <XIcon className="size-4" />
+            ) : (
+              <MenuIcon className="size-4" />
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* Mobile nav drawer */}
+      {mobileOpen && (
+        <div className="border-t border-border/60 bg-background/95 px-4 py-3 md:hidden">
+          <div className="flex flex-col gap-1">
+            {NAV_LINKS.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className="nav-pill justify-start"
+                activeProps={{ className: 'nav-pill is-active justify-start' }}
+                onClick={() => setMobileOpen(false)}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   )
 }
@@ -102,12 +125,12 @@ function HeaderAuth() {
   if (!isSignedIn) {
     return (
       <SignInButton mode="modal">
-        <Button size="sm">Admin Sign In</Button>
+        <Button size="sm">Sign In</Button>
       </SignInButton>
     )
   }
 
   return (
-    <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-9' } }} />
+    <UserButton appearance={{ elements: { userButtonAvatarBox: 'size-8' } }} />
   )
 }
