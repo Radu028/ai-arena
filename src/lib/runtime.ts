@@ -10,5 +10,5 @@ export const runtimeConfig = {
 export const runtimeFlags = {
   hasConvex: runtimeConfig.convexUrl.length > 0,
   hasClerk: runtimeConfig.clerkPublishableKey.length > 0,
-  hasDemoAdmin: import.meta.env.DEV || runtimeConfig.allowDemoAdmin,
+  hasDemoAdmin: runtimeConfig.allowDemoAdmin,
 }

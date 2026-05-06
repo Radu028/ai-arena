@@ -133,18 +133,10 @@ export async function getSessionByJoinCode(
     .unique()
 }
 
-function configuredClerkIssuer() {
-  return (
-    process.env.CLERK_JWT_ISSUER_DOMAIN ?? process.env.CLERK_ISSUER_URL ?? null
-  )
-}
-
 function allowDemoAdminMode() {
-  const issuer = configuredClerkIssuer()
   return (
     process.env.ALLOW_DEMO_ADMIN === 'true' ||
-    process.env.VITE_ALLOW_DEMO_ADMIN === 'true' ||
-    issuer?.includes('placeholder') === true
+    process.env.VITE_ALLOW_DEMO_ADMIN === 'true'
   )
 }
 
