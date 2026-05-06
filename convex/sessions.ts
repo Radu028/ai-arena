@@ -310,8 +310,10 @@ async function buildSessionView(
 export const listAdminSessions = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
+    let identity: Awaited<ReturnType<typeof requireAdminIdentity>>
+    try {
+      identity = await requireAdminIdentity(ctx)
+    } catch {
       return {
         isAuthenticated: false,
         sessions: [],
@@ -346,8 +348,10 @@ export const getAdminSession = query({
     sessionId: v.id('sessions'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
+    let identity: Awaited<ReturnType<typeof requireAdminIdentity>>
+    try {
+      identity = await requireAdminIdentity(ctx)
+    } catch {
       return null
     }
     const session = await ctx.db.get(args.sessionId)
