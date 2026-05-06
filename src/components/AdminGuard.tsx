@@ -1,5 +1,5 @@
 import { SignInButton, useAuth } from '@clerk/tanstack-react-start'
-import { ShieldAlertIcon, ShieldCheckIcon } from 'lucide-react'
+import { ShieldCheckIcon } from 'lucide-react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { Button } from '#/components/ui/button'
 import {
@@ -19,20 +19,7 @@ export function AdminGuard({
 }) {
   const runtime = useRuntimeConfig()
   if (!runtime.hasClerk) {
-    return (
-      <Card className="arena-panel">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-serif text-2xl">
-            <ShieldAlertIcon className="size-5 text-[var(--arena-signal)]" />
-            Clerk is not configured
-          </CardTitle>
-          <CardDescription>
-            Add `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and
-            `CLERK_JWT_ISSUER_DOMAIN` to unlock admin auth.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    )
+    return <>{children}</>
   }
 
   return <ConfiguredAdminGuard title={title}>{children}</ConfiguredAdminGuard>
