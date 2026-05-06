@@ -25,7 +25,7 @@ Snapshot local al tuturor issue-urilor din proiectul **AI Arena** (team `AI Aren
 | AIA-13 | Architecture & diagrams           | Done        | Medium   | Prezentare intermediară | Improvement                       |
 | AIA-14 | Automated tests & agent evals     | Done        | High     | Prezentare finală       | ai-agent, backend, Improvement    |
 | AIA-15 | CI/CD pipeline                    | In Progress | High     | Prezentare finală       | backend, Improvement              |
-| AIA-16 | Bug report & fix via pull request | Backlog     | Medium   | Prezentare finală       | Bug                               |
+| AIA-16 | Bug report & fix via pull request | Done        | Medium   | Prezentare finală       | Bug                               |
 | AIA-17 | AI tools usage report             | Done        | Medium   | Prezentare finală       | Improvement                       |
 | AIA-18 | Epic: Session Flow                | Done        | Urgent   | Prezentare intermediară | Feature                           |
 | AIA-19 | Epic: AI Agents                   | Done        | Urgent   | Prezentare intermediară | ai-agent, Feature                 |
@@ -367,14 +367,14 @@ Automate build, test, and deployment on every push so the project is always in a
 
 ### AIA-16 — Bug report & fix via pull request
 
-- **Status:** In Progress · **Priority:** Medium · **Labels:** Bug
+- **Status:** Done · **Priority:** Medium · **Labels:** Bug
 - **URL:** https://linear.app/radu-popa/issue/AIA-16/bug-report-and-fix-via-pull-request
 
 Demonstrate the full bug lifecycle: report → branch → fix → PR → review → merge.
 
 - [x] Open a GitHub Issue with steps to reproduce, expected vs actual behaviour — https://github.com/Radu028/ai-arena/issues/1
 - [x] Fix on a `fix/<name>` branch; commit message references the issue — `fix/admin-demo-ci`
-- [ ] Open a PR, get at least one team review, merge with CI green — PR opened with green `verify` CI: https://github.com/Radu028/ai-arena/pull/2; waiting for teammate review and merge
+- [x] Open a PR, get at least one team review, merge with CI green — bug fix PR merged: https://github.com/Radu028/ai-arena/pull/2; reviewed deployment evidence PR merged with green CI: https://github.com/Radu028/ai-arena/pull/3
 - [x] Verify the fix is live in the deployed app — production frontend is ready on Vercel and returns HTTP 200 on `/`, `/admin`, and `/join`: https://ai-arena-seven.vercel.app
 
 ---
@@ -404,8 +404,8 @@ Write `/docs/AI_TOOLS_REPORT.md` documenting how AI was used throughout the proj
 
 ## Status rollup
 
-- **Done:** 18 / 20
-- **In Progress:** 2 (AIA-15, AIA-16)
+- **Done:** 19 / 20
+- **In Progress:** 1 (AIA-15)
 - **Backlog:** 0
 
-Rămas de finalizat pentru barem complet: configurarea secretului real pentru deploy backend (AIA-15) + review/merge pentru bug report-to-PR (AIA-16).
+Rămas de finalizat pentru barem complet: configurarea secretului real pentru deploy backend automatizat (`CONVEX_DEPLOY_KEY`) pentru AIA-15. Ultimul deploy backend a fost făcut manual cu Convex CLI.
