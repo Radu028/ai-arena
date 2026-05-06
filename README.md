@@ -18,6 +18,7 @@ The current base includes:
 - admin session creation, start, stop, and early vote close
 - Host / MC agent artifacts
 - Critic agent analysis
+- Stats Analyst agent summaries after finalized rounds
 - realtime public session view via Convex subscriptions
 - anonymous response cards and reveal after scoring
 - human voting plus AI model judging
@@ -45,7 +46,8 @@ The current base includes:
 - `convex/rounds.ts` topic lock and round controls
 - `convex/votes.ts` human voting
 - `convex/state.ts` internal state transitions
-- `convex/orchestration.ts` provider calls, Host, Critic, AI judging
+- `convex/orchestration.ts` provider calls, Host, Critic, Stats Analyst, AI
+  judging
 
 ## Local setup
 
@@ -108,7 +110,7 @@ The repo includes:
 
 - shared schema and validation unit tests
 - Convex function tests with `convex-test`
-- deterministic Host and Critic agent evals
+- deterministic Host, Critic, and Stats Analyst agent evals
 - React Doctor verification for changed React code
 
 Run the full verification set with:

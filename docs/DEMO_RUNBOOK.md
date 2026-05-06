@@ -23,20 +23,20 @@ This is short, easy to judge, and produces reliable answers across providers.
 
 1. Start on the landing page and introduce the product:
    "AI Arena is a live battle platform where multiple AI models answer the same
-   prompt, humans vote, AI judges vote, and two AI agents host and critique the
-   session."
+   prompt, humans vote, model agents judge, and a Stats Analyst agent summarizes
+   the final numbers."
 2. Open the admin page and create a session.
 3. Select at least two models.
 4. Show the generated join link and join code.
 5. Open the guest window and join through the public flow.
 6. Start the session from the admin window.
 7. Submit the suggested topic from the guest window.
-8. Show the Host / MC intro artifact.
+8. Show the model agents competing on the same prompt.
 9. Wait for model responses and explain that model identity stays hidden during
    voting.
 10. Cast a human vote.
 11. Show the AI judge votes and final result.
-12. Show the Critic analysis after the winner is revealed.
+12. Show the Stats Analyst summary after the winner is revealed.
 13. Open leaderboard and history to prove persistence.
 14. Open admin cost tracking to show token/cost accounting.
 15. Finish by opening `docs/MDS_CHECKLIST.md` and pointing to the repository
@@ -48,16 +48,15 @@ Use this exact wording:
 
 > For the recording I am using demo mode to avoid wasting provider credits.
 > The production orchestration is the same code path: provider adapters for
-> OpenAI, Anthropic, Google, xAI, and Mistral run from `convex/orchestration.ts`
-> when the deployment has API keys configured.
+> OpenAI, Anthropic, and Google run from `convex/orchestration.ts` when the
+> deployment has API keys configured.
 
 ## Provider Cost Guardrails
 
 - Use two models for the final recording unless the lab assistant asks for more.
 - Use one short round.
 - Do not use Anthropic Opus models.
-- Use Gemini Flash instead of Gemini Pro for low-cost validation.
-- Prefer cheaper models for Host and Critic copy.
+- Use Gemini 3 Flash for the Stats Analyst agent and low-cost validation.
 - Keep prompts below a few sentences.
 - Stop the session immediately after the required flow is shown.
 
@@ -67,8 +66,8 @@ Use this exact wording:
 - [ ] Admin creates or opens a session.
 - [ ] Guest joins without login.
 - [ ] At least two models participate.
-- [ ] Host agent artifact is visible.
-- [ ] Critic agent artifact is visible.
+- [ ] At least two model agents compete.
+- [ ] Stats Analyst agent artifact is visible.
 - [ ] Human vote is shown.
 - [ ] AI judging or AI vote rationale is shown.
 - [ ] Winner reveal is shown.

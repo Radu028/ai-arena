@@ -13,22 +13,14 @@ interface WinnerCardProps {
 }
 
 const MODEL_PERSONAS: Record<string, string> = {
-  'gpt-4o':
+  'openai-gpt5':
     'sharp Silicon Valley tech visionary in a modern navy suit, confident smirk, award ceremony stage',
-  'gpt-4o-mini':
-    'nimble young tech prodigy in a hoodie and sneakers, energetic pose, neon-lit stage',
-  'claude-opus-4-5':
-    'wise philosopher-scientist with round glasses and elegant coat, warm amber lighting, library backdrop',
-  'claude-sonnet-4-5':
+  'anthropic-claude-sonnet-4':
     'creative polymath in a modern blazer holding a glowing pen, warm studio lighting',
-  'gemini-2-0-flash':
+  'google-gemini-3-flash':
     'vibrant innovator with colorful prismatic glasses and bold jacket, rainbow-spectrum stage',
-  'gemini-2-5-pro-preview-05-06':
+  'google-gemini-31-pro':
     'brilliant futurist in an iridescent suit with cosmic energy, deep space backdrop',
-  'mistral-large-latest':
-    'sophisticated French intellectual in a perfectly tailored suit, Parisian salon lighting',
-  'grok-3':
-    'rebellious tech maverick in all-black with a confident grin, dark dramatic spotlight',
 }
 
 function buildPortraitUrl(modelKey: string, modelLabel: string): string {

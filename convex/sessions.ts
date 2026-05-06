@@ -83,6 +83,9 @@ function summarizeRound(
       hostRecap:
         artifacts.find((artifact) => artifact.type === 'host_recap')?.content ??
         null,
+      statsSummary:
+        artifacts.find((artifact) => artifact.type === 'stats_summary')
+          ?.content ?? null,
     },
     totals: {
       humanVotes: humanVotes.length,

@@ -71,16 +71,16 @@ covers planning, architecture, implementation, testing, and reflection.
 
 **Breakdown by feature**
 
-| Feature                           | AI-assisted share | Notes                                                                                                                                                                                   |
-| --------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `convex/schema.ts`                | ~60%              | Schema was drafted by the assistant, then manually adjusted to add indexes (`by_session_id_and_access_token_hash`, `by_round_id_and_response_id`) and nullable validators.              |
-| `convex/orchestration.ts`         | ~55%              | The provider adapters (OpenAI, Anthropic, Google, Mistral, xAI) and the prompt builders were generated; the timeout wrapper, judging loop, and fallback behaviour were refined by hand. |
-| `convex/state.ts`                 | ~50%              | State transitions were sketched by the assistant and then hardened around edge cases (stopped mid-round, aborted rounds, ties).                                                         |
-| `convex/stats.ts` (new)           | ~80%              | Cross-session leaderboard, history, and admin cost queries were generated with the current schema as context.                                                                           |
-| `src/routes/*`                    | ~65%              | shadcn scaffolds + Tailwind layout generated; data wiring to Convex and interactive handlers reviewed by a human.                                                                       |
-| `src/components/arena/*`          | ~50%              | RoundResponseCard, LiveVoteChart and MeasuredEditorialText started from assistant output, heavily tuned for editorial feel.                                                             |
-| Tests                             | ~70%              | Test skeletons generated; edge cases hand-picked.                                                                                                                                       |
-| `docs/ARCHITECTURE.md`, this file | ~85%              | Drafted by the assistant and manually verified against current code.                                                                                                                    |
+| Feature                           | AI-assisted share | Notes                                                                                                                                                                                               |
+| --------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `convex/schema.ts`                | ~60%              | Schema was drafted by the assistant, then manually adjusted to add indexes (`by_session_id_and_access_token_hash`, `by_round_id_and_response_id`) and nullable validators.                          |
+| `convex/orchestration.ts`         | ~55%              | The provider adapters (OpenAI, Anthropic, Google), Stats Analyst summary agent, and prompt builders were generated; the timeout wrapper, judging loop, and fallback behaviour were refined by hand. |
+| `convex/state.ts`                 | ~50%              | State transitions were sketched by the assistant and then hardened around edge cases (stopped mid-round, aborted rounds, ties).                                                                     |
+| `convex/stats.ts` (new)           | ~80%              | Cross-session leaderboard, history, and admin cost queries were generated with the current schema as context.                                                                                       |
+| `src/routes/*`                    | ~65%              | shadcn scaffolds + Tailwind layout generated; data wiring to Convex and interactive handlers reviewed by a human.                                                                                   |
+| `src/components/arena/*`          | ~50%              | RoundResponseCard, LiveVoteChart and MeasuredEditorialText started from assistant output, heavily tuned for editorial feel.                                                                         |
+| Tests                             | ~70%              | Test skeletons generated; edge cases hand-picked.                                                                                                                                                   |
+| `docs/ARCHITECTURE.md`, this file | ~85%              | Drafted by the assistant and manually verified against current code.                                                                                                                                |
 
 Hand-written (or heavily rewritten) pieces include most of the editorial copy,
 the `pretext` measured text integration, and the exact wording of Critic / Host
@@ -109,12 +109,14 @@ prompts.
 
 **Agent evals (lightweight)**
 
-Because the Host and Critic prompts can run against live paid providers, the
+Because the Host, Critic, and Stats Analyst prompts can run against live paid providers, the
 project keeps the committed evals deterministic and no-cost. The eval suite
 checks both passing and failing examples for:
 
 - Host copy: non-empty output, topic reference, and theme-appropriate tone.
 - Critic copy: all model labels mentioned, winner mentioned, and rationale
+  present.
+- Stats Analyst copy: model reference, vote numbers, and a statistical takeaway
   present.
 - Structural prompt invariants enforced by unit tests (`getThemeCopy` returns
   non-empty `label`, `hostTone`, `criticAngle` for every theme — so Host and

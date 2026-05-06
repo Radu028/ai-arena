@@ -16,12 +16,12 @@ together with the repository link.
 
 ## A. Implementation
 
-| Requirement                                     | Status      | Evidence                                                                                                                                                                                      |
-| ----------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Live demo for the application                   | Ready       | Production app at https://ai-arena-seven.vercel.app. Core flows are listed in `README.md`: public join, live session, voting, leaderboard, history, and admin controls.                       |
-| At least two AI agents in product functionality | Ready       | Host / MC agent and Critic agent are part of the runtime flow. See `convex/orchestration.ts`, `README.md`, `docs/ARCHITECTURE.md`, and backlog items AIA-10/AIA-11 in `docs/LINEAR_TODOS.md`. |
-| Offline demo recording                          | Manual step | Record the flow from `docs/DEMO_RUNBOOK.md`, upload it to YouTube or Drive, then add the link in this row before submission.                                                                  |
-| Original topic, not from Web Development course | Ready       | AI Arena is a live multi-model battle platform with AI agents, judging, realtime voting, and session history.                                                                                 |
+| Requirement                                     | Status      | Evidence                                                                                                                                                                                                                                                                |
+| ----------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live demo for the application                   | Ready       | Production app at https://ai-arena-seven.vercel.app. Core flows are listed in `README.md`: public join, live session, voting, leaderboard, history, and admin controls.                                                                                                 |
+| At least two AI agents in product functionality | Ready       | Model agents compete on each prompt and the Stats Analyst agent summarizes vote/statistical outcomes after finalized rounds. Host and Critic artifacts are also available as supporting agents. See `convex/orchestration.ts`, `README.md`, and `docs/ARCHITECTURE.md`. |
+| Offline demo recording                          | Manual step | Record the flow from `docs/DEMO_RUNBOOK.md`, upload it to YouTube or Drive, then add the link in this row before submission.                                                                                                                                            |
+| Original topic, not from Web Development course | Ready       | AI Arena is a live multi-model battle platform with AI agents, judging, realtime voting, and session history.                                                                                                                                                           |
 
 ## B. AI-Assisted Software Development Process
 
@@ -56,8 +56,8 @@ Use a short, reliable demo that shows the grading criteria directly:
 4. Start the session and copy the join link.
 5. Join as a guest in another browser or incognito window.
 6. Submit one short topic.
-7. Show the Host intro, model responses, human voting, AI judging, Critic
-   analysis, winner reveal, leaderboard/history, and cost tracking.
+7. Show the competing model agents, human voting, AI judging, Stats Analyst
+   summary, winner reveal, leaderboard/history, and cost tracking.
 
 If provider keys are not configured, enable demo mode for the recording and say
 explicitly that the same orchestration uses real provider adapters in production

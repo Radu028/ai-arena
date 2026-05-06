@@ -46,6 +46,7 @@ export const artifactTypeValidator = v.union(
   v.literal('host_transition'),
   v.literal('critic_analysis'),
   v.literal('host_recap'),
+  v.literal('stats_summary'),
 )
 export const artifactStatusValidator = v.union(
   v.literal('pending'),

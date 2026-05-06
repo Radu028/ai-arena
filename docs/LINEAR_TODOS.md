@@ -174,9 +174,12 @@ As an admin, I want to start and stop sessions manually so I can control when AP
 - **Status:** Done · **Priority:** Urgent · **Labels:** ai-agent, Feature
 - **URL:** https://linear.app/radu-popa/issue/AIA-19/epic-ai-agents
 
-The two AI agents that make sessions entertaining and insightful — Host/MC and Critic.
+The AI agents that make sessions competitive and auditable — model competitors,
+Host/MC, Critic, and Stats Analyst.
 
-Both agents are core to the project's MDS requirement of including at least 2 AI agents as part of the product functionality.
+The minimum MDS requirement is satisfied by the competing model agents plus the
+Stats Analyst that summarizes round outcomes. Host and Critic provide additional
+agent functionality for presentation quality.
 
 **Children:** AIA-10, AIA-11.
 
@@ -329,6 +332,7 @@ Cover critical app logic with automated tests and validate both AI agents with l
 
 - [x] **Host eval** — output is non-empty, references the topic, tone fits the session theme
 - [x] **Critic eval** — analysis mentions all models and provides a rationale for the winner
+- [x] **Stats Analyst eval** — summary mentions model labels, vote counts, and a statistical takeaway
 
 **Setup**
 

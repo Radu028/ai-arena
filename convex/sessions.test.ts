@@ -28,7 +28,7 @@ describe('sessions flow', () => {
       modelKeys: [
         'openai-gpt5',
         'anthropic-claude-sonnet-4',
-        'google-gemini-25-pro',
+        'google-gemini-3-flash',
       ],
       maxParticipants: 50,
     })
@@ -62,7 +62,7 @@ describe('sessions flow', () => {
       title: 'Topic Lock Test',
       theme: 'eli5',
       roundCount: 2,
-      modelKeys: ['openai-gpt5', 'mistral-large'],
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
       maxParticipants: 20,
     })
 
@@ -117,7 +117,7 @@ describe('sessions flow', () => {
       title: 'Auto Name Test',
       theme: 'freeform',
       roundCount: 1,
-      modelKeys: ['openai-gpt5', 'mistral-large'],
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
       maxParticipants: 20,
     })
 

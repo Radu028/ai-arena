@@ -24,6 +24,7 @@ pnpm exec convex env set --prod GOOGLE_AI_API_KEY
 pnpm exec convex env set --prod AI_ARENA_DEMO_MODE false
 pnpm exec convex env set --prod HOST_AGENT_MODEL gpt-5-mini
 pnpm exec convex env set --prod CRITIC_AGENT_MODEL gpt-5-mini
+pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-latest
 ```
 
 For the first three commands, omit the value and paste it only into the
@@ -87,8 +88,8 @@ to confirm they exist for Production before the final presentation.
 2. Rotate provider keys and set them in Convex.
 3. Switch `AI_ARENA_DEMO_MODE=false`.
 4. Run one session with exactly two models and one short topic.
-5. Stop immediately after Host, responses, voting, Critic, and winner reveal are
-   visible.
+5. Stop immediately after responses, voting, Stats Analyst, and winner reveal
+   are visible.
 6. Switch back to `AI_ARENA_DEMO_MODE=true` if you only need to record UI
    evidence and want to avoid more spend.
 
@@ -98,8 +99,9 @@ The code now enforces conservative output limits on every paid generation path:
 
 - Round model answers: 280 output tokens.
 - Host and Critic agents: 180 output tokens.
+- Stats Analyst agent: 180 output tokens, using Gemini 3 Flash by default.
 - AI judge decisions: 80 output tokens.
 
-Google uses `gemini-flash-latest` for the default Gemini slot so the demo path
-does not accidentally use a more expensive Pro model. Anthropic remains on
-Sonnet, not Opus.
+The default competition roster is GPT 5.5, Claude Sonnet 4.5, Gemini 3 Flash,
+and Gemini 3.1 Pro. The Stats Analyst uses the cheaper Gemini 3 Flash model by
+default. Anthropic remains on Sonnet, not Opus.
