@@ -35,11 +35,6 @@ async function bootSessionWithTopic() {
     email: null,
     existingToken: null,
   })
-  await t.mutation(api.rounds.submitTopic, {
-    slug: created.slug,
-    participantToken: guest.accessToken,
-    topic: 'Why do Mondays feel slower than Sundays?',
-  })
 
   return { t, admin, created, guest }
 }
@@ -70,7 +65,7 @@ describe('voting', () => {
     }
   })
 
-  test('cannot submit a topic after it is locked', async () => {
+  test('cannot submit a topic after the admin prompt is locked', async () => {
     const { t, created, guest } = await bootSessionWithTopic()
 
     await expect(
@@ -82,7 +77,7 @@ describe('voting', () => {
     ).rejects.toThrow('already has a locked topic')
   })
 
-  test('topic validation rejects too-short submissions', async () => {
+  test('topic submission is closed once the admin starts the match', async () => {
     const t = convexTest({ schema, modules })
     const admin = t.withIdentity(adminIdentity)
     const created = await admin.mutation(api.sessions.create, {
@@ -104,36 +99,9 @@ describe('voting', () => {
       t.mutation(api.rounds.submitTopic, {
         slug: created.slug,
         participantToken: guest.accessToken,
-        topic: 'hi',
+        topic: 'This should not be accepted.',
       }),
-    ).rejects.toThrow()
-  })
-
-  test('topic validation rejects overly long submissions', async () => {
-    const t = convexTest({ schema, modules })
-    const admin = t.withIdentity(adminIdentity)
-    const created = await admin.mutation(api.sessions.create, {
-      title: 'Long Topic Test',
-      theme: 'freeform',
-      roundCount: 1,
-      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
-      maxParticipants: 10,
-    })
-    await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
-    const guest = await t.mutation(api.sessions.joinBySlug, {
-      slug: created.slug,
-      displayName: 'Long Topic',
-      email: null,
-      existingToken: null,
-    })
-
-    await expect(
-      t.mutation(api.rounds.submitTopic, {
-        slug: created.slug,
-        participantToken: guest.accessToken,
-        topic: 'x'.repeat(400),
-      }),
-    ).rejects.toThrow()
+    ).rejects.toThrow('already has a locked topic')
   })
 })
 

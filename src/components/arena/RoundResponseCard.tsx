@@ -7,6 +7,11 @@ import {
 import { cn } from '#/lib/utils'
 import { formatDurationMs } from '#/lib/format'
 import { Button } from '#/components/ui/button'
+import { usePretextBlock } from '#/lib/pretext'
+
+const MODEL_TEXT_PRETEXT_OPTIONS = {
+  whiteSpace: 'pre-wrap',
+} as const
 
 export function RoundResponseCard({
   response,
@@ -32,6 +37,12 @@ export function RoundResponseCard({
   onVote?: (responseId: string) => void
 }) {
   const failed = response.status !== 'success'
+  const { ref, metrics } = usePretextBlock<HTMLDivElement>(
+    response.text,
+    '400 15px "Source Serif 4"',
+    28,
+    MODEL_TEXT_PRETEXT_OPTIONS,
+  )
 
   return (
     <div
@@ -95,9 +106,18 @@ export function RoundResponseCard({
                 'This model did not return a valid answer in time.'}
             </p>
           ) : (
-            <p className="font-editorial text-[0.95rem] leading-7 text-foreground/95">
-              {response.text}
-            </p>
+            <div
+              ref={ref}
+              style={
+                metrics?.height
+                  ? { minHeight: `${Math.max(metrics.height, 28)}px` }
+                  : undefined
+              }
+            >
+              <p className="font-editorial whitespace-pre-wrap text-[0.95rem] leading-7 text-foreground/95">
+                {response.text}
+              </p>
+            </div>
           )}
         </div>
       </div>

@@ -1,10 +1,10 @@
-import { useReducer, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
-import { joinSessionSchema, topicSchema } from '@shared/validation'
+import { joinSessionSchema } from '@shared/validation'
 import {
   LiveSessionTab,
   SessionEventLogTab,
@@ -39,25 +39,22 @@ export const Route = createFileRoute('/sessions/$slug')({
 
 type SessionPageState = {
   displayName: string
-  topic: string
   pendingJoin: boolean
-  pendingTopic: boolean
   pendingVoteId: string | null
+  pendingAutoJoin: boolean
 }
 
 type SessionPageAction =
-  | { type: 'field'; field: 'displayName' | 'topic'; value: string }
+  | { type: 'field'; field: 'displayName'; value: string }
   | { type: 'pendingJoin'; value: boolean }
-  | { type: 'pendingTopic'; value: boolean }
   | { type: 'pendingVoteId'; value: string | null }
-  | { type: 'clearTopic' }
+  | { type: 'pendingAutoJoin'; value: boolean }
 
 const INITIAL_STATE: SessionPageState = {
   displayName: '',
-  topic: '',
   pendingJoin: false,
-  pendingTopic: false,
   pendingVoteId: null,
+  pendingAutoJoin: false,
 }
 
 function sessionPageReducer(
@@ -69,12 +66,10 @@ function sessionPageReducer(
       return { ...current, [action.field]: action.value }
     case 'pendingJoin':
       return { ...current, pendingJoin: action.value }
-    case 'pendingTopic':
-      return { ...current, pendingTopic: action.value }
     case 'pendingVoteId':
       return { ...current, pendingVoteId: action.value }
-    case 'clearTopic':
-      return { ...current, topic: '' }
+    case 'pendingAutoJoin':
+      return { ...current, pendingAutoJoin: action.value }
   }
 }
 
@@ -86,41 +81,40 @@ function SessionPage() {
     participantToken,
   })
   const joinSession = useMutation(api.sessions.joinBySlug)
-  const submitTopic = useMutation(api.rounds.submitTopic)
   const castVote = useMutation(api.votes.castHumanVote)
   const [state, dispatch] = useReducer(sessionPageReducer, INITIAL_STATE)
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const voteAfterJoinIdRef = useRef<string | null>(null)
+  const autoJoinAttemptedRef = useRef(false)
 
-  async function handleTopicSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!participantToken) {
-      toast.error('Join the session before submitting a topic.')
+  useEffect(() => {
+    if (
+      participantToken ||
+      sessionView === undefined ||
+      sessionView === null ||
+      sessionView.viewer ||
+      autoJoinAttemptedRef.current
+    ) {
       return
     }
-    const parsed = topicSchema.safeParse({ topic: state.topic })
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? 'Topic is invalid.')
-      return
-    }
-
-    dispatch({ type: 'pendingTopic', value: true })
-    try {
-      await submitTopic({
-        slug,
-        participantToken,
-        topic: parsed.data.topic,
+    autoJoinAttemptedRef.current = true
+    dispatch({ type: 'pendingAutoJoin', value: true })
+    void joinSession({
+      slug,
+      displayName: '',
+      email: null,
+      existingToken: null,
+    })
+      .then((result) => {
+        setParticipantToken(result.accessToken)
       })
-      dispatch({ type: 'clearTopic' })
-      toast.success('Topic locked for the round.')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Could not submit topic.',
-      )
-    } finally {
-      dispatch({ type: 'pendingTopic', value: false })
-    }
-  }
+      .catch(() => {
+        autoJoinAttemptedRef.current = false
+      })
+      .finally(() => {
+        dispatch({ type: 'pendingAutoJoin', value: false })
+      })
+  }, [joinSession, participantToken, sessionView, setParticipantToken, slug])
 
   async function handleVote(responseId: string) {
     if (!participantToken || !sessionView?.viewer) {
@@ -205,7 +199,25 @@ function SessionPage() {
     }
   }
 
-  if (!sessionView) {
+  if (sessionView === undefined) {
+    return (
+      <div className="shell">
+        <Empty className="surface rounded-2xl p-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <RadioIcon />
+            </EmptyMedia>
+            <EmptyTitle>Opening session...</EmptyTitle>
+            <EmptyDescription>
+              Loading the live room and preparing your spectator seat.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    )
+  }
+
+  if (sessionView === null) {
     return (
       <div className="shell">
         <Empty className="surface rounded-2xl p-10">
@@ -295,11 +307,8 @@ function SessionPage() {
             liveRound={sessionView.currentRound}
             latestFinishedRound={sessionView.latestFinishedRound}
             state={state}
-            onFieldChange={(field, value) =>
-              dispatch({ type: 'field', field, value })
-            }
-            onTopicSubmit={handleTopicSubmit}
             onVote={handleVote}
+            autoJoining={state.pendingAutoJoin}
           />
         </TabsContent>
 

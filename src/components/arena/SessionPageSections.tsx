@@ -6,14 +6,12 @@ import {
   MicVocalIcon,
   RadioIcon,
   ScrollTextIcon,
-  SparklesIcon,
   Users2Icon,
 } from 'lucide-react'
 import type { api } from '@convex/_generated/api'
 import { formatClock, initials } from '#/lib/format'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import {
   Empty,
   EmptyDescription,
@@ -21,15 +19,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '#/components/ui/empty'
-import { Label } from '#/components/ui/label'
 import { ScrollArea } from '#/components/ui/scroll-area'
 import { Separator } from '#/components/ui/separator'
-import { Textarea } from '#/components/ui/textarea'
 import { cn } from '#/lib/utils'
 import { LiveVoteChart } from '#/components/arena/LiveVoteChart'
 import { MeasuredEditorialText } from '#/components/arena/MeasuredEditorialText'
 import { RoundResponseCard } from '#/components/arena/RoundResponseCard'
-import { SessionInviteCard } from '#/components/arena/SessionInviteCard'
 
 export type PublicSessionView = NonNullable<
   FunctionReturnType<typeof api.sessions.getPublicSessionView>
@@ -37,13 +32,10 @@ export type PublicSessionView = NonNullable<
 
 type SessionPageState = {
   displayName: string
-  topic: string
   pendingJoin: boolean
-  pendingTopic: boolean
   pendingVoteId: string | null
+  pendingAutoJoin: boolean
 }
-
-type SessionField = 'displayName' | 'topic'
 
 export function SessionOverviewSection({
   sessionView,
@@ -62,7 +54,7 @@ export function SessionOverviewSection({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_-5%_-30%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_45%),radial-gradient(circle_at_115%_120%,color-mix(in_oklab,var(--arena-amber),transparent_72%),transparent_45%)]"
       />
 
-      <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative p-6 sm:p-8">
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center gap-2">
             <SessionStatusPill
@@ -73,9 +65,6 @@ export function SessionOverviewSection({
             <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
             <Badge variant="secondary">
               {sessionView.session.responseLanguageLabel}
-            </Badge>
-            <Badge variant="outline" className="font-mono text-[0.65rem]">
-              code {sessionView.session.joinCode}
             </Badge>
           </div>
 
@@ -102,8 +91,8 @@ export function SessionOverviewSection({
             <span className="inline-flex items-center gap-2">
               <CalendarClockIcon className="size-4" />
               {sessionView.viewer
-                ? `Joined as ${sessionView.viewer.displayName}`
-                : 'Watching anonymously'}
+                ? `Ready to vote as ${sessionView.viewer.displayName}`
+                : 'Opening your seat...'}
             </span>
           </div>
 
@@ -136,8 +125,6 @@ export function SessionOverviewSection({
             </div>
           ) : null}
         </div>
-
-        <SessionInviteCard slug={sessionView.session.slug} />
       </div>
     </section>
   )
@@ -148,17 +135,15 @@ export function LiveSessionTab({
   liveRound,
   latestFinishedRound,
   state,
-  onFieldChange,
-  onTopicSubmit,
   onVote,
+  autoJoining,
 }: {
   sessionView: PublicSessionView
   liveRound: PublicSessionView['currentRound']
   latestFinishedRound: PublicSessionView['latestFinishedRound']
   state: SessionPageState
-  onFieldChange: (field: SessionField, value: string) => void
-  onTopicSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
   onVote: (responseId: string) => Promise<void>
+  autoJoining: boolean
 }) {
   return (
     <div className="space-y-5">
@@ -171,9 +156,8 @@ export function LiveSessionTab({
           sessionView={sessionView}
           round={liveRound}
           state={state}
-          onFieldChange={onFieldChange}
-          onTopicSubmit={onTopicSubmit}
           onVote={onVote}
+          autoJoining={autoJoining}
         />
       ) : (
         <Empty className="surface rounded-2xl p-10">
@@ -221,7 +205,11 @@ function FinishedRoundRecap({
       ) : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {round.responses.map((response) => (
-          <RoundResponseCard key={response.id} response={response} revealed />
+          <RoundResponseCard
+            key={response.id}
+            response={response}
+            revealed={response.label !== null}
+          />
         ))}
       </div>
     </section>
@@ -232,16 +220,14 @@ function LiveRoundCard({
   sessionView,
   round,
   state,
-  onFieldChange,
-  onTopicSubmit,
   onVote,
+  autoJoining,
 }: {
   sessionView: PublicSessionView
   round: NonNullable<PublicSessionView['currentRound']>
   state: SessionPageState
-  onFieldChange: (field: SessionField, value: string) => void
-  onTopicSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
   onVote: (responseId: string) => Promise<void>
+  autoJoining: boolean
 }) {
   return (
     <section className="surface relative overflow-hidden rounded-2xl">
@@ -287,29 +273,22 @@ function LiveRoundCard({
           />
         ) : null}
 
-        {sessionView.viewer?.canSubmitTopic ? (
-          <form className="space-y-3" onSubmit={onTopicSubmit}>
-            <Label htmlFor="topic">Pitch the next prompt</Label>
-            <Textarea
-              id="topic"
-              value={state.topic}
-              onChange={(e) => onFieldChange('topic', e.target.value)}
-              placeholder="Example: Make a joke about debugging a smart toaster."
-              rows={3}
-            />
-            <Button type="submit" disabled={state.pendingTopic}>
-              <SparklesIcon className="size-4" />
-              {state.pendingTopic ? 'Locking topic...' : 'Submit topic'}
-            </Button>
-          </form>
-        ) : null}
-
-        {round.status === 'generating' ? (
+        {round.status === 'generating' || autoJoining ? (
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             <span className="live-dot mt-1" />
             <p>
-              Models are generating now. Any provider that misses the 15 second
-              window is marked with a timeout and the round continues.
+              {autoJoining
+                ? 'Opening your spectator seat from the invite link...'
+                : 'Models are generating now. Any provider that misses the 15 second window is marked with a timeout and the round continues.'}
+            </p>
+          </div>
+        ) : null}
+
+        {round.status === 'collecting_topic' ? (
+          <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            <span className="live-dot mt-1" />
+            <p>
+              Waiting for the admin to start the next generated round.
             </p>
           </div>
         ) : null}
@@ -320,7 +299,7 @@ function LiveRoundCard({
               <RoundResponseCard
                 key={response.id}
                 response={response}
-                revealed={round.status === 'scored'}
+                revealed={response.label !== null}
                 showVoteButton={
                   round.status === 'voting' &&
                   !sessionView.viewer?.hasVotedCurrentRound
@@ -449,7 +428,7 @@ export function SessionHistoryTab({
                 <RoundResponseCard
                   key={response.id}
                   response={response}
-                  revealed={round.status === 'scored'}
+                  revealed={response.label !== null}
                 />
               ))}
             </div>
