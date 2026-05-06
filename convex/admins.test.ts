@@ -16,6 +16,14 @@ const bootstrapAdminIdentity = {
   name: 'Radu Popa',
 }
 
+const bootstrapAdminPreferredUsernameIdentity = {
+  issuer: 'https://placeholder.clerk.accounts.dev',
+  subject: 'admin_bootstrap_google',
+  tokenIdentifier: 'test|admin_bootstrap_google',
+  preferredUsername: 'radupopa028@gmail.com',
+  name: 'Radu Popa',
+}
+
 const teammateIdentity = {
   issuer: 'https://placeholder.clerk.accounts.dev',
   subject: 'admin_teammate',
@@ -34,6 +42,18 @@ describe('admin access control', () => {
     expect(list.isAuthenticated).toBe(true)
     expect(list.viewerEmail).toBe('radupopa028@gmail.com')
     expect(list.bootstrapAdmins).toContain('radupopa028@gmail.com')
+  })
+
+  test('bootstrap admin also works when Clerk maps email as preferred username', async () => {
+    const t = convexTest({ schema, modules })
+    const bootstrapAdmin = t.withIdentity(
+      bootstrapAdminPreferredUsernameIdentity,
+    )
+
+    const list = await bootstrapAdmin.query(api.admins.list, {})
+
+    expect(list.isAuthenticated).toBe(true)
+    expect(list.viewerEmail).toBe('radupopa028@gmail.com')
   })
 
   test('bootstrap admin can grant admin access by email', async () => {

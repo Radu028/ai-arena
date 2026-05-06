@@ -1,6 +1,6 @@
 import { query, mutation } from './_generated/server'
 import { v } from 'convex/values'
-import { now, requireAdminIdentity } from './lib'
+import { getIdentityEmail, now, requireAdminIdentity } from './lib'
 
 function normalizeEmail(email: string) {
   const normalized = email.trim().toLowerCase()
@@ -25,9 +25,10 @@ export const list = query({
       }
     }
     const admins = await ctx.db.query('adminUsers').take(200)
+    const viewerEmail = getIdentityEmail(identity)
     return {
       isAuthenticated: true,
-      viewerEmail: identity.email ?? null,
+      viewerEmail,
       bootstrapAdmins: ['radupopa028@gmail.com'],
       admins: admins
         .filter((admin) => admin.revokedAt === null)
@@ -60,7 +61,7 @@ export const grant = mutation({
       }
       await ctx.db.patch(existing._id, {
         grantedByIdentity: identity.tokenIdentifier,
-        grantedByEmail: identity.email ?? null,
+        grantedByEmail: getIdentityEmail(identity),
         revokedAt: null,
         createdAt: now(),
       })
@@ -70,7 +71,7 @@ export const grant = mutation({
     await ctx.db.insert('adminUsers', {
       email,
       grantedByIdentity: identity.tokenIdentifier,
-      grantedByEmail: identity.email ?? null,
+      grantedByEmail: getIdentityEmail(identity),
       createdAt: now(),
       revokedAt: null,
     })

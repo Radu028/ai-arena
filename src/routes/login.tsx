@@ -19,6 +19,7 @@ import {
   EmptyTitle,
 } from '#/components/ui/empty'
 import { Button } from '#/components/ui/button'
+import { safeAuthRedirect } from '#/lib/authRedirect'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -60,12 +61,13 @@ function LoginPage() {
 function AuthCard() {
   const { isLoaded, isSignedIn } = useAuth()
   const navigate = useNavigate()
+  const redirectTo = getLoginRedirect()
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      void navigate({ to: '/admin' })
+      void navigate({ to: redirectTo })
     }
-  }, [isLoaded, isSignedIn, navigate])
+  }, [isLoaded, isSignedIn, navigate, redirectTo])
 
   return (
     <div data-reveal className="surface relative overflow-hidden rounded-2xl">
@@ -93,7 +95,7 @@ function AuthCard() {
 
         <div className="mt-8">
           <GoogleSignInButton
-            redirectTo="/admin"
+            redirectTo={redirectTo}
             label="Continue with Google"
           />
         </div>
@@ -119,6 +121,15 @@ function AuthCard() {
         </p>
       </div>
     </div>
+  )
+}
+
+function getLoginRedirect() {
+  if (typeof window === 'undefined') {
+    return safeAuthRedirect(null)
+  }
+  return safeAuthRedirect(
+    new URLSearchParams(window.location.search).get('redirect'),
   )
 }
 

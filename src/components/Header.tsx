@@ -17,6 +17,7 @@ import { useRuntimeConfig } from '#/components/AppProviders'
 import { ArenaLogo } from './ArenaLogo'
 import ThemeToggle from './ThemeToggle'
 import { Button } from '#/components/ui/button'
+import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { cn } from '#/lib/utils'
 import { AdminOnly } from './AdminOnly'
+import { currentAuthRedirect } from '#/lib/authRedirect'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
@@ -210,7 +212,11 @@ function HeaderAuth() {
     return (
       <div className="hidden items-center sm:flex">
         <Button asChild size="sm" className="group h-9 rounded-full px-4">
-          <Link to="/login" aria-label="Sign in with Google">
+          <Link
+            to="/login"
+            search={{ redirect: currentAuthRedirect() }}
+            aria-label="Sign in with Google"
+          >
             <span>Sign in</span>
             <ArrowRightIcon className="ml-1.5 size-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
@@ -295,18 +301,18 @@ function HeaderUserMenu() {
 function MobileAuthLinks({ onNavigate }: { onNavigate: () => void }) {
   const { isLoaded, isSignedIn } = useAuth()
   const clerk = useClerk()
+  const returnTo = currentAuthRedirect()
 
   if (!isLoaded) return null
 
   if (!isSignedIn) {
     return (
       <div className="mt-2 flex flex-col gap-1.5 border-t border-border/60 pt-3">
-        <Button asChild className="w-full" onClick={onNavigate}>
-          <Link to="/login">
-            <LogInIcon className="size-4" />
-            Sign in with Google
-          </Link>
-        </Button>
+        <GoogleSignInButton
+          redirectTo={returnTo}
+          label="Sign in with Google"
+          className="w-full"
+        />
         <p className="px-1 text-[11px] leading-5 text-muted-foreground">
           Same button creates your account on first visit.
         </p>

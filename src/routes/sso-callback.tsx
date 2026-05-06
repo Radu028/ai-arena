@@ -29,10 +29,7 @@ function SSOCallbackPage() {
           AI&nbsp;Arena session.
         </p>
         {runtime.hasClerk ? (
-          <AuthenticateWithRedirectCallback
-            signInForceRedirectUrl="/admin"
-            signUpForceRedirectUrl="/admin"
-          />
+          <AuthenticateWithRedirectCallback />
         ) : (
           <Empty className="mt-6 border-none p-0 text-left">
             <EmptyHeader>
