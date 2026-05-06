@@ -42,6 +42,7 @@ export const ARTIFACT_TYPES = [
   'host_transition',
   'critic_analysis',
   'host_recap',
+  'stats_summary',
 ] as const
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number]
 
@@ -75,8 +76,8 @@ export const AVAILABLE_MODELS = [
   {
     key: 'openai-gpt5',
     providerKey: 'openai',
-    label: 'OpenAI GPT-5.2',
-    modelId: 'gpt-5.2',
+    label: 'OpenAI GPT-5.5',
+    modelId: 'gpt-5.5',
     description: 'Clean structure, high clarity, strong prompt following.',
     tagline: 'Precise and polished.',
     accent: 'var(--arena-openai)',
@@ -85,20 +86,43 @@ export const AVAILABLE_MODELS = [
   {
     key: 'anthropic-claude-sonnet-4',
     providerKey: 'anthropic',
-    label: 'Claude Sonnet 4',
-    modelId: 'claude-sonnet-4-20250514',
+    label: 'Claude Sonnet 4.5',
+    modelId: 'claude-sonnet-4-5-20250929',
     description: 'Balanced reasoning with strong nuance and tone control.',
     tagline: 'Nuanced and composed.',
     accent: 'var(--arena-anthropic)',
     judgeStyle: 'nuanced, empathetic, and articulate',
   },
   {
-    key: 'google-gemini-25-pro',
+    key: 'google-gemini-3-flash',
     providerKey: 'google',
-    label: 'Gemini Flash',
-    modelId: 'gemini-flash-latest',
+    label: 'Gemini 3 Flash',
+    modelId: 'gemini-3-flash-latest',
     description: 'Fast, low-cost synthesis with confident explanation.',
     tagline: 'Fast and budget-aware.',
+    accent: 'var(--arena-google)',
+    judgeStyle: 'broad, insightful, and comparative',
+  },
+  {
+    key: 'google-gemini-31-pro',
+    providerKey: 'google',
+    label: 'Gemini 3.1 Pro',
+    modelId: 'gemini-3.1-pro',
+    description: 'Deeper comparative reasoning with broad synthesis.',
+    tagline: 'Deep and analytical.',
+    accent: 'var(--arena-google)',
+    judgeStyle: 'broad, rigorous, and comparative',
+  },
+] as const satisfies readonly ArenaModelDefinition[]
+
+const LEGACY_MODEL_DEFINITIONS = [
+  {
+    key: 'google-gemini-25-pro',
+    providerKey: 'google',
+    label: 'Gemini 2.5 Pro',
+    modelId: 'gemini-2.5-pro',
+    description: 'Legacy Gemini Pro slot kept for historical sessions.',
+    tagline: 'Legacy model.',
     accent: 'var(--arena-google)',
     judgeStyle: 'broad, insightful, and comparative',
   },
@@ -107,8 +131,8 @@ export const AVAILABLE_MODELS = [
     providerKey: 'xai',
     label: 'Grok 4.1 Fast',
     modelId: 'grok-4-1-fast-reasoning',
-    description: 'Edgier phrasing and punchier comedic instincts.',
-    tagline: 'Fast and sharp.',
+    description: 'Legacy xAI slot kept for historical sessions.',
+    tagline: 'Legacy model.',
     accent: 'var(--arena-xai)',
     judgeStyle: 'punchy, direct, and entertainment-aware',
   },
@@ -117,8 +141,8 @@ export const AVAILABLE_MODELS = [
     providerKey: 'mistral',
     label: 'Mistral Large',
     modelId: 'mistral-large-2512',
-    description: 'Compact, elegant answers with disciplined voice.',
-    tagline: 'Lean and elegant.',
+    description: 'Legacy Mistral slot kept for historical sessions.',
+    tagline: 'Legacy model.',
     accent: 'var(--arena-mistral)',
     judgeStyle: 'concise, stylish, and disciplined',
   },
@@ -187,6 +211,7 @@ export const AGENT_MAX_OUTPUT_TOKENS = 180
 export const JUDGE_MAX_OUTPUT_TOKENS = 80
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
+export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-latest'
 
 // Approximate USD pricing per 1M tokens as of early 2026. Kept intentionally
 // coarse so the dashboard can show meaningful budget estimates without
@@ -205,9 +230,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputUsdPerMillionTokens: 3,
     outputUsdPerMillionTokens: 15,
   },
-  'google-gemini-25-pro': {
+  'google-gemini-3-flash': {
     inputUsdPerMillionTokens: 0.35,
     outputUsdPerMillionTokens: 1.05,
+  },
+  'google-gemini-31-pro': {
+    inputUsdPerMillionTokens: 1.25,
+    outputUsdPerMillionTokens: 5,
+  },
+  'google-gemini-25-pro': {
+    inputUsdPerMillionTokens: 1.25,
+    outputUsdPerMillionTokens: 5,
   },
   'xai-grok-41-fast': {
     inputUsdPerMillionTokens: 0.5,
@@ -244,8 +277,11 @@ export function formatMicrosUsd(micros: number): string {
   return `$${usd.toFixed(2)}`
 }
 
-const MODEL_MAP = new Map<string, (typeof AVAILABLE_MODELS)[number]>(
-  AVAILABLE_MODELS.map((model) => [model.key, model]),
+const MODEL_MAP = new Map<string, ArenaModelDefinition>(
+  [...AVAILABLE_MODELS, ...LEGACY_MODEL_DEFINITIONS].map((model) => [
+    model.key,
+    model,
+  ]),
 )
 
 export function getModelByKey(key: string) {

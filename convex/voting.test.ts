@@ -89,7 +89,7 @@ describe('voting', () => {
       title: 'Validation Test',
       theme: 'freeform',
       roundCount: 1,
-      modelKeys: ['openai-gpt5', 'mistral-large'],
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
       maxParticipants: 10,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
@@ -116,7 +116,7 @@ describe('voting', () => {
       title: 'Long Topic Test',
       theme: 'freeform',
       roundCount: 1,
-      modelKeys: ['openai-gpt5', 'mistral-large'],
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
       maxParticipants: 10,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
@@ -145,7 +145,7 @@ describe('session state machine', () => {
       title: 'Start Twice',
       theme: 'comedy',
       roundCount: 1,
-      modelKeys: ['openai-gpt5', 'mistral-large'],
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
       maxParticipants: 5,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
@@ -182,7 +182,7 @@ describe('session state machine', () => {
         title: 'Too Many Rounds',
         theme: 'comedy',
         roundCount: 99,
-        modelKeys: ['openai-gpt5', 'mistral-large'],
+        modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
         maxParticipants: 10,
       }),
     ).rejects.toThrow()

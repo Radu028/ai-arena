@@ -101,3 +101,44 @@ export function evaluateCriticCopy(args: {
 
   return result(checks)
 }
+
+export function evaluateStatsCopy(args: {
+  output: string
+  modelLabels: string[]
+  requiredNumbers: number[]
+}) {
+  const trimmed = args.output.trim()
+  const normalized = normalize(trimmed)
+
+  const checks: EvalCheck[] = [
+    {
+      name: 'non_empty_output',
+      passed: trimmed.length > 0,
+    },
+    {
+      name: 'mentions_a_model',
+      passed: args.modelLabels.some((label) =>
+        normalized.includes(normalize(label)),
+      ),
+    },
+    {
+      name: 'mentions_required_numbers',
+      passed: args.requiredNumbers.every((value) =>
+        normalized.includes(String(value)),
+      ),
+    },
+    {
+      name: 'stats_focused',
+      passed: includesAnyNeedle(trimmed, [
+        'vote',
+        'votes',
+        'split',
+        'winner',
+        'latency',
+        'round',
+      ]),
+    },
+  ]
+
+  return result(checks)
+}

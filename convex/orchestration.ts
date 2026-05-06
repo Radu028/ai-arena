@@ -16,6 +16,7 @@ import {
   JUDGE_MAX_OUTPUT_TOKENS,
   PROVIDER_TIMEOUT_MS,
   ROUND_MAX_OUTPUT_TOKENS,
+  STATS_AGENT_DEFAULT_MODEL,
   getModelByKey,
 } from '../shared/arena'
 import type { SessionModelSnapshot, ThemeCopy } from '../shared/arena'
@@ -81,9 +82,12 @@ function makeFallbackCopy(topic: string, modelLabel: string) {
   return `${modelLabel} missed the live API call, so AI Arena is using a house fallback on the topic "${topic}". The safest version is: stay clear, be specific, and land one memorable line.`
 }
 
-function getAgentFallback(role: 'host' | 'critic') {
+function getAgentFallback(role: 'host' | 'critic' | 'stats') {
   if (role === 'host') {
     return 'Host temporarily offline. The round continues without commentary.'
+  }
+  if (role === 'stats') {
+    return 'Stats Analyst temporarily offline. The saved vote totals remain the source of truth.'
   }
   return 'Critic temporarily offline. The round result still stands without analysis.'
 }
@@ -175,6 +179,41 @@ function buildCriticPrompt(args: {
   ].join('\n')
 }
 
+function buildStatsPrompt(args: {
+  roundNumber: number
+  topic: string
+  winnerLabels: string[]
+  rows: Array<{
+    slot: string
+    modelLabel: string
+    status: string
+    votes: number
+    latencyMs: number | null
+    isWinner: boolean
+  }>
+  humanVotes: number
+  aiVotes: number
+}) {
+  return [
+    `You are the Stats Analyst agent for AI Arena.`,
+    `Round: ${args.roundNumber}.`,
+    `Topic: ${args.topic}`,
+    `Human votes: ${args.humanVotes}. AI judge votes: ${args.aiVotes}.`,
+    `Winner(s): ${args.winnerLabels.join(', ') || 'none'}.`,
+    `Rows:`,
+    ...args.rows.map((row) =>
+      [
+        `[${row.slot}] ${row.modelLabel}`,
+        `status=${row.status}`,
+        `votes=${row.votes}`,
+        `latencyMs=${row.latencyMs ?? 'n/a'}`,
+        `winner=${row.isWinner ? 'yes' : 'no'}`,
+      ].join(' | '),
+    ),
+    `Write 2-3 concise sentences with the key voting/statistical takeaway. Do not critique writing quality; focus on numbers, winners, vote split, and reliability.`,
+  ].join('\n')
+}
+
 function buildJudgePrompt(args: {
   themeLabel: string
   judgeStyle: string
@@ -203,6 +242,20 @@ function summarizeScoreboard(
         `${entry.label}: ${entry.wins} wins, ${entry.totalVotes} votes`,
     )
     .join(' | ')
+}
+
+function buildStatsFallback(args: {
+  roundNumber: number
+  winnerLabels: string[]
+  humanVotes: number
+  aiVotes: number
+  rows: Array<{ modelLabel: string; votes: number; isWinner: boolean }>
+}) {
+  const winners = args.winnerLabels.join(', ') || 'No winner'
+  const voteSplit = args.rows
+    .map((row) => `${row.modelLabel}: ${row.votes}`)
+    .join(' | ')
+  return `Stats Analyst: Round ${args.roundNumber} finished with ${args.humanVotes} human vote(s) and ${args.aiVotes} AI judge vote(s). Winner: ${winners}. Vote split: ${voteSplit}.`
 }
 
 async function generateWithOpenAI(
@@ -538,6 +591,50 @@ async function generateAgentCopy(args: {
   }
 }
 
+async function generateStatsAgentCopy(args: {
+  prompt: string
+  fallback: string
+}) {
+  const start = Date.now()
+  const modelId = process.env.STATS_AGENT_MODEL ?? STATS_AGENT_DEFAULT_MODEL
+  const apiKey = process.env.GOOGLE_AI_API_KEY
+
+  if (!apiKey || process.env.AI_ARENA_DEMO_MODE === 'true') {
+    return {
+      status: 'fallback' as const,
+      content: args.fallback,
+      modelId,
+      failureReason: apiKey
+        ? 'Demo mode is enabled.'
+        : 'GOOGLE_AI_API_KEY is not configured.',
+      latencyMs: Date.now() - start,
+    }
+  }
+
+  try {
+    const result = await providerTimeout(
+      generateWithGoogle(modelId, apiKey, args.prompt, AGENT_MAX_OUTPUT_TOKENS),
+      AGENT_TIMEOUT_MS,
+    )
+    return {
+      status: 'success' as const,
+      content: result.text,
+      modelId,
+      failureReason: null,
+      latencyMs: Date.now() - start,
+    }
+  } catch (error) {
+    return {
+      status: 'fallback' as const,
+      content: args.fallback,
+      modelId,
+      failureReason:
+        error instanceof Error ? error.message : 'Stats agent failure.',
+      latencyMs: Date.now() - start,
+    }
+  }
+}
+
 function parseJudgeDecision(payload: string, allowedSlots: string[]) {
   try {
     const parsed = JSON.parse(payload) as { slot?: string; rationale?: string }
@@ -800,6 +897,65 @@ export const afterRoundFinalized = internalAction({
       content: criticCopy.content,
       modelId: criticCopy.modelId,
       failureReason: criticCopy.failureReason,
+    })
+
+    const votesByResponseId = new Map<string, number>()
+    for (const response of reviewContext.responses) {
+      votesByResponseId.set(response._id, 0)
+    }
+    for (const vote of reviewContext.humanVotes) {
+      votesByResponseId.set(
+        vote.responseId,
+        (votesByResponseId.get(vote.responseId) ?? 0) + 1,
+      )
+    }
+    for (const vote of reviewContext.aiVotes) {
+      votesByResponseId.set(
+        vote.responseId,
+        (votesByResponseId.get(vote.responseId) ?? 0) + 1,
+      )
+    }
+
+    const statsRows = reviewContext.responses
+      .filter((response) => response.status !== 'pending')
+      .map((response) => ({
+        slot: response.anonymizedSlot,
+        modelLabel: response.modelLabel,
+        status: response.status,
+        votes: votesByResponseId.get(response._id) ?? 0,
+        latencyMs: response.latencyMs,
+        isWinner: reviewContext.round.winnerResponseIds.includes(response._id),
+      }))
+    const winnerLabels = reviewContext.responses
+      .filter((response) =>
+        reviewContext.round.winnerResponseIds.includes(response._id),
+      )
+      .map((response) => response.modelLabel)
+    const statsCopy = await generateStatsAgentCopy({
+      prompt: buildStatsPrompt({
+        roundNumber: reviewContext.round.roundNumber,
+        topic: reviewContext.round.topic ?? 'Untitled topic',
+        winnerLabels,
+        rows: statsRows,
+        humanVotes: reviewContext.humanVotes.length,
+        aiVotes: reviewContext.aiVotes.length,
+      }),
+      fallback: buildStatsFallback({
+        roundNumber: reviewContext.round.roundNumber,
+        winnerLabels,
+        humanVotes: reviewContext.humanVotes.length,
+        aiVotes: reviewContext.aiVotes.length,
+        rows: statsRows,
+      }),
+    })
+    await ctx.runMutation(internal.state.saveArtifact, {
+      sessionId: args.sessionId,
+      roundId: args.roundId,
+      type: 'stats_summary',
+      status: statsCopy.status,
+      content: statsCopy.content,
+      modelId: statsCopy.modelId,
+      failureReason: statsCopy.failureReason,
     })
 
     if (args.isLastRound) {

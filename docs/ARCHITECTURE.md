@@ -40,8 +40,6 @@ flowchart LR
     OpenAI((OpenAI))
     Anthropic((Anthropic))
     Google((Google Gemini))
-    XAI((xAI Grok))
-    Mistral((Mistral))
   end
 
   Client --> SSR
@@ -58,8 +56,6 @@ flowchart LR
   IntAct --> OpenAI
   IntAct --> Anthropic
   IntAct --> Google
-  IntAct --> XAI
-  IntAct --> Mistral
 ```
 
 ### Layers
@@ -144,7 +140,7 @@ erDiagram
   }
   ARTIFACTS {
     id roundId FK
-    string type "host_intro · host_transition · critic_analysis · host_recap"
+    string type "host_intro · host_transition · critic_analysis · host_recap · stats_summary"
     string status "pending · success · fallback"
     string content
   }
@@ -201,7 +197,7 @@ sequenceDiagram
   participant Convex as Convex Query/Mutation
   participant Scheduler as ctx.scheduler
   participant Orchestrate as orchestration.ts (action)
-  participant Providers as 5 model APIs
+  participant Providers as model APIs
 
   Guest->>UI: submit topic
   UI->>Convex: rounds.submitTopic(slug, token, topic)
@@ -213,8 +209,6 @@ sequenceDiagram
     Orchestrate->>Providers: OpenAI
     Orchestrate->>Providers: Anthropic
     Orchestrate->>Providers: Google
-    Orchestrate->>Providers: xAI
-    Orchestrate->>Providers: Mistral
   end
   Providers-->>Orchestrate: text + token usage (or timeout)
   Orchestrate->>Convex: saveModelResponse (per provider)
@@ -227,8 +221,8 @@ sequenceDiagram
   Convex->>Convex: tally votes, set winner(s)
   Convex->>Scheduler: runAfter(0, afterRoundFinalized)
   Scheduler->>Orchestrate: afterRoundFinalized
-  Orchestrate->>Providers: Critic analysis + Host transition/recap
-  Orchestrate->>Convex: saveArtifact (critic + host)
+  Orchestrate->>Providers: Critic analysis + Stats summary + Host transition/recap
+  Orchestrate->>Convex: saveArtifact (critic + stats + host)
 ```
 
 ## 6. Agent workflow
@@ -244,16 +238,17 @@ flowchart TD
   AIJudge --> Humans[Humans vote in UI]
   Humans --> Finalize[finalizeRound · pick winners<br/>human + AI ballots counted equally]
   Finalize --> Critic[Critic explains outcome<br/>theme-aware prompt]
-  Critic --> Next{Last round?}
+  Critic --> Stats[Stats Analyst summarizes<br/>votes · winner · reliability]
+  Stats --> Next{Last round?}
   Next -- no --> Transition[Host transition to next round]
   Transition --> Start
   Next -- yes --> Recap[Host recap of full scoreboard]
   Recap --> End([Session ended])
 ```
 
-Prompt strings live alongside the orchestration action
-(`buildHostPrompt`, `buildCriticPrompt`, `buildJudgePrompt`,
-`buildRoundPrompt` in `convex/orchestration.ts`).
+Prompt strings live alongside the orchestration action (`buildHostPrompt`,
+`buildCriticPrompt`, `buildStatsPrompt`, `buildJudgePrompt`, `buildRoundPrompt`
+in `convex/orchestration.ts`).
 
 ## 7. Scoring rules
 

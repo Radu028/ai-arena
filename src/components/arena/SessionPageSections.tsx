@@ -163,6 +163,11 @@ export function LiveSessionTab({
                 text={latestFinishedRound.artifacts.criticAnalysis}
               />
             ) : null}
+            {latestFinishedRound.artifacts.statsSummary ? (
+              <MeasuredEditorialText
+                text={latestFinishedRound.artifacts.statsSummary}
+              />
+            ) : null}
             <div className="grid gap-4 md:grid-cols-3">
               {latestFinishedRound.responses.map((response) => (
                 <RoundResponseCard
@@ -270,6 +275,10 @@ export function LiveSessionTab({
                 text={liveRound.artifacts.criticAnalysis}
               />
             ) : null}
+            {liveRound.status === 'scored' &&
+            liveRound.artifacts.statsSummary ? (
+              <MeasuredEditorialText text={liveRound.artifacts.statsSummary} />
+            ) : null}
             {liveRound.status === 'scored' && liveRound.artifacts.hostRecap ? (
               <MeasuredEditorialText text={liveRound.artifacts.hostRecap} />
             ) : null}
@@ -314,6 +323,9 @@ export function SessionHistoryTab({
             ) : null}
             {round.artifacts.criticAnalysis ? (
               <MeasuredEditorialText text={round.artifacts.criticAnalysis} />
+            ) : null}
+            {round.artifacts.statsSummary ? (
+              <MeasuredEditorialText text={round.artifacts.statsSummary} />
             ) : null}
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {round.responses.map((response) => (
