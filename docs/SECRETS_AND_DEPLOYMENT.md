@@ -72,7 +72,10 @@ https://ai-arena-seven.vercel.app
 The frontend needs these public/non-provider values in Vercel:
 
 - `VITE_CONVEX_URL`
-- `VITE_ALLOW_DEMO_ADMIN` only if demo admin access is intentionally enabled
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` from the Clerk Vercel Marketplace
+  integration, or `VITE_CLERK_PUBLISHABLE_KEY`
+- Do not set `VITE_ALLOW_DEMO_ADMIN` in hosted environments unless demo admin
+  access is intentionally enabled for a throwaway preview.
 
 Use:
 
