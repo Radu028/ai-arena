@@ -1,56 +1,46 @@
-import { useEffect, useState } from 'react'
-import { LaptopIcon, MoonIcon, SunIcon } from 'lucide-react'
+import { MoonStarIcon, SunIcon, SunMoonIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '#/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '#/components/ui/dropdown-menu'
+
+const ORDER = ['light', 'dark', 'system'] as const
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const currentTheme = theme ?? 'system'
+  const nextTheme =
+    ORDER[
+      (ORDER.indexOf(currentTheme as (typeof ORDER)[number]) + 1) % ORDER.length
+    ]
 
-  function pick(next: 'light' | 'dark' | 'system') {
+  const icon =
+    currentTheme === 'light' ? (
+      <SunIcon className="size-4" />
+    ) : currentTheme === 'dark' ? (
+      <MoonStarIcon className="size-4" />
+    ) : (
+      <SunMoonIcon className="size-4" />
+    )
+
+  function handleToggle() {
     document.documentElement.classList.add('theme-switching')
-    setTheme(next)
+    setTheme(nextTheme)
     setTimeout(() => {
       document.documentElement.classList.remove('theme-switching')
-    }, 360)
+    }, 450)
   }
 
-  const current = mounted ? (theme ?? 'system') : 'system'
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon-sm"
-          className="rounded-full"
-          suppressHydrationWarning
-          aria-label={`Theme: ${current}`}
-          title={`Theme: ${current}`}
-        >
-          <SunIcon className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <MoonIcon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-36">
-        <DropdownMenuItem onClick={() => pick('light')}>
-          <SunIcon className="size-4" /> Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => pick('dark')}>
-          <MoonIcon className="size-4" /> Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => pick('system')}>
-          <LaptopIcon className="size-4" /> System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-sm"
+      suppressHydrationWarning
+      className="group rounded-full border-border/70 bg-background/70 backdrop-blur-sm"
+      onClick={handleToggle}
+      title={`Theme: ${currentTheme}`}
+      aria-label={`Current Theme: ${currentTheme}`}
+    >
+      <span className="transition-transform duration-300 group-hover:-rotate-12">{icon}</span>
+    </Button>
   )
 }
