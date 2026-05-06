@@ -27,6 +27,7 @@ import {
 } from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
+import { AdminOnly } from '#/components/AdminOnly'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
@@ -397,12 +398,14 @@ function CallToAction() {
           </CardDescription>
         </CardHeader>
         <CardContent className="relative flex flex-wrap items-center gap-3 px-8 pb-10 pt-3 sm:px-12">
-          <Button asChild size="lg" className="h-11 rounded-full px-6">
-            <Link to="/admin">
-              <LayersIcon className="size-4" />
-              Open admin console
-            </Link>
-          </Button>
+          <AdminOnly>
+            <Button asChild size="lg" className="h-11 rounded-full px-6">
+              <Link to="/admin">
+                <LayersIcon className="size-4" />
+                Open admin console
+              </Link>
+            </Button>
+          </AdminOnly>
           <Button
             asChild
             size="lg"
