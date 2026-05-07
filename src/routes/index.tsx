@@ -166,7 +166,7 @@ function FlowSection() {
     {
       step: '02',
       title: 'Models answer in parallel',
-      copy: 'Responses arrive simultaneously. Anything missing the 15s window gets a graceful timeout.',
+      copy: 'Responses arrive simultaneously. Anything missing the provider timeout gets a graceful timeout.',
       icon: ZapIcon,
     },
     {
