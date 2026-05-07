@@ -114,7 +114,7 @@ export const AVAILABLE_MODELS = [
     key: 'google-gemini-3-flash',
     providerKey: 'google',
     label: 'Gemini 3 Flash',
-    modelId: 'gemini-3-flash-latest',
+    modelId: 'gemini-3-flash-preview',
     description: 'Fast, low-cost synthesis with confident explanation.',
     tagline: 'Fast and budget-aware.',
     accent: 'var(--arena-google)',
@@ -222,14 +222,14 @@ export const MAX_ROUNDS = 10
 export const MAX_TOPIC_LENGTH = 300
 export const MIN_TOPIC_LENGTH = 5
 export const MAX_CUSTOM_PROMPT_LENGTH = 500
-export const PROVIDER_TIMEOUT_MS = 15_000
+export const PROVIDER_TIMEOUT_MS = 65_000
 export const AGENT_TIMEOUT_MS = 8_000
 export const ROUND_MAX_OUTPUT_TOKENS = 500
 export const AGENT_MAX_OUTPUT_TOKENS = 180
 export const JUDGE_MAX_OUTPUT_TOKENS = 80
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
-export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-latest'
+export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-preview'
 
 // Approximate USD pricing per 1M tokens as of early 2026. Kept intentionally
 // coarse so the dashboard can show meaningful budget estimates without

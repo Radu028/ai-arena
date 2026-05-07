@@ -24,7 +24,7 @@ pnpm exec convex env set --prod GOOGLE_AI_API_KEY
 pnpm exec convex env set --prod AI_ARENA_DEMO_MODE false
 pnpm exec convex env set --prod HOST_AGENT_MODEL gpt-5-mini
 pnpm exec convex env set --prod CRITIC_AGENT_MODEL gpt-5-mini
-pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-latest
+pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-preview
 ```
 
 For the first three commands, omit the value and paste it only into the
