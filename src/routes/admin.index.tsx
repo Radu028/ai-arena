@@ -173,8 +173,9 @@ function CostSection({ costs }: { costs: NonNullable<AdminCostSummary> }) {
             {formatMicrosUsd(costs.totals.costMicrosUsd)}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Aggregated across {costs.totals.sessions} sessions and{' '}
-            {costs.totals.rounds} rounds.
+            Aggregated across {costs.totals.sessions} session
+            {costs.totals.sessions === 1 ? '' : 's'} and {costs.totals.rounds}{' '}
+            round{costs.totals.rounds === 1 ? '' : 's'}.
           </p>
         </div>
 
@@ -365,11 +366,23 @@ function SessionListSection({
 }) {
   return (
     <section data-reveal className="surface overflow-hidden rounded-2xl">
-      <div className="border-b border-border/60 px-6 py-4">
-        <p className="text-sm font-semibold">Recent sessions</p>
-        <p className="text-xs text-muted-foreground">
-          Sessions appear here once Clerk authentication is configured.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-6 py-4">
+        <div>
+          <p className="text-sm font-semibold">Recent sessions</p>
+          <p className="text-xs text-muted-foreground">
+            {data?.sessions.length
+              ? `${data.sessions.length} session${data.sessions.length === 1 ? '' : 's'} created so far`
+              : 'No arenas have been created yet on this deployment.'}
+          </p>
+        </div>
+        {data && data.sessions.length > 0 ? (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/sessions/new">
+              <PlusIcon className="size-3.5" />
+              New
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {data && data.sessions.length > 0 ? (

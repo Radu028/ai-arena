@@ -108,7 +108,7 @@ function Hero({
         </div>
       </div>
 
-      <div className="mt-16 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm">
+      <div className="mt-14 grid grid-cols-2 gap-3 sm:mt-16 sm:gap-4 md:flex md:flex-wrap md:items-center md:justify-center md:gap-x-10 md:gap-y-4">
         <HeroStat
           icon={SparklesIcon}
           label="frontier models"
@@ -139,15 +139,15 @@ function HeroStat({
   label: string
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <div className="flex items-center gap-2.5 rounded-xl border border-border/40 bg-background/30 p-2.5 backdrop-blur-sm md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <Icon className="size-4" />
       </div>
-      <div className="leading-tight">
+      <div className="min-w-0 leading-tight">
         <p className="font-mono text-base font-semibold tabular-nums">
           {value}
         </p>
-        <p className="text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="truncate text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
           {label}
         </p>
       </div>

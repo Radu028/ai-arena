@@ -1,10 +1,15 @@
 import { useAuth } from '@clerk/tanstack-react-start'
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { Loader2Icon, LockKeyholeIcon, ShieldAlertIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
-import { currentAuthRedirect } from '#/lib/authRedirect'
+import {
+  DEFAULT_AUTH_REDIRECT,
+  safeAuthRedirect,
+  stringifyLocationSearch,
+} from '#/lib/authRedirect'
 import {
   Empty,
   EmptyDescription,
@@ -53,9 +58,18 @@ function ConfiguredAdminGuard({
   title: string
 }) {
   const { isLoaded, isSignedIn } = useAuth()
-  const returnTo = currentAuthRedirect()
+  const { pathname, search, hash } = useLocation()
+  const [mounted, setMounted] = useState(false)
 
-  if (!isLoaded) {
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const searchString = stringifyLocationSearch(search)
+  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
+  const returnTo = mounted ? safeAuthRedirect(here) : DEFAULT_AUTH_REDIRECT
+
+  if (!mounted || !isLoaded) {
     return (
       <div className="surface flex flex-col items-center gap-3 rounded-2xl border border-border/60 p-10 text-center">
         <Loader2Icon

@@ -61,7 +61,7 @@ function LeaderboardPage() {
         </p>
       </section>
 
-      <section data-reveal className="grid gap-4 sm:grid-cols-3">
+      <section data-reveal className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <SummaryStat
           icon={TrophyIcon}
           label="Models tracked"
