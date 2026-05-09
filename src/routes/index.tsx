@@ -96,16 +96,21 @@ function Hero({
         </div>
       </div>
 
-      <div className="mt-16 grid grid-cols-2 gap-y-6 sm:mt-20 md:grid-cols-4 md:divide-x md:divide-border/50">
-        <HeroStat
-          label="frontier models"
-          value={String(modelsTracked)}
-        />
-        <HeroStat
-          label="completed sessions"
-          value={String(completedSessions)}
-        />
+      <div
+        className={
+          completedSessions > 0
+            ? 'mt-16 grid grid-cols-2 gap-y-6 sm:mt-20 md:grid-cols-4 md:divide-x md:divide-border/50'
+            : 'mt-16 grid grid-cols-3 gap-y-6 sm:mt-20 md:divide-x md:divide-border/50'
+        }
+      >
+        <HeroStat label="frontier models" value={String(modelsTracked)} />
         <HeroStat label="round agents" value="3" />
+        {completedSessions > 0 ? (
+          <HeroStat
+            label="completed sessions"
+            value={String(completedSessions)}
+          />
+        ) : null}
         <HeroStat label="anonymous voting" value="100%" />
       </div>
     </section>
