@@ -10,10 +10,10 @@ export const Route = createFileRoute('/admin/sessions/new')({
 
 function NewSessionPage() {
   return (
-    <div className="shell space-y-8">
+    <div className="shell space-y-10">
       <AdminGuard title="Create a new arena session">
-        <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm">
+        <div>
+          <Button asChild variant="ghost" size="sm" className="-ml-3">
             <Link to="/admin">
               <ArrowLeftIcon className="size-4" />
               Back to console
@@ -32,7 +32,7 @@ function NewSessionPage() {
           </p>
         </header>
 
-        <section data-reveal className="surface rounded-2xl p-6 sm:p-8">
+        <section data-reveal>
           <CreateSessionForm />
         </section>
       </AdminGuard>

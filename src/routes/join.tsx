@@ -6,23 +6,14 @@ import {
   EyeIcon,
   KeyRoundIcon,
   RadioIcon,
-  TicketIcon,
   UserRoundIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { joinCodeSchema, normalizeOptionalEmail } from '@shared/validation'
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { Separator } from '#/components/ui/separator'
 
 export const Route = createFileRoute('/join')({
   component: JoinPage,
@@ -123,100 +114,93 @@ function JoinPage() {
 
       <section
         data-reveal
-        className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[1.15fr_1fr]"
+        className="mx-auto grid w-full max-w-5xl gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-16"
       >
-        <Card className="surface p-0">
-          <CardHeader className="px-6 pt-6">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <TicketIcon className="size-5" />
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <p className="eyebrow">Join code</p>
+            <Label
+              htmlFor="code"
+              className="sr-only"
+            >
+              Join code
+            </Label>
+            <Input
+              id="code"
+              value={state.code}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setField',
+                  field: 'code',
+                  value: e.target.value,
+                })
+              }
+              placeholder="A1B2C3"
+              className="mt-3 h-14 font-mono text-2xl tracking-[0.4em] uppercase placeholder:tracking-normal placeholder:text-muted-foreground/50"
+              maxLength={8}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Six characters, case-insensitive. Shared by the admin running the
+              session.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="displayName">
+                Display name{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="displayName"
+                value={state.displayName}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'setField',
+                    field: 'displayName',
+                    value: e.target.value,
+                  })
+                }
+                className="h-11"
+                placeholder="Auto-generated if empty"
+              />
             </div>
-            <CardTitle className="mt-4 text-xl font-semibold">
-              Enter join code
-            </CardTitle>
-            <CardDescription>
-              Codes are six characters and case-insensitive. They&rsquo;re
-              issued by the admin running the session.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="code">Join code</Label>
-                <Input
-                  id="code"
-                  value={state.code}
-                  onChange={(e) =>
-                    dispatch({
-                      type: 'setField',
-                      field: 'code',
-                      value: e.target.value,
-                    })
-                  }
-                  placeholder="A1B2C3"
-                  className="h-11 font-mono text-base tracking-[0.4em] uppercase placeholder:tracking-normal placeholder:text-muted-foreground/50"
-                  maxLength={8}
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={state.email}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'setField',
+                    field: 'email',
+                    value: e.target.value,
+                  })
+                }
+                className="h-11"
+                placeholder="you@example.com"
+              />
+            </div>
+          </div>
 
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">
-                    Display name{' '}
-                    <span className="text-muted-foreground">(optional)</span>
-                  </Label>
-                  <Input
-                    id="displayName"
-                    value={state.displayName}
-                    onChange={(e) =>
-                      dispatch({
-                        type: 'setField',
-                        field: 'displayName',
-                        value: e.target.value,
-                      })
-                    }
-                    className="h-11"
-                    placeholder="Auto-generated if empty"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email{' '}
-                    <span className="text-muted-foreground">(optional)</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={state.email}
-                    onChange={(e) =>
-                      dispatch({
-                        type: 'setField',
-                        field: 'email',
-                        value: e.target.value,
-                      })
-                    }
-                    className="h-11"
-                    placeholder="you@example.com"
-                  />
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                size="lg"
-                disabled={state.pending}
-                className="h-11 w-full rounded-lg sm:w-auto"
-              >
-                {state.pending ? 'Joining...' : 'Join session'}
-                <ArrowRightIcon className="size-4" />
-              </Button>
-            </form>
-
-            <Separator className="my-6 opacity-60" />
-
+          <div className="flex flex-wrap items-center gap-4">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={state.pending}
+              className="h-11 rounded-full px-6"
+            >
+              {state.pending ? 'Joining...' : 'Join session'}
+              <ArrowRightIcon className="size-4" />
+            </Button>
             <p className="text-sm text-muted-foreground">
-              Got a share link instead?{' '}
+              Got a share link?{' '}
               <Link
                 to="/"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -225,37 +209,37 @@ function JoinPage() {
               </Link>{' '}
               — no code needed.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </form>
 
-        <div className="flex flex-col gap-3">
-          <InfoTile
+        <ul className="grid gap-7 self-start sm:grid-cols-2 lg:grid-cols-1">
+          <InfoItem
             icon={EyeIcon}
             title="Spectator-first"
             copy="Watch every round in realtime without an account. Reveal happens automatically when voting closes."
           />
-          <InfoTile
+          <InfoItem
             icon={UserRoundIcon}
             title="Username only when voting"
             copy="Cast your ballot, then choose a name. We never ask for more than that to take part."
           />
-          <InfoTile
+          <InfoItem
             icon={KeyRoundIcon}
             title="Persistent ballot"
             copy="Refreshing or returning later keeps your vote — we anchor it with a local session token."
           />
-          <InfoTile
+          <InfoItem
             icon={RadioIcon}
             title="Live everything"
             copy="Topic submissions, vote splits, and reveals all stream over Convex without any polling."
           />
-        </div>
+        </ul>
       </section>
     </div>
   )
 }
 
-function InfoTile({
+function InfoItem({
   icon: Icon,
   title,
   copy,
@@ -265,14 +249,14 @@ function InfoTile({
   copy: string
 }) {
   return (
-    <div className="surface flex gap-3 rounded-xl p-4">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+    <li className="flex gap-3">
+      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="size-4" />
       </div>
       <div>
         <p className="text-sm font-semibold">{title}</p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">{copy}</p>
       </div>
-    </div>
+    </li>
   )
 }

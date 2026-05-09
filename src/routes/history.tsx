@@ -73,27 +73,28 @@ function HistoryPage() {
         </p>
       </section>
 
-      <section data-reveal className="surface overflow-hidden rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <HistoryIcon className="size-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Completed sessions</p>
-              <p className="text-xs text-muted-foreground">
-                {data
-                  ? `Page ${pageNumber} · ${data.rows.length} sessions`
-                  : 'Loading...'}
-              </p>
-            </div>
+      <section data-reveal className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="eyebrow">Completed sessions</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+              {data
+                ? `Page ${pageNumber} · ${data.rows.length} session${data.rows.length === 1 ? '' : 's'}`
+                : 'Loading session archive…'}
+            </h2>
           </div>
+          {data?.hasMore ? (
+            <p className="text-xs text-muted-foreground">more available →</p>
+          ) : data ? (
+            <p className="text-xs text-muted-foreground">end of archive</p>
+          ) : null}
         </div>
 
         {data && data.rows.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <div className="overflow-hidden rounded-xl border border-border/40">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Theme</TableHead>
@@ -105,64 +106,65 @@ function HistoryPage() {
                   <TableHead>Finished</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {data.rows.map((row) => (
-                  <TableRow key={row.id} className="group">
-                    <TableCell className="max-w-xs">
-                      <Link
-                        to="/sessions/$slug"
-                        params={{ slug: row.slug }}
-                        className="font-medium text-foreground transition-colors hover:text-primary"
-                      >
-                        <span className="truncate">{row.title}</span>
-                        <ArrowRightIcon className="ml-2 inline size-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-normal">
-                        {row.themeLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <StatusPill status={row.status} />
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
-                      {row.completedRounds}/{row.roundCount}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
-                      {row.modelCount}
-                    </TableCell>
-                    <TableCell>
-                      {row.overallWinner ? (
-                        <span className="inline-flex items-center gap-2">
-                          <TrophyIcon className="size-3.5 text-amber-500 dark:text-amber-300" />
-                          <span className="font-medium">
-                            {row.overallWinner.label}
+                <TableBody>
+                  {data.rows.map((row) => (
+                    <TableRow key={row.id} className="group">
+                      <TableCell className="max-w-xs">
+                        <Link
+                          to="/sessions/$slug"
+                          params={{ slug: row.slug }}
+                          className="font-medium text-foreground transition-colors hover:text-primary"
+                        >
+                          <span className="truncate">{row.title}</span>
+                          <ArrowRightIcon className="ml-2 inline size-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-normal">
+                          {row.themeLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill status={row.status} />
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                        {row.completedRounds}/{row.roundCount}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                        {row.modelCount}
+                      </TableCell>
+                      <TableCell>
+                        {row.overallWinner ? (
+                          <span className="inline-flex items-center gap-2">
+                            <TrophyIcon className="size-3.5 text-amber-500 dark:text-amber-300" />
+                            <span className="font-medium">
+                              {row.overallWinner.label}
+                            </span>
+                            <Badge variant="secondary" className="font-mono">
+                              {row.overallWinner.wins}
+                            </Badge>
                           </span>
-                          <Badge variant="secondary" className="font-mono">
-                            {row.overallWinner.wins}
-                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {row.totalHumanVotes}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarIcon className="size-3" />
+                          {formatDateTime(row.finishedAt)}
                         </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.totalHumanVotes}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarIcon className="size-3" />
-                        {formatDateTime(row.finishedAt)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         ) : data ? (
-          <Empty className="py-12">
+          <Empty className="rounded-xl border border-dashed border-border/50 py-12">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <HistoryIcon />
@@ -174,17 +176,16 @@ function HistoryPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="space-y-2 p-6">
+          <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           <p className="text-xs text-muted-foreground">
             Page <span className="font-mono">{pageNumber}</span>
-            {data?.hasMore ? ' · more available' : ' · end of archive'}
           </p>
           <div className="flex items-center gap-2">
             <Button

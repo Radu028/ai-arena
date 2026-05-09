@@ -1,12 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import {
-  CrownIcon,
-  MedalIcon,
-  PercentIcon,
-  TrophyIcon,
-  Users2Icon,
-} from 'lucide-react'
+import { CrownIcon, MedalIcon, TrophyIcon } from 'lucide-react'
 import { api } from '@convex/_generated/api'
 import { formatMicrosUsd } from '@shared/arena'
 import {
@@ -47,8 +41,10 @@ type LeaderboardRow = {
 function LeaderboardPage() {
   const data = useQuery(api.stats.getModelLeaderboard, {})
 
+  const top = data?.rows[0]
+
   return (
-    <div className="shell space-y-12">
+    <div className="shell space-y-14">
       <section data-reveal className="mx-auto max-w-3xl text-center">
         <p className="eyebrow">Cross-session standings</p>
         <h1 className="display mt-3 text-balance">
@@ -61,74 +57,74 @@ function LeaderboardPage() {
         </p>
       </section>
 
-      <section data-reveal className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+      <section
+        data-reveal
+        className="mx-auto grid w-full max-w-3xl grid-cols-3 sm:divide-x sm:divide-border/50"
+      >
         <SummaryStat
-          icon={TrophyIcon}
           label="Models tracked"
           value={data ? String(data.rows.length) : null}
         />
         <SummaryStat
-          icon={Users2Icon}
           label="Sessions counted"
           value={data ? String(data.sessionsIncluded) : null}
         />
         <SummaryStat
-          icon={PercentIcon}
           label="Top win rate"
           value={
             data
-              ? data.rows[0]
-                ? `${data.rows[0].winRate.toFixed(1)}%`
+              ? top
+                ? `${top.winRate.toFixed(1)}%`
                 : '0.0%'
               : null
           }
         />
       </section>
 
-      <section data-reveal className="surface overflow-hidden rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300">
-              <CrownIcon className="size-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Model standings</p>
-              <p className="text-xs text-muted-foreground">
-                Sorted by win rate · {data?.rows.length ?? 0} models
-              </p>
-            </div>
+      <section data-reveal className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="eyebrow">Model standings</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+              Sorted by win rate
+            </h2>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {data?.rows.length ?? 0} models
+          </p>
         </div>
 
         {data && data.rows.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Wins</TableHead>
-                  <TableHead className="text-right">Ties</TableHead>
-                  <TableHead className="text-right">Rounds</TableHead>
-                  <TableHead className="text-right">Win %</TableHead>
-                  <TableHead className="text-right">Total votes</TableHead>
-                  <TableHead className="text-right">Reliability</TableHead>
-                  <TableHead className="text-right">Est. cost</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.rows.map((row, index) => (
-                  <LeaderboardRowItem
-                    key={row.modelKey}
-                    row={row}
-                    rank={index + 1}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          <div className="overflow-hidden rounded-xl border border-border/40">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Model</TableHead>
+                    <TableHead className="text-right">Wins</TableHead>
+                    <TableHead className="text-right">Ties</TableHead>
+                    <TableHead className="text-right">Rounds</TableHead>
+                    <TableHead className="text-right">Win %</TableHead>
+                    <TableHead className="text-right">Total votes</TableHead>
+                    <TableHead className="text-right">Reliability</TableHead>
+                    <TableHead className="text-right">Est. cost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.rows.map((row, index) => (
+                    <LeaderboardRowItem
+                      key={row.modelKey}
+                      row={row}
+                      rank={index + 1}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         ) : data ? (
-          <Empty className="py-12">
+          <Empty className="rounded-xl border border-dashed border-border/50 py-12">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <TrophyIcon />
@@ -141,7 +137,7 @@ function LeaderboardPage() {
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="space-y-2 p-6">
+          <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
@@ -249,29 +245,24 @@ function WinRateBar({ value }: { value: number }) {
 }
 
 function SummaryStat({
-  icon: Icon,
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string }>
   label: string
   value: string | null
 }) {
   return (
-    <div className="surface flex items-center gap-4 rounded-xl p-5">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-        <Icon className="size-5" />
-      </div>
-      <div className="leading-tight">
-        <p className="eyebrow">{label}</p>
-        {value === null ? (
-          <Skeleton className="mt-2 h-7 w-20" />
-        ) : (
-          <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">
-            {value}
-          </p>
-        )}
-      </div>
+    <div className="px-3 text-center sm:px-6">
+      <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
+      {value === null ? (
+        <Skeleton className="mx-auto mt-2 h-7 w-20" />
+      ) : (
+        <p className="display mt-1 text-2xl tabular-nums sm:text-3xl">
+          {value}
+        </p>
+      )}
     </div>
   )
 }

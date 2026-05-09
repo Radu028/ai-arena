@@ -202,7 +202,7 @@ function SessionPage() {
   if (sessionView === undefined) {
     return (
       <div className="shell">
-        <Empty className="surface rounded-2xl p-10">
+        <Empty className="rounded-2xl border border-dashed border-border/50 p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <RadioIcon />
@@ -220,7 +220,7 @@ function SessionPage() {
   if (sessionView === null) {
     return (
       <div className="shell">
-        <Empty className="surface rounded-2xl p-10">
+        <Empty className="rounded-2xl border border-dashed border-border/50 p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <GavelIcon />
@@ -250,11 +250,11 @@ function SessionPage() {
   const winner = sessionEnded ? sessionView.scoreboard.at(0) : undefined
 
   return (
-    <div className="shell space-y-6">
+    <div className="shell space-y-10">
       {winner ? (
         <section
           data-reveal
-          className="surface relative overflow-hidden rounded-3xl p-6 sm:p-8"
+          className="relative isolate overflow-hidden rounded-3xl border border-amber-500/20 px-6 py-10 sm:px-10 sm:py-14"
         >
           <div
             aria-hidden
@@ -285,7 +285,7 @@ function SessionPage() {
 
       <SessionOverviewSection sessionView={sessionView} />
 
-      <Tabs defaultValue="live" className="space-y-4">
+      <Tabs defaultValue="live" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 sm:w-auto">
           <TabsTrigger value="live">
             <RadioIcon className="size-3.5" />

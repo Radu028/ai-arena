@@ -3,7 +3,6 @@ import {
   CalendarClockIcon,
   GavelIcon,
   HourglassIcon,
-  MicVocalIcon,
   RadioIcon,
   ScrollTextIcon,
   Users2Icon,
@@ -20,7 +19,6 @@ import {
   EmptyTitle,
 } from '#/components/ui/empty'
 import { ScrollArea } from '#/components/ui/scroll-area'
-import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
 import { LiveVoteChart } from '#/components/arena/LiveVoteChart'
 import { MeasuredEditorialText } from '#/components/arena/MeasuredEditorialText'
@@ -45,87 +43,78 @@ export function SessionOverviewSection({
   const isLive = sessionView.session.status === 'active'
 
   return (
-    <section
-      data-reveal
-      className="surface relative overflow-hidden rounded-3xl"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_-5%_-30%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_45%),radial-gradient(circle_at_115%_120%,color-mix(in_oklab,var(--arena-amber),transparent_72%),transparent_45%)]"
-      />
+    <section data-reveal className="space-y-6 pb-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <SessionStatusPill
+          status={sessionView.session.status}
+          statusLabel={sessionView.session.statusLabel}
+          isLive={isLive}
+        />
+        <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
+        <Badge variant="secondary">
+          {sessionView.session.responseLanguageLabel}
+        </Badge>
+      </div>
 
-      <div className="relative p-6 sm:p-8">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <SessionStatusPill
-              status={sessionView.session.status}
-              statusLabel={sessionView.session.statusLabel}
-              isLive={isLive}
-            />
-            <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
-            <Badge variant="secondary">
-              {sessionView.session.responseLanguageLabel}
-            </Badge>
-          </div>
+      <div>
+        <p className="eyebrow">Live arena</p>
+        <h1 className="display mt-2 text-balance text-3xl sm:text-5xl">
+          {sessionView.session.title}
+        </h1>
+      </div>
 
-          <div>
-            <p className="eyebrow">Live arena</p>
-            <h1 className="display mt-2 text-balance text-3xl sm:text-4xl">
-              {sessionView.session.title}
-            </h1>
-          </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+        <span className="inline-flex items-center gap-2">
+          <Users2Icon className="size-4" />
+          <span className="font-mono tabular-nums text-foreground">
+            {sessionView.session.participantCount}
+          </span>{' '}
+          of{' '}
+          <span className="font-mono tabular-nums">
+            {sessionView.session.maxParticipants}
+          </span>{' '}
+          seats
+        </span>
+        <span aria-hidden className="hidden size-1 rounded-full bg-border sm:inline-block" />
+        <span className="inline-flex items-center gap-2">
+          <CalendarClockIcon className="size-4" />
+          {sessionView.viewer
+            ? `Ready to vote as ${sessionView.viewer.displayName}`
+            : 'Opening your seat...'}
+        </span>
+      </div>
 
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <Users2Icon className="size-4" />
-              <span className="font-mono tabular-nums text-foreground">
-                {sessionView.session.participantCount}
-              </span>{' '}
-              of{' '}
-              <span className="font-mono tabular-nums">
-                {sessionView.session.maxParticipants}
-              </span>{' '}
-              seats
-            </span>
-            <Separator orientation="vertical" className="h-4 max-sm:hidden" />
-            <span className="inline-flex items-center gap-2">
-              <CalendarClockIcon className="size-4" />
-              {sessionView.viewer
-                ? `Ready to vote as ${sessionView.viewer.displayName}`
-                : 'Opening your seat...'}
-            </span>
-          </div>
-
-          <div className="mt-1 flex flex-wrap gap-2">
-            {sessionView.participants.slice(0, 12).map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center gap-2 rounded-full border border-border/60 bg-background/40 py-1 pl-1 pr-3"
-              >
-                <Avatar className="size-6">
-                  <AvatarFallback className="text-[0.6rem]">
-                    {initials(p.displayName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs font-medium">{p.displayName}</span>
-              </div>
-            ))}
-            {sessionView.participants.length > 12 ? (
-              <span className="inline-flex items-center rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs text-muted-foreground">
-                +{sessionView.participants.length - 12} more
-              </span>
-            ) : null}
-          </div>
-          {sessionView.session.customPrompt ? (
-            <div className="rounded-2xl border border-border/60 bg-background/45 p-4">
-              <p className="eyebrow text-[0.65rem]">Arena prompt</p>
-              <p className="mt-2 text-sm leading-6 text-foreground/85">
-                {sessionView.session.customPrompt}
-              </p>
+      {sessionView.participants.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {sessionView.participants.slice(0, 12).map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center gap-2 rounded-full bg-muted/40 py-1 pl-1 pr-3"
+            >
+              <Avatar className="size-6">
+                <AvatarFallback className="text-[0.6rem]">
+                  {initials(p.displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium">{p.displayName}</span>
             </div>
+          ))}
+          {sessionView.participants.length > 12 ? (
+            <span className="inline-flex items-center rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+              +{sessionView.participants.length - 12} more
+            </span>
           ) : null}
         </div>
-      </div>
+      ) : null}
+
+      {sessionView.session.customPrompt ? (
+        <blockquote className="border-l-2 border-primary/40 pl-4">
+          <p className="eyebrow text-[0.65rem]">Arena prompt</p>
+          <p className="mt-2 font-editorial text-base italic leading-7 text-foreground/85">
+            “{sessionView.session.customPrompt}”
+          </p>
+        </blockquote>
+      ) : null}
     </section>
   )
 }
@@ -160,7 +149,7 @@ export function LiveSessionTab({
           autoJoining={autoJoining}
         />
       ) : (
-        <Empty className="surface rounded-2xl p-10">
+        <Empty className="rounded-2xl border border-dashed border-border/50 p-10">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <HourglassIcon />
@@ -183,7 +172,7 @@ function FinishedRoundRecap({
   round: NonNullable<PublicSessionView['latestFinishedRound']>
 }) {
   return (
-    <section className="surface space-y-5 rounded-2xl p-6">
+    <section className="space-y-5 border-t border-border/60 pt-6">
       <header className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="font-mono text-[0.65rem]">
           round {round.roundNumber}
@@ -236,7 +225,7 @@ function LiveRoundCard({
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/60 to-transparent"
       />
 
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 px-6 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-mono text-[0.65rem]">
             round {round.roundNumber}
@@ -314,8 +303,8 @@ function LiveRoundCard({
         {round.status === 'voting' &&
         (sessionView.viewer?.hasVotedCurrentRound ||
           !sessionView.viewer?.canVote) ? (
-          <div className="rounded-2xl border border-border/60 bg-background/40 p-5">
-            <div className="mb-4 flex items-center gap-2">
+          <div className="space-y-3 border-t border-border/40 pt-5">
+            <div className="flex items-center gap-2">
               <GavelIcon className="size-4 text-primary" />
               <p className="text-sm font-semibold">Live vote split</p>
             </div>
@@ -360,7 +349,7 @@ export function SessionHistoryTab({
 }) {
   if (rounds.length === 0) {
     return (
-      <Empty className="surface rounded-2xl p-10">
+      <Empty className="rounded-2xl border border-dashed border-border/50 p-10">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <ScrollTextIcon />
@@ -376,13 +365,13 @@ export function SessionHistoryTab({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-12">
       {rounds.map((round) => (
         <article
           key={round.id}
-          className="surface relative overflow-hidden rounded-2xl"
+          className="space-y-5 border-t border-border/60 pt-6 first:border-t-0 first:pt-0"
         >
-          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-6 py-4">
+          <header className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="font-mono text-[0.65rem]">
                 round {round.roundNumber}
@@ -391,7 +380,7 @@ export function SessionHistoryTab({
             </div>
           </header>
 
-          <div className="space-y-5 px-6 py-6">
+          <div className="space-y-5">
             <div>
               <p className="eyebrow">Topic</p>
               <h3 className="mt-1.5 font-display text-balance text-xl font-semibold tracking-tight sm:text-2xl">
@@ -445,21 +434,21 @@ export function SessionEventLogTab({
   events: PublicSessionView['events']
 }) {
   return (
-    <section className="surface relative overflow-hidden rounded-2xl">
-      <header className="flex items-center gap-3 border-b border-border/60 px-6 py-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <MicVocalIcon className="size-5" />
-        </div>
+    <section className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold">Live event log</p>
-          <p className="text-xs text-muted-foreground">
-            Newest events first · {events.length} total
-          </p>
+          <p className="eyebrow">Live event log</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+            Session timeline
+          </h2>
         </div>
-      </header>
+        <p className="text-xs text-muted-foreground">
+          Newest first · {events.length} total
+        </p>
+      </div>
 
       {events.length === 0 ? (
-        <Empty className="py-10">
+        <Empty className="rounded-xl border border-dashed border-border/50 py-10">
           <EmptyHeader>
             <EmptyTitle>No events yet</EmptyTitle>
             <EmptyDescription>
@@ -469,7 +458,7 @@ export function SessionEventLogTab({
         </Empty>
       ) : (
         <ScrollArea className="h-112">
-          <ol className="relative ml-6 mr-6 my-6 space-y-5 border-l border-border/60 pl-6">
+          <ol className="relative ml-1 my-2 space-y-5 border-l border-border/60 pl-6">
             {events.map((event) => (
               <li key={event._id} className="relative">
                 <span
