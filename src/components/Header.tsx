@@ -29,7 +29,6 @@ import {
 import { cn } from '#/lib/utils'
 import { AdminOnly } from './AdminOnly'
 import {
-  DEFAULT_AUTH_REDIRECT,
   safeAuthRedirect,
   stringifyLocationSearch,
 } from '#/lib/authRedirect'
@@ -215,18 +214,7 @@ function HeaderNavLink({
 
 function HeaderAuth() {
   const { isLoaded, isSignedIn } = useAuth()
-  const { pathname, search, hash } = useLocation()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Compute the redirect target from the router (works on SSR and client),
-  // but only attach it after hydration to avoid attribute mismatches.
-  const searchString = stringifyLocationSearch(search)
-  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
-  const redirect = mounted ? safeAuthRedirect(here) : DEFAULT_AUTH_REDIRECT
+  const redirect = useCurrentRedirect()
 
   if (!isLoaded) {
     return (
@@ -330,16 +318,7 @@ function HeaderUserMenu() {
 function MobileAuthLinks({ onNavigate }: { onNavigate: () => void }) {
   const { isLoaded, isSignedIn } = useAuth()
   const clerk = useClerk()
-  const { pathname, search, hash } = useLocation()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const searchString = stringifyLocationSearch(search)
-  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
-  const returnTo = mounted ? safeAuthRedirect(here) : DEFAULT_AUTH_REDIRECT
+  const returnTo = useCurrentRedirect()
 
   if (!isLoaded) return null
 
@@ -418,6 +397,20 @@ function Avatar({
       )}
     </span>
   )
+}
+
+// Compute the current location-based redirect target for auth links. We
+// intentionally derive this synchronously from the router rather than gating it
+// behind a `mounted` flag — TanStack Start's SSR pipeline renders some
+// components more than once and the post-effect render is the one that ends up
+// in the served HTML, so a `useEffect`-driven swap creates a hydration
+// mismatch when the client picks up the pre-effect value. `useLocation` returns
+// the same path on both sides of hydration, so the value stays stable.
+function useCurrentRedirect() {
+  const { pathname, search, hash } = useLocation()
+  const searchString = stringifyLocationSearch(search)
+  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
+  return safeAuthRedirect(here)
 }
 
 function computeInitials(value: string) {

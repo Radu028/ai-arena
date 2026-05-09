@@ -6,7 +6,6 @@ import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
 import {
-  DEFAULT_AUTH_REDIRECT,
   safeAuthRedirect,
   stringifyLocationSearch,
 } from '#/lib/authRedirect'
@@ -59,15 +58,18 @@ function ConfiguredAdminGuard({
 }) {
   const { isLoaded, isSignedIn } = useAuth()
   const { pathname, search, hash } = useLocation()
+  // Delay rendering the auth-resolved branches until after hydration so we
+  // don't briefly flash "Sign in" on SSR when the user is in fact signed in.
+  // The redirect URL itself is computed statically from the router so it
+  // matches between SSR and the first client render.
   const [mounted, setMounted] = useState(false)
-
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const searchString = stringifyLocationSearch(search)
   const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
-  const returnTo = mounted ? safeAuthRedirect(here) : DEFAULT_AUTH_REDIRECT
+  const returnTo = safeAuthRedirect(here)
 
   if (!mounted || !isLoaded) {
     return (
