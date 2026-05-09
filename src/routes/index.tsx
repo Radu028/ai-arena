@@ -318,22 +318,22 @@ function CallToAction() {
   return (
     <section
       data-reveal
-      className="relative isolate overflow-hidden rounded-3xl border border-border/40 px-8 py-14 sm:px-16 sm:py-20"
+      className="relative isolate overflow-hidden border-t border-border/60 pt-16 sm:pt-20"
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-20%,color-mix(in_oklab,var(--arena-violet),transparent_55%),transparent_50%),radial-gradient(circle_at_85%_120%,color-mix(in_oklab,var(--arena-amber),transparent_55%),transparent_45%)]"
+        className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(circle_at_18%_50%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_55%),radial-gradient(circle_at_82%_50%,color-mix(in_oklab,var(--arena-amber),transparent_72%),transparent_55%)]"
       />
-      <div className="relative max-w-3xl">
+      <div className="relative mx-auto max-w-3xl text-center">
         <p className="eyebrow">Run a session</p>
         <h2 className="display mt-3 text-balance text-3xl sm:text-5xl">
-          Spin up a live arena in under a minute.
+          Spin up a live arena <span className="gradient-text">in under a minute.</span>
         </h2>
-        <p className="mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
           Pick a theme, lock the lineup, and share the join code. The room
           opens instantly with anonymous responses and live voting.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3">
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <AdminOnly>
             <Button asChild size="lg" className="h-11 rounded-full px-6">
               <Link to="/admin">
@@ -369,14 +369,14 @@ function SectionHeading({
   description: string
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+    <div className="grid gap-4 md:grid-cols-12 md:items-end md:gap-10">
+      <div className="md:col-span-7 lg:col-span-8">
         <p className="eyebrow">{eyebrow}</p>
-        <h2 className="mt-2 max-w-3xl text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="mt-2 text-pretty text-2xl font-semibold tracking-tight sm:text-3xl">
           {title}
         </h2>
       </div>
-      <p className="max-w-md text-pretty text-sm leading-6 text-muted-foreground sm:text-right">
+      <p className="text-pretty text-sm leading-6 text-muted-foreground md:col-span-5 md:text-right lg:col-span-4">
         {description}
       </p>
     </div>
