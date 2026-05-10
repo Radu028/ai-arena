@@ -10,11 +10,11 @@ import { useSignUp } from '@clerk/nextjs' // or @clerk/react, @clerk/expo
 const { signUp, errors, fetchStatus } = useSignUp()
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `signUp` | `SignUpFuture` | Sign-up object with namespaced methods |
-| `errors` | `Errors<SignUpFields>` | Structured error object |
-| `fetchStatus` | `'idle' \| 'fetching'` | Network request status |
+| Property      | Type                   | Description                            |
+| ------------- | ---------------------- | -------------------------------------- |
+| `signUp`      | `SignUpFuture`         | Sign-up object with namespaced methods |
+| `errors`      | `Errors<SignUpFields>` | Structured error object                |
+| `fetchStatus` | `'idle' \| 'fetching'` | Network request status                 |
 
 ## Sign-Up Methods
 
@@ -24,8 +24,8 @@ const { signUp, errors, fetchStatus } = useSignUp()
 const { error } = await signUp.password({
   emailAddress: 'user@example.com',
   password: 'securePassword123',
-  firstName: 'Jane',  // optional
-  lastName: 'Doe',    // optional
+  firstName: 'Jane', // optional
+  lastName: 'Doe', // optional
 })
 ```
 
@@ -86,7 +86,9 @@ const { error } = await signUp.verifications.verifyPhoneCode({ code: '123456' })
 
 ```typescript
 // verificationUrl: where the user lands after clicking the email link (relative or absolute)
-const { error } = await signUp.verifications.sendEmailLink({ verificationUrl: '/verify' })
+const { error } = await signUp.verifications.sendEmailLink({
+  verificationUrl: '/verify',
+})
 // User clicks the link in their email to verify
 ```
 
@@ -132,12 +134,12 @@ const { signUp, errors } = useSignUp()
 
 // Field-level errors
 errors?.fields?.emailAddress // { code, message, longMessage? }
-errors?.fields?.password     // { code, message, longMessage? }
-errors?.fields?.firstName    // { code, message, longMessage? }
-errors?.fields?.lastName     // { code, message, longMessage? }
-errors?.fields?.phoneNumber  // { code, message, longMessage? }
-errors?.fields?.username     // { code, message, longMessage? }
-errors?.fields?.code         // { code, message, longMessage? }
+errors?.fields?.password // { code, message, longMessage? }
+errors?.fields?.firstName // { code, message, longMessage? }
+errors?.fields?.lastName // { code, message, longMessage? }
+errors?.fields?.phoneNumber // { code, message, longMessage? }
+errors?.fields?.username // { code, message, longMessage? }
+errors?.fields?.code // { code, message, longMessage? }
 
 // Global errors
 errors?.global // ClerkGlobalHookError[] | null
@@ -224,7 +226,9 @@ export default function SignUpPage() {
           </button>
         </form>
         {/* For email OTP: change sendPhoneCode() to sendEmailCode() */}
-        <button onClick={() => signUp.verifications.sendPhoneCode()}>I need a new code</button>
+        <button onClick={() => signUp.verifications.sendPhoneCode()}>
+          I need a new code
+        </button>
       </>
     )
   }
@@ -237,7 +241,9 @@ export default function SignUpPage() {
         <div>
           <label htmlFor="phoneNumber">Phone number</label>
           <input id="phoneNumber" name="phoneNumber" type="tel" />
-          {errors.fields.phoneNumber && <p>{errors.fields.phoneNumber.message}</p>}
+          {errors.fields.phoneNumber && (
+            <p>{errors.fields.phoneNumber.message}</p>
+          )}
         </div>
         <button type="submit" disabled={fetchStatus === 'fetching'}>
           Continue

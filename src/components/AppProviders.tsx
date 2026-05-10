@@ -3,6 +3,7 @@ import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import { createContext, use } from 'react'
 import { ThemeProvider } from 'next-themes'
+import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { runtimeConfig, runtimeFlags } from '#/lib/runtime'
 
 const convexClient = runtimeFlags.hasConvex
@@ -59,7 +60,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <ConvexLayer>{children}</ConvexLayer>
+        <MotionConfig reducedMotion="user">
+          <LazyMotion features={domAnimation} strict>
+            <ConvexLayer>{children}</ConvexLayer>
+          </LazyMotion>
+        </MotionConfig>
       </ThemeProvider>
     </RuntimeContext.Provider>
   )

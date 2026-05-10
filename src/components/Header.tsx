@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth, useClerk, useUser } from '@clerk/tanstack-react-start'
 import {
   ArrowRightIcon,
@@ -28,7 +28,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { cn } from '#/lib/utils'
 import { AdminOnly } from './AdminOnly'
-import { currentAuthRedirect } from '#/lib/authRedirect'
+import { safeAuthRedirect, stringifyLocationSearch } from '#/lib/authRedirect'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },
@@ -45,6 +45,7 @@ const ADMIN_NAV_LINK = {
 
 export default function Header() {
   const runtime = useRuntimeConfig()
+  const { pathname } = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -54,6 +55,11 @@ export default function Header() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Close the mobile menu whenever the route changes
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
 
   return (
     <header
@@ -68,7 +74,7 @@ export default function Header() {
         <Link
           to="/"
           className="group inline-flex items-center gap-2.5"
-          onClick={() => setMobileOpen(false)}
+          aria-label="AI Arena home"
         >
           <span className="relative inline-flex">
             <ArenaLogo
@@ -81,7 +87,7 @@ export default function Header() {
             <span className="text-[0.95rem] font-semibold tracking-tight whitespace-nowrap">
               AI Arena
             </span>
-            <span className="mt-0.5 hidden text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground sm:inline-block">
+            <span className="mt-0.5 hidden whitespace-nowrap text-[0.625rem] uppercase tracking-[0.2em] text-muted-foreground lg:inline-block">
               live model battles
             </span>
           </span>
@@ -127,6 +133,7 @@ export default function Header() {
             className="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? (
               <XIcon className="size-4" />
@@ -137,32 +144,38 @@ export default function Header() {
         </div>
       </nav>
 
-      {mobileOpen ? (
-        <div className="border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur-xl md:hidden">
-          <div className="flex flex-col gap-1">
-            {NAV_LINKS.map(({ to, label, icon: Icon }) => (
-              <HeaderNavLink
-                key={to}
-                to={to}
-                label={label}
-                icon={Icon}
-                mobile
-                onNavigate={() => setMobileOpen(false)}
-              />
-            ))}
-            <AdminOnly>
-              <HeaderNavLink
-                {...ADMIN_NAV_LINK}
-                mobile
-                onNavigate={() => setMobileOpen(false)}
-              />
-            </AdminOnly>
-            {runtime.hasClerk ? (
-              <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
-            ) : null}
-          </div>
+      <div
+        className={cn(
+          'overflow-hidden border-t border-border/0 bg-background/95 backdrop-blur-xl transition-[max-height,border-color,opacity] duration-300 ease-out md:hidden',
+          mobileOpen
+            ? 'max-h-[420px] border-border/60 opacity-100'
+            : 'pointer-events-none max-h-0 opacity-0',
+        )}
+        aria-hidden={!mobileOpen}
+      >
+        <div className="flex flex-col gap-1 px-4 py-3">
+          {NAV_LINKS.map(({ to, label, icon: Icon }) => (
+            <HeaderNavLink
+              key={to}
+              to={to}
+              label={label}
+              icon={Icon}
+              mobile
+              onNavigate={() => setMobileOpen(false)}
+            />
+          ))}
+          <AdminOnly>
+            <HeaderNavLink
+              {...ADMIN_NAV_LINK}
+              mobile
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </AdminOnly>
+          {runtime.hasClerk ? (
+            <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
+          ) : null}
         </div>
-      ) : null}
+      </div>
     </header>
   )
 }
@@ -198,6 +211,7 @@ function HeaderNavLink({
 
 function HeaderAuth() {
   const { isLoaded, isSignedIn } = useAuth()
+  const redirect = useCurrentRedirect()
 
   if (!isLoaded) {
     return (
@@ -214,7 +228,7 @@ function HeaderAuth() {
         <Button asChild size="sm" className="group h-9 rounded-full px-4">
           <Link
             to="/login"
-            search={{ redirect: currentAuthRedirect() }}
+            search={{ redirect }}
             aria-label="Sign in with Google"
           >
             <span>Sign in</span>
@@ -301,7 +315,7 @@ function HeaderUserMenu() {
 function MobileAuthLinks({ onNavigate }: { onNavigate: () => void }) {
   const { isLoaded, isSignedIn } = useAuth()
   const clerk = useClerk()
-  const returnTo = currentAuthRedirect()
+  const returnTo = useCurrentRedirect()
 
   if (!isLoaded) return null
 
@@ -380,6 +394,20 @@ function Avatar({
       )}
     </span>
   )
+}
+
+// Compute the current location-based redirect target for auth links. We
+// intentionally derive this synchronously from the router rather than gating it
+// behind a `mounted` flag — TanStack Start's SSR pipeline renders some
+// components more than once and the post-effect render is the one that ends up
+// in the served HTML, so a `useEffect`-driven swap creates a hydration
+// mismatch when the client picks up the pre-effect value. `useLocation` returns
+// the same path on both sides of hydration, so the value stays stable.
+function useCurrentRedirect() {
+  const { pathname, search, hash } = useLocation()
+  const searchString = stringifyLocationSearch(search)
+  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
+  return safeAuthRedirect(here)
 }
 
 function computeInitials(value: string) {

@@ -1,0 +1,13 @@
+peerDependencyRules:
+  allowedVersions:
+    '@tailwindcss/typography>tailwindcss': '>=4.0.0'
+    'tsconfck>typescript': '>=6.0.0'
+
+allowBuilds:
+  '@clerk/shared': false
+  '@google/genai': true
+  esbuild: true
+  lightningcss: true
+  msw: false
+  protobufjs: false
+  unrs-resolver: true

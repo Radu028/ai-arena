@@ -12,11 +12,11 @@ import { useSignIn } from '@clerk/nextjs' // or @clerk/clerk-react, @clerk/clerk
 const { signIn, isLoaded, setActive } = useSignIn()
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `signIn` | `SignIn` | Sign-in object with methods |
-| `isLoaded` | `boolean` | Whether the hook has loaded |
-| `setActive` | `(params) => Promise` | Sets the active session |
+| Property    | Type                  | Description                 |
+| ----------- | --------------------- | --------------------------- |
+| `signIn`    | `SignIn`              | Sign-in object with methods |
+| `isLoaded`  | `boolean`             | Whether the hook has loaded |
+| `setActive` | `(params) => Promise` | Sets the active session     |
 
 ## Sign-In Flow
 
@@ -75,13 +75,19 @@ await setActive({ session: signIn.createdSessionId })
 
 ```typescript
 // 1. Start reset flow
-await signIn.create({ strategy: 'reset_password_email_code', identifier: 'user@example.com' })
+await signIn.create({
+  strategy: 'reset_password_email_code',
+  identifier: 'user@example.com',
+})
 
 // or prepare after initial create:
 await signIn.prepareFirstFactor({ strategy: 'reset_password_email_code' })
 
 // 2. Verify reset code
-await signIn.attemptFirstFactor({ strategy: 'reset_password_email_code', code: '123456' })
+await signIn.attemptFirstFactor({
+  strategy: 'reset_password_email_code',
+  code: '123456',
+})
 
 // 3. Set new password
 await signIn.resetPassword({ password: 'newSecurePassword123' })
@@ -109,8 +115,8 @@ try {
 } catch (err) {
   if (isClerkAPIResponseError(err)) {
     err.errors.forEach((e) => {
-      console.log(e.code)        // e.g. 'form_identifier_not_found'
-      console.log(e.message)     // Human-readable message
+      console.log(e.code) // e.g. 'form_identifier_not_found'
+      console.log(e.message) // Human-readable message
       console.log(e.longMessage) // Detailed message
     })
   }

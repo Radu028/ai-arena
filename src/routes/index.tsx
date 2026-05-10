@@ -8,25 +8,13 @@ import {
   LockIcon,
   MicVocalIcon,
   RadioIcon,
-  SparklesIcon,
-  TimerIcon,
   TrophyIcon,
-  Users2Icon,
   ZapIcon,
 } from 'lucide-react'
 import { api } from '@convex/_generated/api'
 import { AVAILABLE_MODELS, THEME_COPY } from '@shared/arena'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
-import { Separator } from '#/components/ui/separator'
-import { cn } from '#/lib/utils'
 import { AdminOnly } from '#/components/AdminOnly'
 
 export const Route = createFileRoute('/')({ component: HomePage })
@@ -35,7 +23,7 @@ function HomePage() {
   const stats = useQuery(api.stats.getModelLeaderboard, {})
 
   return (
-    <div className="shell space-y-20 sm:space-y-24">
+    <div className="shell space-y-24 sm:space-y-28">
       <Hero
         completedSessions={stats?.sessionsIncluded ?? 0}
         modelsTracked={
@@ -108,49 +96,36 @@ function Hero({
         </div>
       </div>
 
-      <div className="mt-16 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm">
-        <HeroStat
-          icon={SparklesIcon}
-          label="frontier models"
-          value={String(modelsTracked)}
-        />
-        <Separator orientation="vertical" className="h-6 max-md:hidden" />
-        <HeroStat
-          icon={TrophyIcon}
-          label="completed sessions"
-          value={String(completedSessions)}
-        />
-        <Separator orientation="vertical" className="h-6 max-md:hidden" />
-        <HeroStat icon={GavelIcon} label="round agents" value="3" />
-        <Separator orientation="vertical" className="h-6 max-md:hidden" />
-        <HeroStat icon={LockIcon} label="anonymous voting" value="100%" />
+      <div
+        className={
+          completedSessions > 0
+            ? 'mt-16 grid grid-cols-2 gap-y-6 sm:mt-20 md:grid-cols-4 md:divide-x md:divide-border/50'
+            : 'mt-16 grid grid-cols-3 gap-y-6 sm:mt-20 md:divide-x md:divide-border/50'
+        }
+      >
+        <HeroStat label="frontier models" value={String(modelsTracked)} />
+        <HeroStat label="round agents" value="3" />
+        {completedSessions > 0 ? (
+          <HeroStat
+            label="completed sessions"
+            value={String(completedSessions)}
+          />
+        ) : null}
+        <HeroStat label="anonymous voting" value="100%" />
       </div>
     </section>
   )
 }
 
-function HeroStat({
-  icon: Icon,
-  value,
-  label,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  value: string
-  label: string
-}) {
+function HeroStat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <Icon className="size-4" />
-      </div>
-      <div className="leading-tight">
-        <p className="font-mono text-base font-semibold tabular-nums">
-          {value}
-        </p>
-        <p className="text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
-          {label}
-        </p>
-      </div>
+    <div className="flex flex-col items-center justify-center gap-1 px-4 text-center md:items-start md:px-8 md:text-left">
+      <p className="font-mono text-2xl font-semibold tabular-nums sm:text-3xl">
+        {value}
+      </p>
+      <p className="text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
     </div>
   )
 }
@@ -161,59 +136,45 @@ function FlowSection() {
       step: '01',
       title: 'Topic locks once',
       copy: 'The first valid prompt freezes the round. No more edits — every model sees the same brief.',
-      icon: TimerIcon,
     },
     {
       step: '02',
       title: 'Models answer in parallel',
       copy: 'Responses arrive simultaneously. Anything missing the provider timeout gets a graceful timeout.',
-      icon: ZapIcon,
     },
     {
       step: '03',
       title: 'Crowd & AI judges vote',
       copy: 'Humans and eligible models cast one ballot each. Models cannot vote for themselves.',
-      icon: Users2Icon,
     },
     {
       step: '04',
       title: 'Agents react, MC bridges',
       copy: 'The Critic explains the win, Stats summarises the round, the MC flows into the next.',
-      icon: MicVocalIcon,
     },
   ]
 
   return (
-    <section data-reveal className="space-y-8">
+    <section data-reveal className="space-y-12">
       <SectionHeading
         eyebrow="Round loop"
         title="Built for live arenas, not benchmarks."
         description="Every round runs on the same clean four-step loop, with anonymous reveals and explicit ties. No magic, no leaderboard farming."
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s) => (
-          <Card
-            key={s.step}
-            className="surface sheen-on-hover relative overflow-hidden p-5 ring-0 transition-shadow hover:ring-1 hover:ring-foreground/15"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <s.icon className="size-5" />
-              </div>
-              <span className="font-mono text-xs tracking-wider text-muted-foreground">
-                {s.step}
-              </span>
-            </div>
-            <CardTitle className="mt-4 text-base font-semibold">
-              {s.title}
-            </CardTitle>
+          <li key={s.step} className="border-t border-border/60 pt-5">
+            <span className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+              Step {s.step}
+            </span>
+            <h3 className="mt-2.5 text-base font-semibold">{s.title}</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {s.copy}
             </p>
-          </Card>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   )
 }
@@ -224,73 +185,53 @@ function FeatureSection() {
       title: 'Host / MC agent',
       copy: 'Introduces rounds, threads transitions, and closes with a recap. Generated text feels like a tight broadcast.',
       icon: MicVocalIcon,
-      ringClass: 'ring-violet',
     },
     {
       title: 'Critic agent',
       copy: 'Explains why the winner worked and what the runners-up missed. Editorial, not evangelical.',
       icon: GavelIcon,
-      ringClass: 'ring-violet',
     },
     {
       title: 'Stats analyst',
       copy: 'Quietly summarises vote distributions, latency, and reliability after every finalised round.',
       icon: BarChart3Icon,
-      ringClass: 'ring-violet',
     },
     {
       title: 'Realtime crowd',
       copy: 'Audiences join in seconds, watch votes update live, and only need a username when they vote.',
       icon: RadioIcon,
-      ringClass: 'ring-amber',
     },
     {
       title: 'Anonymous reveal',
       copy: 'Responses stay anonymous through voting. Identities only unlock once the ballots close.',
       icon: LockIcon,
-      ringClass: 'ring-amber',
     },
     {
       title: 'Champion card',
       copy: 'When a session ends, AI Arena renders a downloadable champion portrait you can share.',
       icon: TrophyIcon,
-      ringClass: 'ring-amber',
     },
   ]
 
   return (
-    <section data-reveal className="space-y-8">
+    <section data-reveal className="space-y-12">
       <SectionHeading
         eyebrow="Inside the arena"
         title="Three agents, one stage, zero filler."
         description="Every artifact you see — host introductions, critic notes, stats summaries — comes from a dedicated agent that only ships when a round actually finalises."
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
         {features.map((f) => (
-          <Card
-            key={f.title}
-            className={cn(
-              'surface relative overflow-hidden p-5 ring-0 transition-all hover:-translate-y-0.5 hover:ring-1 hover:ring-foreground/15',
-            )}
-          >
-            <div
-              className={cn(
-                'inline-flex size-10 items-center justify-center rounded-lg',
-                f.ringClass === 'ring-violet'
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-              )}
-            >
-              <f.icon className="size-5" />
+          <div key={f.title}>
+            <div className="inline-flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <f.icon className="size-4.5" />
             </div>
-            <CardTitle className="mt-4 text-base font-semibold">
-              {f.title}
-            </CardTitle>
+            <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {f.copy}
             </p>
-          </Card>
+          </div>
         ))}
       </div>
     </section>
@@ -299,25 +240,31 @@ function FeatureSection() {
 
 function RosterSection() {
   return (
-    <section data-reveal className="space-y-8">
+    <section data-reveal className="space-y-12">
       <SectionHeading
         eyebrow="Battle roster"
         title="The frontier models on stage."
         description="The lineup is snapshotted at session creation, so historical sessions stay reproducible even when providers ship new versions."
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {AVAILABLE_MODELS.map((model) => (
-          <Card
+          <li
             key={model.key}
-            className="surface group relative overflow-hidden p-5 ring-0 transition-all hover:-translate-y-0.5 hover:ring-1 hover:ring-foreground/15"
+            className="border-t border-border/60 pt-5"
+            style={
+              {
+                ['--accent']: model.accent,
+              } as React.CSSProperties
+            }
           >
             <div className="flex items-center justify-between">
               <span
-                className="size-2.5 rounded-full ring-2 ring-background"
+                className="size-2.5 rounded-full"
                 style={{ backgroundColor: model.accent }}
+                aria-hidden
               />
-              <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+              <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
                 {model.providerKey}
               </span>
             </div>
@@ -325,79 +272,74 @@ function RosterSection() {
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {model.description}
             </p>
-            <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="mt-4 text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
               {model.tagline}
             </p>
-          </Card>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }
 
 function ThemeSection() {
   return (
-    <section data-reveal className="space-y-8">
+    <section data-reveal className="space-y-12">
       <SectionHeading
         eyebrow="Theme presets"
         title="Tune the room with a single switch."
         description="Each preset rewires Host tone, Critic framing, and the quality bar judges hold every model to. Pick one, then run the round."
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {Object.entries(THEME_COPY).map(([key, copy]) => (
-          <Card
-            key={key}
-            className="surface relative overflow-hidden p-5 ring-0 transition-all hover:-translate-y-0.5 hover:ring-1 hover:ring-foreground/15"
-          >
-            <Badge
-              variant="outline"
-              className="font-mono text-[0.65rem] uppercase tracking-wider"
-            >
+          <li key={key} className="border-t border-border/60 pt-5">
+            <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
               {key}
-            </Badge>
-            <p className="mt-4 text-base font-semibold">{copy.label}</p>
-            <Separator className="my-4 opacity-60" />
-            <dl className="grid gap-2 text-sm">
+            </span>
+            <p className="mt-3 text-base font-semibold">{copy.label}</p>
+            <dl className="mt-4 space-y-3 text-sm">
               <div>
-                <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-muted-foreground">
+                <dt className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
                   Host tone
                 </dt>
-                <dd className="leading-6">{copy.hostTone}</dd>
+                <dd className="mt-0.5 leading-6">{copy.hostTone}</dd>
               </div>
               <div>
-                <dt className="text-[0.7rem] uppercase tracking-[0.14em] text-muted-foreground">
+                <dt className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
                   Critic angle
                 </dt>
-                <dd className="leading-6">{copy.criticAngle}</dd>
+                <dd className="mt-0.5 leading-6">{copy.criticAngle}</dd>
               </div>
             </dl>
-          </Card>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   )
 }
 
 function CallToAction() {
   return (
-    <section data-reveal>
-      <Card className="surface relative overflow-hidden border-border/70 p-0 ring-0">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-20%,color-mix(in_oklab,var(--arena-violet),transparent_55%),transparent_50%),radial-gradient(circle_at_85%_120%,color-mix(in_oklab,var(--arena-amber),transparent_55%),transparent_45%)]"
-        />
-        <CardHeader className="relative px-8 pt-10 sm:px-12">
-          <p className="eyebrow">Run a session</p>
-          <CardTitle className="display max-w-3xl text-balance text-4xl sm:text-5xl">
-            Spin up a live arena in under a minute.
-          </CardTitle>
-          <CardDescription className="max-w-2xl text-pretty text-base sm:text-lg sm:leading-7">
-            Pick a theme, lock the lineup, and share the join code. The room
-            opens instantly with anonymous responses and live voting.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="relative flex flex-wrap items-center gap-3 px-8 pb-10 pt-3 sm:px-12">
+    <section
+      data-reveal
+      className="relative isolate overflow-hidden border-t border-border/60 pt-16 sm:pt-20"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(circle_at_18%_50%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_55%),radial-gradient(circle_at_82%_50%,color-mix(in_oklab,var(--arena-amber),transparent_72%),transparent_55%)]"
+      />
+      <div className="relative mx-auto max-w-3xl text-center">
+        <p className="eyebrow">Run a session</p>
+        <h2 className="display mt-3 text-balance text-3xl sm:text-5xl">
+          Spin up a live arena{' '}
+          <span className="gradient-text">in under a minute.</span>
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+          Pick a theme, lock the lineup, and share the join code. The room opens
+          instantly with anonymous responses and live voting.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <AdminOnly>
             <Button asChild size="lg" className="h-11 rounded-full px-6">
               <Link to="/admin">
@@ -417,8 +359,8 @@ function CallToAction() {
               <ArrowRightIcon className="size-4" />
             </Link>
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </section>
   )
 }
@@ -433,14 +375,14 @@ function SectionHeading({
   description: string
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+    <div className="grid gap-4 md:grid-cols-12 md:items-end md:gap-10">
+      <div className="md:col-span-7 lg:col-span-8">
         <p className="eyebrow">{eyebrow}</p>
-        <h2 className="mt-2 max-w-3xl text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h2 className="mt-2 text-pretty text-2xl font-semibold tracking-tight sm:text-3xl">
           {title}
         </h2>
       </div>
-      <p className="max-w-md text-pretty text-sm leading-6 text-muted-foreground sm:text-right">
+      <p className="text-pretty text-sm leading-6 text-muted-foreground md:col-span-5 md:text-right lg:col-span-4">
         {description}
       </p>
     </div>

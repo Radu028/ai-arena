@@ -82,7 +82,7 @@ Use `<UserProfile />` for the user account billing UI. It renders the current pl
 import { UserProfile } from '@clerk/nextjs'
 
 export default function AccountPage() {
-	return <UserProfile />
+  return <UserProfile />
 }
 ```
 
@@ -95,14 +95,15 @@ For richer subscription details in client components (status, renewal date, tria
 import { useSubscription } from '@clerk/nextjs/experimental'
 
 export function BillingSummary() {
-	const { data, isLoading } = useSubscription()
-	if (isLoading || !data) return null
-	return (
-		<p>
-			Status: {data.status}
-			{data.nextPayment && ` (renews ${data.nextPayment.date.toLocaleDateString()})`}
-		</p>
-	)
+  const { data, isLoading } = useSubscription()
+  if (isLoading || !data) return null
+  return (
+    <p>
+      Status: {data.status}
+      {data.nextPayment &&
+        ` (renews ${data.nextPayment.date.toLocaleDateString()})`}
+    </p>
+  )
 }
 ```
 
@@ -115,19 +116,18 @@ For interactive components that need plan checks:
 import { useAuth } from '@clerk/nextjs'
 
 export function ExportButton() {
-	const { has } = useAuth()
+  const { has } = useAuth()
 
-	if (!has?.({ plan: 'pro' })) {
-		return (
-			<button disabled title="Pro plan required">
-				Export (Pro)
-			</button>
-		)
-	}
+  if (!has?.({ plan: 'pro' })) {
+    return (
+      <button disabled title="Pro plan required">
+        Export (Pro)
+      </button>
+    )
+  }
 
-	return <button onClick={handleExport}>Export</button>
+  return <button onClick={handleExport}>Export</button>
 }
 ```
 
 Note: `has` may be `undefined` on initial render. Use optional chaining `has?.()`.
-

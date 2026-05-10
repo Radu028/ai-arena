@@ -28,3 +28,21 @@ export function currentAuthRedirect() {
     `${window.location.pathname}${window.location.search}${window.location.hash}`,
   )
 }
+
+export function stringifyLocationSearch(search: unknown): string {
+  if (typeof search === 'string') {
+    return search.startsWith('?') || search.length === 0 ? search : `?${search}`
+  }
+  if (search && typeof search === 'object') {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(
+      search as Record<string, unknown>,
+    )) {
+      if (value === undefined || value === null) continue
+      params.append(key, String(value))
+    }
+    const out = params.toString()
+    return out.length > 0 ? `?${out}` : ''
+  }
+  return ''
+}

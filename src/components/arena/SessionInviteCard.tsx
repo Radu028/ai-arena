@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   CheckIcon,
   CopyIcon,
@@ -28,11 +28,14 @@ export function SessionInviteCard({
   const shareInputId = useId()
   const [copied, setCopied] = useState(false)
   const [largeQr, setLargeQr] = useState(false)
+  const [origin, setOrigin] = useState<string | null>(null)
   const joinPath = `/sessions/${slug}`
-  const shareUrl =
-    typeof window === 'undefined'
-      ? joinPath
-      : new URL(joinPath, window.location.origin).toString()
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
+  const shareUrl = origin ? `${origin}${joinPath}` : joinPath
   const qrSize = largeQr ? 520 : 240
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&margin=12&data=${encodeURIComponent(shareUrl)}`
 

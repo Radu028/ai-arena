@@ -1,10 +1,11 @@
 import { useAuth } from '@clerk/tanstack-react-start'
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { Loader2Icon, LockKeyholeIcon, ShieldAlertIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
-import { currentAuthRedirect } from '#/lib/authRedirect'
+import { safeAuthRedirect, stringifyLocationSearch } from '#/lib/authRedirect'
 import {
   Empty,
   EmptyDescription,
@@ -53,9 +54,21 @@ function ConfiguredAdminGuard({
   title: string
 }) {
   const { isLoaded, isSignedIn } = useAuth()
-  const returnTo = currentAuthRedirect()
+  const { pathname, search, hash } = useLocation()
+  // Delay rendering the auth-resolved branches until after hydration so we
+  // don't briefly flash "Sign in" on SSR when the user is in fact signed in.
+  // The redirect URL itself is computed statically from the router so it
+  // matches between SSR and the first client render.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  if (!isLoaded) {
+  const searchString = stringifyLocationSearch(search)
+  const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
+  const returnTo = safeAuthRedirect(here)
+
+  if (!mounted || !isLoaded) {
     return (
       <div className="surface flex flex-col items-center gap-3 rounded-2xl border border-border/60 p-10 text-center">
         <Loader2Icon

@@ -71,8 +71,8 @@ If that prints `1.1.1` (or any version you trust), use bare `clerk` for the rest
 
 Otherwise fall back to a package runner, in this order (matches the CLI's own `preferredRunner` logic, which prefers the runner that matches the project's lockfile):
 
-| Project package manager   | Invocation                       |
-| ------------------------- | -------------------------------- |
+| Project package manager   | Invocation             |
+| ------------------------- | ---------------------- |
 | bun (`bun.lock*`)         | `bunx clerk@1.1.1`     |
 | npm (`package-lock.json`) | `npx -y clerk@1.1.1`   |
 | pnpm (`pnpm-lock.yaml`)   | `pnpm dlx clerk@1.1.1` |

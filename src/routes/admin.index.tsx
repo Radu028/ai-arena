@@ -4,10 +4,8 @@ import { useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   ArrowRightIcon,
-  CoinsIcon,
   CopyIcon,
   PlusIcon,
-  ShieldCheckIcon,
   ShieldIcon,
   SparklesIcon,
   Wand2Icon,
@@ -27,7 +25,6 @@ import {
 } from '#/components/ui/empty'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import {
   Table,
@@ -86,10 +83,10 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="shell space-y-8">
+    <div className="shell space-y-16">
       <AdminGuard title="Admin console">
         {data && !data.isAuthenticated ? (
-          <Empty className="surface rounded-2xl p-10">
+          <Empty className="rounded-2xl border border-border/60 bg-card/40 p-10">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <ShieldIcon />
@@ -132,6 +129,8 @@ function AdminDashboard() {
           <CostSection costs={costs} />
         ) : null}
 
+        {hasAdminAccess ? <SessionListSection data={data} /> : null}
+
         {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
           <AdminAccessSection
             adminUsers={adminUsers}
@@ -141,8 +140,6 @@ function AdminDashboard() {
             granting={grantingAdmin}
           />
         ) : null}
-
-        {hasAdminAccess ? <SessionListSection data={data} /> : null}
       </AdminGuard>
     </div>
   )
@@ -150,113 +147,95 @@ function AdminDashboard() {
 
 function CostSection({ costs }: { costs: NonNullable<AdminCostSummary> }) {
   return (
-    <section data-reveal className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-      <div className="surface rounded-2xl p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300">
-              <CoinsIcon className="size-5" />
-            </div>
-            <p className="text-sm font-semibold">Cost tracking</p>
-          </div>
-          <Badge
-            variant="outline"
-            className="font-mono text-[0.65rem] uppercase"
-          >
-            estimated
-          </Badge>
-        </div>
-
-        <div className="mt-5">
-          <p className="eyebrow">Total spend</p>
-          <p className="mt-1 font-mono text-4xl font-semibold tabular-nums">
+    <section data-reveal className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Cost tracking</p>
+          <p className="display mt-2 text-4xl tabular-nums sm:text-5xl">
             {formatMicrosUsd(costs.totals.costMicrosUsd)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Aggregated across {costs.totals.sessions} sessions and{' '}
-            {costs.totals.rounds} rounds.
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Estimated spend across {costs.totals.sessions} session
+            {costs.totals.sessions === 1 ? '' : 's'} and {costs.totals.rounds}{' '}
+            round{costs.totals.rounds === 1 ? '' : 's'}.
           </p>
         </div>
-
-        <Separator className="my-6 opacity-60" />
-
-        <div className="grid grid-cols-2 gap-3">
-          <MiniStat
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4 sm:divide-x sm:divide-border/50">
+          <KpiStat
             label="Sessions"
             value={costs.totals.sessions.toLocaleString()}
           />
-          <MiniStat
+          <KpiStat
             label="Rounds"
             value={costs.totals.rounds.toLocaleString()}
           />
-          <MiniStat
-            label="Input tokens"
+          <KpiStat
+            label="Tokens in"
             value={costs.totals.tokensIn.toLocaleString()}
           />
-          <MiniStat
-            label="Output tokens"
+          <KpiStat
+            label="Tokens out"
             value={costs.totals.tokensOut.toLocaleString()}
           />
         </div>
       </div>
 
-      <div className="surface overflow-hidden rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Cost by model</p>
-          <Badge
-            variant="outline"
-            className="font-mono text-[0.65rem] uppercase"
-          >
+          <span className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
             top spend first
-          </Badge>
+          </span>
         </div>
         {costs.byModel.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Calls</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {costs.byModel.map((row) => (
-                  <TableRow key={row.modelKey}>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          aria-hidden
-                          className="size-2 rounded-full"
-                          style={{ backgroundColor: row.accent }}
-                        />
-                        {row.label}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.calls}
-                      {row.failures > 0 ? (
-                        <span className="ml-1 text-[0.7rem] text-muted-foreground">
-                          ({row.failures} failed)
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                      {row.tokensIn.toLocaleString()}
-                      <span className="mx-1 opacity-40">/</span>
-                      {row.tokensOut.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {formatMicrosUsd(row.costMicrosUsd)}
-                    </TableCell>
+          <div className="overflow-hidden rounded-xl border border-border/40">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Model</TableHead>
+                    <TableHead className="text-right">Calls</TableHead>
+                    <TableHead className="text-right">Tokens</TableHead>
+                    <TableHead className="text-right">Cost</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {costs.byModel.map((row) => (
+                    <TableRow key={row.modelKey}>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            aria-hidden
+                            className="size-2 rounded-full"
+                            style={{ backgroundColor: row.accent }}
+                          />
+                          {row.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {row.calls}
+                        {row.failures > 0 ? (
+                          <span className="ml-1 text-[0.7rem] text-muted-foreground">
+                            ({row.failures} failed)
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        {row.tokensIn.toLocaleString()}
+                        <span className="mx-1 opacity-40">/</span>
+                        {row.tokensOut.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {formatMicrosUsd(row.costMicrosUsd)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         ) : (
-          <Empty className="py-10">
+          <Empty className="rounded-xl border border-dashed border-border/50 py-10">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <SparklesIcon />
@@ -287,21 +266,19 @@ function AdminAccessSection({
   granting: boolean
 }) {
   return (
-    <section data-reveal className="surface overflow-hidden rounded-2xl">
-      <div className="flex items-center gap-3 border-b border-border/60 px-6 py-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <ShieldCheckIcon className="size-5" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold">Admin access</p>
-          <p className="text-xs text-muted-foreground">
-            <code>radupopa028@gmail.com</code> is the bootstrap admin. Add
-            teammates by email after they sign in with Clerk.
-          </p>
-        </div>
+    <section data-reveal className="space-y-6">
+      <div>
+        <p className="eyebrow">Admin access</p>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+          Who can run the arena
+        </h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          <code>radupopa028@gmail.com</code> is the bootstrap admin. Add
+          teammates by email after they sign in with Clerk.
+        </p>
       </div>
 
-      <div className="grid gap-6 px-6 py-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="adminEmail">New admin email</Label>
@@ -320,7 +297,7 @@ function AdminAccessSection({
           </Button>
         </form>
 
-        <div className="overflow-hidden rounded-xl border border-border/60">
+        <div className="overflow-hidden rounded-xl border border-border/40">
           <Table>
             <TableHeader>
               <TableRow>
@@ -364,71 +341,85 @@ function SessionListSection({
   data: AdminSessionsResult | undefined
 }) {
   return (
-    <section data-reveal className="surface overflow-hidden rounded-2xl">
-      <div className="border-b border-border/60 px-6 py-4">
-        <p className="text-sm font-semibold">Recent sessions</p>
-        <p className="text-xs text-muted-foreground">
-          Sessions appear here once Clerk authentication is configured.
-        </p>
+    <section data-reveal className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Recent sessions</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+            {data?.sessions.length
+              ? `${data.sessions.length} session${data.sessions.length === 1 ? '' : 's'} created so far`
+              : 'No arenas yet'}
+          </h2>
+        </div>
+        {data && data.sessions.length > 0 ? (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/sessions/new">
+              <PlusIcon className="size-3.5" />
+              New
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {data && data.sessions.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Theme</TableHead>
-                <TableHead className="text-right">Rounds</TableHead>
-                <TableHead>Join code</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.sessions.map((session) => (
-                <TableRow key={session.id} className="group">
-                  <TableCell>
-                    <Link
-                      to="/admin/sessions/$sessionId"
-                      params={{ sessionId: session.id }}
-                      className="font-medium text-foreground transition-colors hover:text-primary"
-                    >
-                      {session.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <SessionStatusPill status={session.status} />
-                  </TableCell>
-                  <TableCell className="capitalize text-muted-foreground">
-                    {session.theme}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
-                    {session.roundCount}
-                  </TableCell>
-                  <TableCell>
-                    <JoinCodeChip code={session.joinCode} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDateTime(session.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      to="/admin/sessions/$sessionId"
-                      params={{ sessionId: session.id }}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary"
-                    >
-                      open <ArrowRightIcon className="size-3" />
-                    </Link>
-                  </TableCell>
+        <div className="overflow-hidden rounded-xl border border-border/40">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Theme</TableHead>
+                  <TableHead className="text-right">Rounds</TableHead>
+                  <TableHead>Join code</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.sessions.map((session) => (
+                  <TableRow key={session.id} className="group">
+                    <TableCell>
+                      <Link
+                        to="/admin/sessions/$sessionId"
+                        params={{ sessionId: session.id }}
+                        className="font-medium text-foreground transition-colors hover:text-primary"
+                      >
+                        {session.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <SessionStatusPill status={session.status} />
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground">
+                      {session.theme}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      {session.roundCount}
+                    </TableCell>
+                    <TableCell>
+                      <JoinCodeChip code={session.joinCode} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDateTime(session.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        to="/admin/sessions/$sessionId"
+                        params={{ sessionId: session.id }}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary"
+                      >
+                        open <ArrowRightIcon className="size-3" />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       ) : data ? (
-        <Empty className="flex-none py-12">
+        <Empty className="flex-none rounded-xl border border-dashed border-border/50 py-12">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <SparklesIcon />
@@ -446,7 +437,7 @@ function SessionListSection({
           </Button>
         </Empty>
       ) : (
-        <div className="space-y-2 p-6">
+        <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -493,13 +484,13 @@ function JoinCodeChip({ code }: { code: string }) {
   )
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function KpiStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5">
-      <p className="text-[0.62rem] uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="px-0 sm:px-5 sm:first:pl-0">
+      <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 font-mono text-base font-semibold tabular-nums">
+      <p className="mt-1 font-mono text-base font-semibold tabular-nums">
         {value}
       </p>
     </div>

@@ -7,6 +7,10 @@ import {
   useLocation,
 } from '@tanstack/react-router'
 import { TerminalIcon } from 'lucide-react'
+import { useEffect } from 'react'
+import { useReducedMotion } from 'motion/react'
+import { useAnimate } from 'motion/react-mini'
+import * as m from 'motion/react-m'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import { AppProviders, useRuntimeConfig } from '#/components/AppProviders'
@@ -19,7 +23,6 @@ import {
 } from '#/components/ui/empty'
 import { Toaster } from '#/components/ui/sonner'
 import { Button } from '#/components/ui/button'
-import { useGlobalReveal } from '#/hooks/use-global-reveal'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -75,12 +78,44 @@ function RootLayout() {
 function RootFrame() {
   const runtime = useRuntimeConfig()
   const { pathname } = useLocation()
-  useGlobalReveal()
+  const [scope, animate] = useAnimate<HTMLDivElement>()
+  const shouldReduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    const root = scope.current
+    const targets = Array.from(root.querySelectorAll('[data-reveal]'))
+    const controls = targets.map((target, index) =>
+      animate(
+        target,
+        shouldReduceMotion
+          ? { opacity: 1, y: 0 }
+          : { opacity: [0, 1], y: [18, 0] },
+        {
+          delay: shouldReduceMotion ? 0 : index * 0.045,
+          duration: shouldReduceMotion ? 0 : 0.55,
+          ease: [0.22, 1, 0.36, 1],
+        },
+      ),
+    )
+
+    return () => {
+      controls.forEach((control) => control.stop())
+    }
+  }, [animate, pathname, scope, shouldReduceMotion])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div ref={scope} className="flex min-h-screen flex-col">
       <Header />
-      <main key={pathname} className="page-enter flex-1 pt-6 pb-16 sm:pt-10">
+      <m.main
+        key={pathname}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: shouldReduceMotion ? 0 : 0.36,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="flex-1 pt-6 pb-16 sm:pt-10"
+      >
         {runtime.hasConvex ? (
           <Outlet />
         ) : (
@@ -99,7 +134,7 @@ function RootFrame() {
             </Empty>
           </div>
         )}
-      </main>
+      </m.main>
       <Footer />
       <Toaster richColors position="top-right" />
     </div>
