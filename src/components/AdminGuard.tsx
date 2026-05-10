@@ -5,10 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
-import {
-  safeAuthRedirect,
-  stringifyLocationSearch,
-} from '#/lib/authRedirect'
+import { safeAuthRedirect, stringifyLocationSearch } from '#/lib/authRedirect'
 import {
   Empty,
   EmptyDescription,

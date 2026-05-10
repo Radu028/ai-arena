@@ -29,15 +29,15 @@ export function currentAuthRedirect() {
   )
 }
 
-export function stringifyLocationSearch(
-  search: unknown,
-): string {
+export function stringifyLocationSearch(search: unknown): string {
   if (typeof search === 'string') {
     return search.startsWith('?') || search.length === 0 ? search : `?${search}`
   }
   if (search && typeof search === 'object') {
     const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(search as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(
+      search as Record<string, unknown>,
+    )) {
       if (value === undefined || value === null) continue
       params.append(key, String(value))
     }

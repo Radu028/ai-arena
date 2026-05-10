@@ -28,10 +28,7 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { cn } from '#/lib/utils'
 import { AdminOnly } from './AdminOnly'
-import {
-  safeAuthRedirect,
-  stringifyLocationSearch,
-} from '#/lib/authRedirect'
+import { safeAuthRedirect, stringifyLocationSearch } from '#/lib/authRedirect'
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', icon: HomeIcon, exact: true },

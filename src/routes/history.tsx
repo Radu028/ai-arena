@@ -95,17 +95,17 @@ function HistoryPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Theme</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Rounds</TableHead>
-                  <TableHead className="text-right">Models</TableHead>
-                  <TableHead>Top winner</TableHead>
-                  <TableHead className="text-right">Votes</TableHead>
-                  <TableHead>Finished</TableHead>
-                </TableRow>
-              </TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Theme</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Rounds</TableHead>
+                    <TableHead className="text-right">Models</TableHead>
+                    <TableHead>Top winner</TableHead>
+                    <TableHead className="text-right">Votes</TableHead>
+                    <TableHead>Finished</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {data.rows.map((row) => (
                     <TableRow key={row.id} className="group">

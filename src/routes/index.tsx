@@ -332,11 +332,12 @@ function CallToAction() {
       <div className="relative mx-auto max-w-3xl text-center">
         <p className="eyebrow">Run a session</p>
         <h2 className="display mt-3 text-balance text-3xl sm:text-5xl">
-          Spin up a live arena <span className="gradient-text">in under a minute.</span>
+          Spin up a live arena{' '}
+          <span className="gradient-text">in under a minute.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-          Pick a theme, lock the lineup, and share the join code. The room
-          opens instantly with anonymous responses and live voting.
+          Pick a theme, lock the lineup, and share the join code. The room opens
+          instantly with anonymous responses and live voting.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <AdminOnly>

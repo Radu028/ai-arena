@@ -39,7 +39,9 @@ function AdminSessionDetailPage() {
   const startSession = useMutation(api.sessions.start)
   const stopSession = useMutation(api.sessions.stop)
   const endVotingEarly = useMutation(api.rounds.endVotingEarly)
-  const revealLatestScoredRound = useMutation(api.rounds.revealLatestScoredRound)
+  const revealLatestScoredRound = useMutation(
+    api.rounds.revealLatestScoredRound,
+  )
 
   async function handleStart() {
     if (!session) return

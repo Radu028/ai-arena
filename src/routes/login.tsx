@@ -192,9 +192,7 @@ function HeroFeature({
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          {body}
-        </p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
       </div>
     </li>
   )

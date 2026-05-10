@@ -71,13 +71,7 @@ function LeaderboardPage() {
         />
         <SummaryStat
           label="Top win rate"
-          value={
-            data
-              ? top
-                ? `${top.winRate.toFixed(1)}%`
-                : '0.0%'
-              : null
-          }
+          value={data ? (top ? `${top.winRate.toFixed(1)}%` : '0.0%') : null}
         />
       </section>
 

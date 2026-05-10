@@ -451,7 +451,9 @@ export const finalizeRound = internalMutation({
       )
       if (nextRound) {
         const topic = session.customPrompt?.trim() || session.title
-        const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+        const slots = buildAnonymizedSlots(
+          session.selectedModelsSnapshot.length,
+        )
         await ctx.db.patch(nextRound._id, {
           status: 'generating',
           topic,

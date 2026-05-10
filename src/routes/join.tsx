@@ -119,10 +119,7 @@ function JoinPage() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <p className="eyebrow">Join code</p>
-            <Label
-              htmlFor="code"
-              className="sr-only"
-            >
+            <Label htmlFor="code" className="sr-only">
               Join code
             </Label>
             <Input
@@ -169,8 +166,7 @@ function JoinPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">
-                Email{' '}
-                <span className="text-muted-foreground">(optional)</span>
+                Email <span className="text-muted-foreground">(optional)</span>
               </Label>
               <Input
                 id="email"

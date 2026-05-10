@@ -75,7 +75,10 @@ export function SessionOverviewSection({
           </span>{' '}
           seats
         </span>
-        <span aria-hidden className="hidden size-1 rounded-full bg-border sm:inline-block" />
+        <span
+          aria-hidden
+          className="hidden size-1 rounded-full bg-border sm:inline-block"
+        />
         <span className="inline-flex items-center gap-2">
           <CalendarClockIcon className="size-4" />
           {sessionView.viewer
@@ -276,9 +279,7 @@ function LiveRoundCard({
         {round.status === 'collecting_topic' ? (
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             <span className="live-dot mt-1" />
-            <p>
-              Waiting for the admin to start the next generated round.
-            </p>
+            <p>Waiting for the admin to start the next generated round.</p>
           </div>
         ) : null}
 

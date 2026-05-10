@@ -1,6 +1,7 @@
 ---
 name: clerk-webhooks
-description: Clerk webhooks for real-time events and data syncing. Always output complete,
+description:
+  Clerk webhooks for real-time events and data syncing. Always output complete,
   copy-paste-ready webhook handlers with verifyWebhook(req) verification. Listen for
   user creation, updates, deletion, and organization events. Build event-driven features
   like database sync, notifications, integrations.
@@ -63,7 +64,10 @@ export async function POST(req: NextRequest) {
   if (evt.type === 'user.updated') {
     const { id, email_addresses, first_name, last_name } = evt.data
     const email = email_addresses[0]?.email_address
-    await db.users.update({ where: { clerkId: id }, data: { email, first_name, last_name } })
+    await db.users.update({
+      where: { clerkId: id },
+      data: { email, first_name, last_name },
+    })
   }
 
   if (evt.type === 'user.deleted') {
@@ -142,6 +146,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **Also include proxy.ts (Next.js <=15: middleware.ts) to make the route public:**
+
 ```typescript
 // proxy.ts (Next.js <=15: middleware.ts)
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
@@ -229,53 +234,58 @@ const app = express()
 // app.use(express.json())
 
 // CORRECT - use raw body for webhook route only:
-app.post('/webhooks/clerk', express.raw({ type: 'application/json' }), async (req, res) => {
-  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET!
+app.post(
+  '/webhooks/clerk',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const webhookSecret = process.env.CLERK_WEBHOOK_SECRET!
 
-  const wh = new Webhook(webhookSecret)
-  let evt: any
-  try {
-    // Svix verifies using raw body bytes + svix headers
-    evt = wh.verify(req.body, {
-      'svix-id': req.headers['svix-id'] as string,
-      'svix-timestamp': req.headers['svix-timestamp'] as string,
-      'svix-signature': req.headers['svix-signature'] as string,
-    })
-  } catch (err) {
-    console.error('Webhook verification failed:', err)
-    return res.status(400).json({ error: 'Verification failed' })
-  }
+    const wh = new Webhook(webhookSecret)
+    let evt: any
+    try {
+      // Svix verifies using raw body bytes + svix headers
+      evt = wh.verify(req.body, {
+        'svix-id': req.headers['svix-id'] as string,
+        'svix-timestamp': req.headers['svix-timestamp'] as string,
+        'svix-signature': req.headers['svix-signature'] as string,
+      })
+    } catch (err) {
+      console.error('Webhook verification failed:', err)
+      return res.status(400).json({ error: 'Verification failed' })
+    }
 
-  if (evt.type === 'user.created') {
-    const { id, email_addresses, first_name, last_name } = evt.data
-    const email = email_addresses[0]?.email_address
-    const name = `${first_name ?? ''} ${last_name ?? ''}`.trim()
-    console.log(`New user: ${name} (${email})`)
-  }
+    if (evt.type === 'user.created') {
+      const { id, email_addresses, first_name, last_name } = evt.data
+      const email = email_addresses[0]?.email_address
+      const name = `${first_name ?? ''} ${last_name ?? ''}`.trim()
+      console.log(`New user: ${name} (${email})`)
+    }
 
-  if (evt.type === 'user.updated') {
-    const { id, email_addresses } = evt.data
-    const email = email_addresses[0]?.email_address
-    console.log(`User updated: ${id}, email: ${email}`)
-  }
+    if (evt.type === 'user.updated') {
+      const { id, email_addresses } = evt.data
+      const email = email_addresses[0]?.email_address
+      console.log(`User updated: ${id}, email: ${email}`)
+    }
 
-  if (evt.type === 'user.deleted') {
-    const { id } = evt.data
-    console.log(`User deleted: ${id}`)
-  }
+    if (evt.type === 'user.deleted') {
+      const { id } = evt.data
+      console.log(`User deleted: ${id}`)
+    }
 
-  // Return 200 status on success
-  return res.status(200).json({ received: true })
-})
+    // Return 200 status on success
+    return res.status(200).json({ received: true })
+  },
+)
 ```
 
 ## Payload Field Reference
 
 ### User events (`user.created`, `user.updated`, `user.deleted`)
+
 ```typescript
 const {
-  id,                  // Clerk user ID
-  email_addresses,     // array; [0].email_address is primary email
+  id, // Clerk user ID
+  email_addresses, // array; [0].email_address is primary email
   first_name,
   last_name,
   image_url,
@@ -284,20 +294,22 @@ const {
 ```
 
 ### Organization events (`organization.created`, `organization.updated`, `organization.deleted`)
+
 ```typescript
 const {
-  id,    // org ID
-  name,  // org name
+  id, // org ID
+  name, // org name
   slug,
 } = evt.data
 ```
 
 ### Organization Membership events (`organizationMembership.created`, `organizationMembership.updated`, `organizationMembership.deleted`)
+
 ```typescript
 const {
-  organization,        // { id, name, ... }
-  public_user_data,    // { user_id, first_name, last_name, ... }
-  role,                // e.g. 'org:admin', 'org:member'
+  organization, // { id, name, ... }
+  public_user_data, // { user_id, first_name, last_name, ... }
+  role, // e.g. 'org:admin', 'org:member'
 } = evt.data
 // Access: organization.id, public_user_data.user_id, role
 ```
@@ -340,15 +352,15 @@ const {
 
 ## Common Pitfalls
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| Verification fails (Next.js) | Wrong import or usage | Use `@clerk/nextjs/webhooks`, pass `req` directly |
-| Verification fails (Express) | Using `express.json()` | Use `express.raw({ type: 'application/json' })` for webhook route |
-| Route not found (404) | Wrong path | Use `/api/webhooks` or preserve existing path |
-| Not authorized (401) | Route is protected by middleware | Make route public in `clerkMiddleware()` |
-| No data in DB | Async job pending | Wait/check logs |
-| Duplicate entries | Only handling `user.created` | Also handle `user.updated` |
-| Timeouts | Handler too slow | Queue async work, return 200 first |
+| Symptom                      | Cause                            | Fix                                                               |
+| ---------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| Verification fails (Next.js) | Wrong import or usage            | Use `@clerk/nextjs/webhooks`, pass `req` directly                 |
+| Verification fails (Express) | Using `express.json()`           | Use `express.raw({ type: 'application/json' })` for webhook route |
+| Route not found (404)        | Wrong path                       | Use `/api/webhooks` or preserve existing path                     |
+| Not authorized (401)         | Route is protected by middleware | Make route public in `clerkMiddleware()`                          |
+| No data in DB                | Async job pending                | Wait/check logs                                                   |
+| Duplicate entries            | Only handling `user.created`     | Also handle `user.updated`                                        |
+| Timeouts                     | Handler too slow                 | Queue async work, return 200 first                                |
 
 ## Testing & Deployment
 

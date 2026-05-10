@@ -1,6 +1,5 @@
 @layer theme, base, components, utilities;
 @import 'tailwindcss';
-@import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
 @import '@fontsource/source-serif-4';
@@ -415,22 +414,6 @@ code,
   background: color-mix(in oklab, var(--foreground), transparent 86%);
 }
 
-/* Page enter animation (fires on route change via key prop) */
-@keyframes page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-enter {
-  animation: page-enter 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 /* Theme switch transition — only fires when .theme-switching is present */
 .theme-switching *,
 .theme-switching *::before,
@@ -444,23 +427,15 @@ code,
   transition-delay: 0s !important;
 }
 
-/* Scroll reveal — global data-reveal attribute */
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-[data-reveal][data-revealed='true'] {
-  opacity: 1;
-  transform: translateY(0);
+@media (scripting: enabled) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-reveal],
-  .page-enter,
   .gradient-text,
   .live-dot::after,
   .sheen-on-hover::before {
