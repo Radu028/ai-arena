@@ -427,13 +427,6 @@ code,
   transition-delay: 0s !important;
 }
 
-@media (scripting: enabled) {
-  [data-reveal] {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   [data-reveal],
   .gradient-text,
