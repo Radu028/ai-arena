@@ -1,7 +1,18 @@
-export function ArenaLogo({ size = 40 }: { size?: number }) {
+import { cn } from '#/lib/utils'
+
+export function ArenaLogo({
+  size = 40,
+  className,
+}: {
+  size?: number
+  className?: string
+}) {
   return (
     <svg
-      className="transition-transform duration-500 hover:rotate-12"
+      className={cn(
+        'transition-transform duration-500 hover:rotate-12',
+        className,
+      )}
       width={size}
       height={size}
       viewBox="0 0 40 40"
