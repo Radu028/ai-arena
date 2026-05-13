@@ -1,13 +1,15 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useEffect, useMemo, useState } from 'react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   ArrowRightIcon,
   CopyIcon,
   PlusIcon,
+  SearchIcon,
   ShieldIcon,
   SparklesIcon,
+  UserPlusIcon,
   Wand2Icon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -38,6 +40,9 @@ import { formatDateTime } from '#/lib/format'
 
 type AdminCostSummary = FunctionReturnType<typeof api.stats.getAdminCostSummary>
 type AdminUsersResult = FunctionReturnType<typeof api.admins.list>
+type SignedUpUsersResult = FunctionReturnType<
+  typeof api.admins.listSignedUpUsers
+>
 type AdminSessionsResult = FunctionReturnType<
   typeof api.sessions.listAdminSessions
 >
@@ -61,21 +66,79 @@ function AdminDashboardContent() {
   const costs = useQuery(api.stats.getAdminCostSummary, {})
   const adminUsers = useQuery(api.admins.list, {})
   const grantAdmin = useMutation(api.admins.grant)
+  const listSignedUpUsers = useAction(api.admins.listSignedUpUsers)
   const [adminEmail, setAdminEmail] = useState('')
-  const [grantingAdmin, setGrantingAdmin] = useState(false)
+  const [grantingAdminEmail, setGrantingAdminEmail] = useState<string | null>(
+    null,
+  )
+  const [userSearch, setUserSearch] = useState('')
+  const [signedUpUsers, setSignedUpUsers] =
+    useState<SignedUpUsersResult | null>(null)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersError, setUsersError] = useState<string | null>(null)
   const hasAdminAccess = data?.isAuthenticated !== false
+  const canLoadUsers = adminUsers?.isAuthenticated === true
+
+  useEffect(() => {
+    if (!canLoadUsers) {
+      return
+    }
+
+    let cancelled = false
+    const timeout = window.setTimeout(() => {
+      setLoadingUsers(true)
+      setUsersError(null)
+      void listSignedUpUsers({
+        query: userSearch.trim() || undefined,
+        limit: 100,
+      })
+        .then((result) => {
+          if (!cancelled) {
+            setSignedUpUsers(result)
+          }
+        })
+        .catch((error: unknown) => {
+          if (!cancelled) {
+            setUsersError(
+              error instanceof Error
+                ? error.message
+                : 'Could not load signed-up users.',
+            )
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoadingUsers(false)
+          }
+        })
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+    }
+  }, [canLoadUsers, listSignedUpUsers, userSearch])
 
   async function handleGrantAdmin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const email = adminEmail.trim().toLowerCase()
+    await handleGrantAdminEmail(adminEmail, { clearManualInput: true })
+  }
+
+  async function handleGrantAdminEmail(
+    rawEmail: string,
+    options: { clearManualInput?: boolean } = {},
+  ) {
+    const email = rawEmail.trim().toLowerCase()
     if (!email) {
       toast.error('Enter an email address.')
       return
     }
-    setGrantingAdmin(true)
+    setGrantingAdminEmail(email)
     try {
       const result = await grantAdmin({ email })
-      setAdminEmail('')
+      if (options.clearManualInput) {
+        setAdminEmail('')
+      }
       toast.success(
         result.alreadyAdmin
           ? `${result.email} is already an admin.`
@@ -88,7 +151,7 @@ function AdminDashboardContent() {
           : 'Could not grant admin access.',
       )
     } finally {
-      setGrantingAdmin(false)
+      setGrantingAdminEmail(null)
     }
   }
 
@@ -146,7 +209,13 @@ function AdminDashboardContent() {
           adminEmail={adminEmail}
           onAdminEmailChange={setAdminEmail}
           onSubmit={handleGrantAdmin}
-          granting={grantingAdmin}
+          grantingEmail={grantingAdminEmail}
+          signedUpUsers={signedUpUsers}
+          userSearch={userSearch}
+          onUserSearchChange={setUserSearch}
+          loadingUsers={loadingUsers}
+          usersError={usersError}
+          onGrantEmail={handleGrantAdminEmail}
         />
       ) : null}
     </>
@@ -265,14 +334,35 @@ function AdminAccessSection({
   adminEmail,
   onAdminEmailChange,
   onSubmit,
-  granting,
+  grantingEmail,
+  signedUpUsers,
+  userSearch,
+  onUserSearchChange,
+  loadingUsers,
+  usersError,
+  onGrantEmail,
 }: {
   adminUsers: NonNullable<AdminUsersResult>
   adminEmail: string
   onAdminEmailChange: (next: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
-  granting: boolean
+  grantingEmail: string | null
+  signedUpUsers: SignedUpUsersResult | null
+  userSearch: string
+  onUserSearchChange: (next: string) => void
+  loadingUsers: boolean
+  usersError: string | null
+  onGrantEmail: (email: string) => Promise<void>
 }) {
+  const adminEmailSet = useMemo(
+    () =>
+      new Set([
+        ...adminUsers.bootstrapAdmins.map((email) => email.toLowerCase()),
+        ...adminUsers.admins.map((admin) => admin.email.toLowerCase()),
+      ]),
+    [adminUsers.admins, adminUsers.bootstrapAdmins],
+  )
+
   return (
     <section data-reveal className="space-y-6">
       <div>
@@ -299,9 +389,9 @@ function AdminAccessSection({
               className="h-10"
             />
           </div>
-          <Button type="submit" disabled={granting}>
+          <Button type="submit" disabled={grantingEmail !== null}>
             <Wand2Icon className="size-4" />
-            {granting ? 'Granting...' : 'Grant admin'}
+            {grantingEmail ? 'Granting...' : 'Grant admin'}
           </Button>
         </form>
 
@@ -339,7 +429,166 @@ function AdminAccessSection({
           </Table>
         </div>
       </div>
+
+      <div className="space-y-4 rounded-2xl border border-border/40 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="eyebrow">Signed-up users</p>
+            <h3 className="mt-2 text-lg font-semibold tracking-tight">
+              Grant access from Clerk users
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Search everyone who has signed in, then click once to make them an
+              admin.
+            </p>
+          </div>
+          {signedUpUsers ? (
+            <p className="font-mono text-xs text-muted-foreground">
+              {signedUpUsers.users.length} shown
+              {signedUpUsers.totalCount > signedUpUsers.users.length
+                ? ` of ${signedUpUsers.totalCount}`
+                : ''}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={userSearch}
+            onChange={(event) => onUserSearchChange(event.target.value)}
+            placeholder="Search by name or email"
+            className="h-10 pl-9"
+          />
+        </div>
+
+        {usersError ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {usersError}
+          </p>
+        ) : null}
+
+        <SignedUpUsersTable
+          users={signedUpUsers?.users ?? []}
+          adminEmailSet={adminEmailSet}
+          loading={loadingUsers}
+          grantingEmail={grantingEmail}
+          onGrantEmail={onGrantEmail}
+        />
+      </div>
     </section>
+  )
+}
+
+function SignedUpUsersTable({
+  users,
+  adminEmailSet,
+  loading,
+  grantingEmail,
+  onGrantEmail,
+}: {
+  users: NonNullable<SignedUpUsersResult>['users']
+  adminEmailSet: Set<string>
+  loading: boolean
+  grantingEmail: string | null
+  onGrantEmail: (email: string) => Promise<void>
+}) {
+  if (loading && users.length === 0) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-12 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (!loading && users.length === 0) {
+    return (
+      <Empty className="rounded-xl border border-dashed border-border/50 py-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <UserPlusIcon />
+          </EmptyMedia>
+          <EmptyTitle>No users found</EmptyTitle>
+          <EmptyDescription>
+            Try a different search, or ask the user to sign in once with Google.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/40">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Signed up</TableHead>
+              <TableHead>Last sign-in</TableHead>
+              <TableHead className="text-right">Access</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => {
+              const isAdmin = adminEmailSet.has(user.email.toLowerCase())
+              const isGranting = grantingEmail === user.email.toLowerCase()
+              return (
+                <TableRow key={user.id || user.email}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {user.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt=""
+                          className="size-8 rounded-full border border-border/50"
+                        />
+                      ) : (
+                        <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase">
+                          {user.email.slice(0, 1)}
+                        </span>
+                      )}
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {user.createdAt ? formatDateTime(user.createdAt) : '—'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {user.lastSignInAt
+                      ? formatDateTime(user.lastSignInAt)
+                      : 'Never'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isAdmin ? (
+                      <Badge variant="secondary">Admin</Badge>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={grantingEmail !== null}
+                        onClick={() => void onGrantEmail(user.email)}
+                      >
+                        <UserPlusIcon className="size-3.5" />
+                        {isGranting ? 'Granting...' : 'Make admin'}
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   )
 }
 
