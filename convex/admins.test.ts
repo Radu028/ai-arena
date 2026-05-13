@@ -79,6 +79,48 @@ describe('admin access control', () => {
     )
   })
 
+  test('bootstrap admin grant is always treated as already active', async () => {
+    const t = convexTest({ schema, modules })
+    const bootstrapAdmin = t.withIdentity(bootstrapAdminIdentity)
+
+    const granted = await bootstrapAdmin.mutation(api.admins.grant, {
+      email: 'RADUPOPA028@gmail.com',
+    })
+    const list = await bootstrapAdmin.query(api.admins.list, {})
+
+    expect(granted).toMatchObject({
+      ok: true,
+      email: 'radupopa028@gmail.com',
+      alreadyAdmin: true,
+    })
+    expect(list.admins.map((admin) => admin.email)).not.toContain(
+      'radupopa028@gmail.com',
+    )
+    expect(list.bootstrapAdmins).toContain('radupopa028@gmail.com')
+  })
+
+  test('admins can remove granted admins but not the bootstrap admin', async () => {
+    const t = convexTest({ schema, modules })
+    const bootstrapAdmin = t.withIdentity(bootstrapAdminIdentity)
+
+    await bootstrapAdmin.mutation(api.admins.grant, {
+      email: 'teammate@example.com',
+    })
+    await bootstrapAdmin.mutation(api.admins.revoke, {
+      email: 'teammate@example.com',
+    })
+
+    const teammate = t.withIdentity(teammateIdentity)
+    const teammateList = await teammate.query(api.admins.list, {})
+    expect(teammateList.isAuthenticated).toBe(false)
+
+    await expect(
+      bootstrapAdmin.mutation(api.admins.revoke, {
+        email: 'radupopa028@gmail.com',
+      }),
+    ).rejects.toThrow('bootstrap admin cannot be removed')
+  })
+
   test('non-admin users cannot create sessions', async () => {
     const t = convexTest({ schema, modules })
     const teammate = t.withIdentity(teammateIdentity)
@@ -100,6 +142,17 @@ describe('admin access control', () => {
 
     await expect(
       teammate.mutation(api.admins.grant, {
+        email: 'another@example.com',
+      }),
+    ).rejects.toThrow('not an admin')
+  })
+
+  test('non-admin users cannot remove admin access', async () => {
+    const t = convexTest({ schema, modules })
+    const teammate = t.withIdentity(teammateIdentity)
+
+    await expect(
+      teammate.mutation(api.admins.revoke, {
         email: 'another@example.com',
       }),
     ).rejects.toThrow('not an admin')
