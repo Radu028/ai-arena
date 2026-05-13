@@ -1,9 +1,9 @@
 export const runtimeConfig = {
   convexUrl: import.meta.env.VITE_CONVEX_URL ?? '',
   clerkPublishableKey:
-    import.meta.env.CLERK_PUBLISHABLE_KEY ??
     import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ??
     import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
+    import.meta.env.CLERK_PUBLISHABLE_KEY ??
     '',
   allowDemoAdmin: import.meta.env.VITE_ALLOW_DEMO_ADMIN === 'true',
 }
