@@ -50,6 +50,7 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
   component: RootLayout,
+  errorComponent: RootErrorBoundary,
   notFoundComponent: NotFoundPage,
 })
 
@@ -166,4 +167,55 @@ function NotFoundPage() {
       </Empty>
     </div>
   )
+}
+
+function RootErrorBoundary({
+  error,
+  reset,
+}: {
+  error: Error
+  reset: () => void
+}) {
+  return (
+    <div className="shell">
+      <Empty className="surface rounded-2xl p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <TerminalIcon />
+          </EmptyMedia>
+          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyDescription>
+            The route failed while rendering. Try again, or return home and
+            reopen the page.
+          </EmptyDescription>
+          <p className="max-w-2xl break-words rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
+            {formatRootError(error)}
+          </p>
+        </EmptyHeader>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button type="button" onClick={() => reset()}>
+            Retry
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back home</Link>
+          </Button>
+        </div>
+      </Empty>
+    </div>
+  )
+}
+
+function formatRootError(error: Error) {
+  const message = error.message.trim()
+  if (!message) {
+    return 'Unknown route error'
+  }
+  if (message.startsWith('<!DOCTYPE html') || message.includes('<html')) {
+    const status =
+      message.match(/Error code\s*(\d{3})/i)?.[1] ??
+      message.match(/<title>[^<]*?\b(\d{3})\b[^<]*<\/title>/i)?.[1] ??
+      'upstream'
+    return `Upstream service returned ${status}.`
+  }
+  return message
 }

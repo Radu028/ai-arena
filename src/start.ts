@@ -2,13 +2,12 @@ import { clerkMiddleware } from '@clerk/tanstack-react-start/server'
 import { createMiddleware, createStart } from '@tanstack/react-start'
 
 const publishableKey =
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
-  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
   process.env.CLERK_PUBLISHABLE_KEY ??
+  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
   ''
 
 const secretKey = process.env.CLERK_SECRET_KEY ?? ''
-const isDevelopment = process.env.NODE_ENV !== 'production'
 const enableClerkSsrAuth = process.env.VITE_ENABLE_CLERK_SSR_AUTH === 'true'
 
 const clearStaleClerkSession = createMiddleware().server(
@@ -16,7 +15,7 @@ const clearStaleClerkSession = createMiddleware().server(
     try {
       return await next()
     } catch (error) {
-      if (!isDevelopment || !isClerkJwksMismatch(error)) {
+      if (!isClerkJwksMismatch(error)) {
         throw error
       }
 
@@ -45,12 +44,29 @@ const clearStaleClerkSession = createMiddleware().server(
 )
 
 function isClerkJwksMismatch(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false
-  }
+  return stringifyError(error).includes('jwk-kid-mismatch')
+}
 
-  const cause = error.cause instanceof Error ? error.cause.message : ''
-  return `${error.message}\n${cause}`.includes('jwk-kid-mismatch')
+function stringifyError(error: unknown): string {
+  if (error instanceof Error) {
+    return [
+      error.message,
+      stringifyError(error.cause),
+      'data' in error ? stringifyError(error.data) : '',
+      'body' in error ? stringifyError(error.body) : '',
+    ].join('\n')
+  }
+  if (typeof error === 'string') {
+    return error
+  }
+  if (error && typeof error === 'object') {
+    try {
+      return JSON.stringify(error)
+    } catch {
+      return String(error)
+    }
+  }
+  return ''
 }
 
 export const startInstance = createStart(() => ({

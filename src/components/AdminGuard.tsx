@@ -1,7 +1,8 @@
 import { useAuth } from '@clerk/tanstack-react-start'
 import { Link, useLocation } from '@tanstack/react-router'
+import { useConvexAuth } from 'convex/react'
 import { Loader2Icon, LockKeyholeIcon, ShieldAlertIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useRuntimeConfig } from '#/components/AppProviders'
 import { GoogleSignInButton } from '#/components/GoogleSignInButton'
 import { Button } from '#/components/ui/button'
@@ -53,22 +54,25 @@ function ConfiguredAdminGuard({
   children: React.ReactNode
   title: string
 }) {
+  const runtime = useRuntimeConfig()
   const { isLoaded, isSignedIn } = useAuth()
+  const convexAuth = useConvexAuth()
   const { pathname, search, hash } = useLocation()
   // Delay rendering the auth-resolved branches until after hydration so we
   // don't briefly flash "Sign in" on SSR when the user is in fact signed in.
   // The redirect URL itself is computed statically from the router so it
   // matches between SSR and the first client render.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useHydrated()
 
   const searchString = stringifyLocationSearch(search)
   const here = `${pathname}${searchString}${hash ? `#${hash}` : ''}`
   const returnTo = safeAuthRedirect(here)
 
-  if (!mounted || !isLoaded) {
+  if (
+    !mounted ||
+    !isLoaded ||
+    (runtime.hasConvex && isSignedIn && convexAuth.isLoading)
+  ) {
     return (
       <div className="surface flex flex-col items-center gap-3 rounded-2xl border border-border/60 p-10 text-center">
         <Loader2Icon
@@ -79,7 +83,7 @@ function ConfiguredAdminGuard({
           Checking your session…
         </p>
         <p className="text-xs text-muted-foreground">
-          Loading authentication state from Clerk.
+          Loading authentication state from Clerk and Convex.
         </p>
       </div>
     )
@@ -129,5 +133,41 @@ function ConfiguredAdminGuard({
     )
   }
 
+  if (runtime.hasConvex && !convexAuth.isAuthenticated) {
+    return (
+      <Empty className="surface rounded-2xl p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ShieldAlertIcon />
+          </EmptyMedia>
+          <EmptyTitle>Convex authentication is not connected</EmptyTitle>
+          <EmptyDescription>
+            Clerk sign-in succeeded, but Convex has not accepted the session
+            token yet. Sign out and back in after the Clerk Convex integration
+            and issuer domain are configured.
+          </EmptyDescription>
+        </EmptyHeader>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/login" search={{ redirect: returnTo }}>
+              Retry sign-in
+            </Link>
+          </Button>
+        </div>
+      </Empty>
+    )
+  }
+
   return <>{children}</>
+}
+
+function useHydrated() {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      queueMicrotask(onStoreChange)
+      return () => {}
+    },
+    () => true,
+    () => false,
+  )
 }

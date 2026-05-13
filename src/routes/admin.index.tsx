@@ -47,6 +47,16 @@ export const Route = createFileRoute('/admin/')({
 })
 
 function AdminDashboard() {
+  return (
+    <div className="shell space-y-16">
+      <AdminGuard title="Admin console">
+        <AdminDashboardContent />
+      </AdminGuard>
+    </div>
+  )
+}
+
+function AdminDashboardContent() {
   const data = useQuery(api.sessions.listAdminSessions, {})
   const costs = useQuery(api.stats.getAdminCostSummary, {})
   const adminUsers = useQuery(api.admins.list, {})
@@ -83,65 +93,63 @@ function AdminDashboard() {
   }
 
   return (
-    <div className="shell space-y-16">
-      <AdminGuard title="Admin console">
-        {data && !data.isAuthenticated ? (
-          <Empty className="rounded-2xl border border-border/60 bg-card/40 p-10">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ShieldIcon />
-              </EmptyMedia>
-              <EmptyTitle>Admin access required</EmptyTitle>
-              <EmptyDescription>
-                You&rsquo;re signed in but this email isn&rsquo;t on the
-                allowlist. Ask <code>radupopa028@gmail.com</code> to grant
-                access from this page.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+    <>
+      {data && !data.isAuthenticated ? (
+        <Empty className="rounded-2xl border border-border/60 bg-card/40 p-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ShieldIcon />
+            </EmptyMedia>
+            <EmptyTitle>Admin access required</EmptyTitle>
+            <EmptyDescription>
+              You&rsquo;re signed in but this email isn&rsquo;t on the
+              allowlist. Ask <code>radupopa028@gmail.com</code> to grant access
+              from this page.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : null}
+
+      <header
+        data-reveal
+        className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div>
+          <p className="eyebrow">Admin console</p>
+          <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
+            Sessions
+          </h1>
+          <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
+            Create waiting rooms, start battles manually, and stop sessions when
+            you want to cut off provider spend.
+          </p>
+        </div>
+        {hasAdminAccess ? (
+          <Button asChild size="lg" className="h-11 rounded-full px-5">
+            <Link to="/admin/sessions/new">
+              <PlusIcon className="size-4" />
+              New session
+            </Link>
+          </Button>
         ) : null}
+      </header>
 
-        <header
-          data-reveal
-          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div>
-            <p className="eyebrow">Admin console</p>
-            <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
-              Sessions
-            </h1>
-            <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
-              Create waiting rooms, start battles manually, and stop sessions
-              when you want to cut off provider spend.
-            </p>
-          </div>
-          {hasAdminAccess ? (
-            <Button asChild size="lg" className="h-11 rounded-full px-5">
-              <Link to="/admin/sessions/new">
-                <PlusIcon className="size-4" />
-                New session
-              </Link>
-            </Button>
-          ) : null}
-        </header>
+      {hasAdminAccess && costs && costs.isAuthenticated ? (
+        <CostSection costs={costs} />
+      ) : null}
 
-        {hasAdminAccess && costs && costs.isAuthenticated ? (
-          <CostSection costs={costs} />
-        ) : null}
+      {hasAdminAccess ? <SessionListSection data={data} /> : null}
 
-        {hasAdminAccess ? <SessionListSection data={data} /> : null}
-
-        {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
-          <AdminAccessSection
-            adminUsers={adminUsers}
-            adminEmail={adminEmail}
-            onAdminEmailChange={setAdminEmail}
-            onSubmit={handleGrantAdmin}
-            granting={grantingAdmin}
-          />
-        ) : null}
-      </AdminGuard>
-    </div>
+      {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
+        <AdminAccessSection
+          adminUsers={adminUsers}
+          adminEmail={adminEmail}
+          onAdminEmailChange={setAdminEmail}
+          onSubmit={handleGrantAdmin}
+          granting={grantingAdmin}
+        />
+      ) : null}
+    </>
   )
 }
 

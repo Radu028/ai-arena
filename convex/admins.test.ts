@@ -93,4 +93,15 @@ describe('admin access control', () => {
       }),
     ).rejects.toThrow('not an admin')
   })
+
+  test('non-admin users cannot grant admin access', async () => {
+    const t = convexTest({ schema, modules })
+    const teammate = t.withIdentity(teammateIdentity)
+
+    await expect(
+      teammate.mutation(api.admins.grant, {
+        email: 'another@example.com',
+      }),
+    ).rejects.toThrow('not an admin')
+  })
 })

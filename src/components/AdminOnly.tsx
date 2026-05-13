@@ -1,4 +1,4 @@
-import { useQuery } from 'convex/react'
+import { useConvexAuth, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { useRuntimeConfig } from '#/components/AppProviders'
 
@@ -17,6 +17,10 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
 }
 
 function ClerkAdminOnly({ children }: { children: React.ReactNode }) {
-  const adminState = useQuery(api.admins.list, {})
+  const { isAuthenticated, isLoading } = useConvexAuth()
+  const adminState = useQuery(api.admins.list, isAuthenticated ? {} : 'skip')
+  if (isLoading || !isAuthenticated) {
+    return null
+  }
   return adminState?.isAuthenticated ? <>{children}</> : null
 }
