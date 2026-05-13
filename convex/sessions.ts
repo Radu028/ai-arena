@@ -470,7 +470,9 @@ export const create = mutation({
       args.modelKeys.length < MIN_MODELS_PER_SESSION ||
       args.modelKeys.length > MAX_MODELS_PER_SESSION
     ) {
-      throw new Error('Select between two and five models.')
+      throw new Error(
+        `Select between ${MIN_MODELS_PER_SESSION} and ${MAX_MODELS_PER_SESSION} models.`,
+      )
     }
 
     const selectedModelsSnapshot = ensureModelSnapshots(args.modelKeys)

@@ -101,6 +101,26 @@ export const AVAILABLE_MODELS = [
     judgeStyle: 'precise, structured, and outcome-focused',
   },
   {
+    key: 'openai-gpt54-mini',
+    providerKey: 'openai',
+    label: 'OpenAI GPT-5.4 Mini',
+    modelId: 'gpt-5.4-mini',
+    description: 'Fast, capable reasoning for coding and agentic prompts.',
+    tagline: 'Compact and capable.',
+    accent: 'var(--arena-openai)',
+    judgeStyle: 'practical, concise, and implementation-aware',
+  },
+  {
+    key: 'openai-gpt5-mini',
+    providerKey: 'openai',
+    label: 'OpenAI GPT-5 Mini',
+    modelId: 'gpt-5-mini',
+    description: 'Cost-efficient GPT-5 reasoning for well-defined tasks.',
+    tagline: 'Lean and reliable.',
+    accent: 'var(--arena-openai)',
+    judgeStyle: 'efficient, direct, and clarity-focused',
+  },
+  {
     key: 'anthropic-claude-sonnet-4',
     providerKey: 'anthropic',
     label: 'Claude Sonnet 4.6',
@@ -109,6 +129,16 @@ export const AVAILABLE_MODELS = [
     tagline: 'Nuanced and composed.',
     accent: 'var(--arena-anthropic)',
     judgeStyle: 'nuanced, empathetic, and articulate',
+  },
+  {
+    key: 'anthropic-claude-haiku-45',
+    providerKey: 'anthropic',
+    label: 'Claude Haiku 4.5',
+    modelId: 'claude-haiku-4-5-20251001',
+    description: 'Fast Anthropic model with strong coding and agent skills.',
+    tagline: 'Fast and sharp.',
+    accent: 'var(--arena-anthropic)',
+    judgeStyle: 'quick, crisp, and practical',
   },
   {
     key: 'google-gemini-3-flash',
@@ -244,9 +274,21 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputUsdPerMillionTokens: 2.5,
     outputUsdPerMillionTokens: 10,
   },
+  'openai-gpt54-mini': {
+    inputUsdPerMillionTokens: 0.75,
+    outputUsdPerMillionTokens: 4.5,
+  },
+  'openai-gpt5-mini': {
+    inputUsdPerMillionTokens: 0.25,
+    outputUsdPerMillionTokens: 2,
+  },
   'anthropic-claude-sonnet-4': {
     inputUsdPerMillionTokens: 3,
     outputUsdPerMillionTokens: 15,
+  },
+  'anthropic-claude-haiku-45': {
+    inputUsdPerMillionTokens: 1,
+    outputUsdPerMillionTokens: 5,
   },
   'google-gemini-3-flash': {
     inputUsdPerMillionTokens: 0.35,
