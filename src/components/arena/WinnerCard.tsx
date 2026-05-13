@@ -21,8 +21,14 @@ interface WinnerCardProps {
 const MODEL_PERSONAS: Record<string, string> = {
   'openai-gpt5':
     'sharp Silicon Valley tech visionary in a modern navy suit, confident smirk, award ceremony stage',
+  'openai-gpt54-mini':
+    'focused AI engineer in a tailored graphite jacket, compact workstation lights, confident award stage',
+  'openai-gpt5-mini':
+    'quick strategic builder in a clean white bomber jacket, streamlined neon stage, bright confident smile',
   'anthropic-claude-sonnet-4':
     'creative polymath in a modern blazer holding a glowing pen, warm studio lighting',
+  'anthropic-claude-haiku-45':
+    'nimble creative analyst in a warm copper blazer, elegant minimalist studio lighting',
   'google-gemini-3-flash':
     'vibrant innovator with colorful prismatic glasses and bold jacket, rainbow-spectrum stage',
   'google-gemini-31-pro':

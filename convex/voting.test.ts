@@ -5,6 +5,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
+import { MAX_MODELS_PER_SESSION, MIN_MODELS_PER_SESSION } from '../shared/arena'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -167,7 +168,9 @@ describe('session state machine', () => {
         modelKeys: ['openai-gpt5'],
         maxParticipants: 10,
       }),
-    ).rejects.toThrow('between two and five')
+    ).rejects.toThrow(
+      `between ${MIN_MODELS_PER_SESSION} and ${MAX_MODELS_PER_SESSION}`,
+    )
   })
 })
 
