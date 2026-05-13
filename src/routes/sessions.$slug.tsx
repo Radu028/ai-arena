@@ -11,7 +11,6 @@ import {
   SessionHistoryTab,
   SessionOverviewSection,
 } from '#/components/arena/SessionPageSections'
-import { WinnerCard } from '#/components/arena/WinnerCard'
 import { useParticipantToken } from '#/hooks/use-participant-token'
 import { Button } from '#/components/ui/button'
 import {
@@ -207,7 +206,7 @@ function SessionPage() {
             <EmptyMedia variant="icon">
               <RadioIcon />
             </EmptyMedia>
-            <EmptyTitle>Opening session...</EmptyTitle>
+            <EmptyTitle>Opening session&hellip;</EmptyTitle>
             <EmptyDescription>
               Loading the live room and preparing your spectator seat.
             </EmptyDescription>
@@ -263,10 +262,7 @@ function SessionPage() {
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_-20%,color-mix(in_oklab,var(--arena-amber),transparent_60%),transparent_45%),radial-gradient(circle_at_90%_120%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_45%)]"
           />
-          <div className="relative grid gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
-            <div className="mx-auto w-full max-w-md lg:mx-0">
-              <WinnerCard session={sessionView.session} winner={winner} />
-            </div>
+          <div className="relative max-w-4xl space-y-5">
             <div className="space-y-4">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                 <CrownIcon className="size-3" />
@@ -279,7 +275,6 @@ function SessionPage() {
               <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
                 {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
                 {winner.roundsPlayed} · {winnerVoteLabel} for the winner.
-                Generate the champion portrait and download or share the card.
               </p>
             </div>
           </div>

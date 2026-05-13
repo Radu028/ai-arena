@@ -32,7 +32,7 @@ const DISPLAY_NOUNS = [
   'Tiger',
   'Signal',
 ]
-const BOOTSTRAP_ADMIN_EMAILS = ['radupopa028@gmail.com']
+export const BOOTSTRAP_ADMIN_EMAILS = ['radupopa028@gmail.com'] as const
 
 export function now() {
   return Date.now()
@@ -169,6 +169,17 @@ function configuredBootstrapAdminEmails() {
       .map((email) => normalizeEmail(email))
       .filter((email): email is string => Boolean(email)),
   )
+}
+
+export function getBootstrapAdminEmails() {
+  return Array.from(configuredBootstrapAdminEmails()).sort((left, right) =>
+    left.localeCompare(right),
+  )
+}
+
+export function isBootstrapAdminEmail(email: string) {
+  const normalized = normalizeEmail(email)
+  return normalized ? configuredBootstrapAdminEmails().has(normalized) : false
 }
 
 export async function isAdminIdentity(

@@ -9,6 +9,7 @@ import {
   SearchIcon,
   ShieldIcon,
   SparklesIcon,
+  UserMinusIcon,
   UserPlusIcon,
   Wand2Icon,
 } from 'lucide-react'
@@ -66,9 +67,13 @@ function AdminDashboardContent() {
   const costs = useQuery(api.stats.getAdminCostSummary, {})
   const adminUsers = useQuery(api.admins.list, {})
   const grantAdmin = useMutation(api.admins.grant)
+  const revokeAdmin = useMutation(api.admins.revoke)
   const listSignedUpUsers = useAction(api.admins.listSignedUpUsers)
   const [adminEmail, setAdminEmail] = useState('')
   const [grantingAdminEmail, setGrantingAdminEmail] = useState<string | null>(
+    null,
+  )
+  const [revokingAdminEmail, setRevokingAdminEmail] = useState<string | null>(
     null,
   )
   const [userSearch, setUserSearch] = useState('')
@@ -155,6 +160,27 @@ function AdminDashboardContent() {
     }
   }
 
+  async function handleRevokeAdminEmail(rawEmail: string) {
+    const email = rawEmail.trim().toLowerCase()
+    setRevokingAdminEmail(email)
+    try {
+      const result = await revokeAdmin({ email })
+      toast.success(
+        result.alreadyRevoked
+          ? `${result.email} was already removed.`
+          : `Admin access removed from ${result.email}.`,
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not remove admin access.',
+      )
+    } finally {
+      setRevokingAdminEmail(null)
+    }
+  }
+
   return (
     <>
       {data && !data.isAuthenticated ? (
@@ -216,6 +242,8 @@ function AdminDashboardContent() {
           loadingUsers={loadingUsers}
           usersError={usersError}
           onGrantEmail={handleGrantAdminEmail}
+          revokingEmail={revokingAdminEmail}
+          onRevokeEmail={handleRevokeAdminEmail}
         />
       ) : null}
     </>
@@ -341,6 +369,8 @@ function AdminAccessSection({
   loadingUsers,
   usersError,
   onGrantEmail,
+  revokingEmail,
+  onRevokeEmail,
 }: {
   adminUsers: NonNullable<AdminUsersResult>
   adminEmail: string
@@ -353,6 +383,8 @@ function AdminAccessSection({
   loadingUsers: boolean
   usersError: string | null
   onGrantEmail: (email: string) => Promise<void>
+  revokingEmail: string | null
+  onRevokeEmail: (email: string) => Promise<void>
 }) {
   const adminEmailSet = useMemo(
     () =>
@@ -401,6 +433,7 @@ function AdminAccessSection({
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead className="text-right">Access</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -415,16 +448,34 @@ function AdminAccessSection({
                       bootstrap
                     </Badge>
                   </TableCell>
-                </TableRow>
-              ))}
-              {adminUsers.admins.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell className="font-medium">{admin.email}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    Granted by {admin.grantedByEmail ?? 'admin'}
+                  <TableCell className="text-right">
+                    <Badge variant="outline">Permanent</Badge>
                   </TableCell>
                 </TableRow>
               ))}
+              {adminUsers.admins.map((admin) => {
+                const isRevoking = revokingEmail === admin.email.toLowerCase()
+                return (
+                  <TableRow key={admin.id}>
+                    <TableCell className="font-medium">{admin.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      Granted by {admin.grantedByEmail ?? 'admin'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={revokingEmail !== null}
+                        onClick={() => void onRevokeEmail(admin.email)}
+                      >
+                        <UserMinusIcon className="size-3.5" />
+                        {isRevoking ? 'Removing...' : 'Remove'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>

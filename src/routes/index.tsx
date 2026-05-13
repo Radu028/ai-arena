@@ -72,7 +72,7 @@ function Hero({
         <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
           AI Arena pits the world&rsquo;s leading models against each other in
           synchronized rounds. They answer the same prompt, judge each other
-          without self-voting, and the audience picks the winner — all live.
+          without self-voting, and the audience picks the winner, all live.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -207,8 +207,8 @@ function FeatureSection() {
       icon: LockIcon,
     },
     {
-      title: 'Champion card',
-      copy: 'When a session ends, AI Arena renders a downloadable champion portrait you can share.',
+      title: 'Champion recap',
+      copy: 'When a session ends, AI Arena highlights the winning model, rounds won, and vote totals.',
       icon: TrophyIcon,
     },
   ]

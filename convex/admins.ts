@@ -1,7 +1,13 @@
 import { action, internalQuery, query, mutation } from './_generated/server'
 import { v } from 'convex/values'
 import { internal } from './_generated/api'
-import { getIdentityEmail, now, requireAdminIdentity } from './lib'
+import {
+  getBootstrapAdminEmails,
+  getIdentityEmail,
+  isBootstrapAdminEmail,
+  now,
+  requireAdminIdentity,
+} from './lib'
 
 function normalizeEmail(email: string) {
   const normalized = email.trim().toLowerCase()
@@ -21,7 +27,7 @@ export const list = query({
       return {
         isAuthenticated: false,
         viewerEmail: null,
-        bootstrapAdmins: ['radupopa028@gmail.com'],
+        bootstrapAdmins: getBootstrapAdminEmails(),
         admins: [],
       }
     }
@@ -30,9 +36,12 @@ export const list = query({
     return {
       isAuthenticated: true,
       viewerEmail,
-      bootstrapAdmins: ['radupopa028@gmail.com'],
+      bootstrapAdmins: getBootstrapAdminEmails(),
       admins: admins
-        .filter((admin) => admin.revokedAt === null)
+        .filter(
+          (admin) =>
+            admin.revokedAt === null && !isBootstrapAdminEmail(admin.email),
+        )
         .sort((left, right) => left.email.localeCompare(right.email))
         .map((admin) => ({
           id: admin._id,
@@ -108,6 +117,9 @@ export const grant = mutation({
   handler: async (ctx, args) => {
     const identity = await requireAdminIdentity(ctx)
     const email = normalizeEmail(args.email)
+    if (isBootstrapAdminEmail(email)) {
+      return { ok: true, email, alreadyAdmin: true }
+    }
     const existing = await ctx.db
       .query('adminUsers')
       .withIndex('by_email', (q) => q.eq('email', email))
@@ -134,6 +146,36 @@ export const grant = mutation({
       revokedAt: null,
     })
     return { ok: true, email, alreadyAdmin: false }
+  },
+})
+
+export const revoke = mutation({
+  args: {
+    email: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireAdminIdentity(ctx)
+    const email = normalizeEmail(args.email)
+    if (isBootstrapAdminEmail(email)) {
+      throw new Error('The bootstrap admin cannot be removed.')
+    }
+    if (getIdentityEmail(identity) === email) {
+      throw new Error('You cannot remove your own admin access.')
+    }
+
+    const existing = await ctx.db
+      .query('adminUsers')
+      .withIndex('by_email', (q) => q.eq('email', email))
+      .unique()
+
+    if (!existing || existing.revokedAt !== null) {
+      return { ok: true, email, alreadyRevoked: true }
+    }
+
+    await ctx.db.patch(existing._id, {
+      revokedAt: now(),
+    })
+    return { ok: true, email, alreadyRevoked: false }
   },
 })
 
