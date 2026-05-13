@@ -1,17 +1,17 @@
 import { useEffect, useReducer } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
+import {
+  ArrowRightIcon,
+  EyeIcon,
+  KeyRoundIcon,
+  RadioIcon,
+  UserRoundIcon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
 import { joinCodeSchema, normalizeOptionalEmail } from '@shared/validation'
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 
@@ -19,27 +19,24 @@ export const Route = createFileRoute('/join')({
   component: JoinPage,
 })
 
+type State = {
+  code: string
+  displayName: string
+  email: string
+  pending: boolean
+  redirectSlug: string | null
+}
+
+type Action =
+  | { type: 'setField'; field: 'code' | 'displayName' | 'email'; value: string }
+  | { type: 'setPending'; value: boolean }
+  | { type: 'setRedirectSlug'; value: string | null }
+
 function JoinPage() {
   const navigate = useNavigate()
   const joinByCode = useMutation(api.sessions.joinByCode)
   const [state, dispatch] = useReducer(
-    (
-      current: {
-        code: string
-        displayName: string
-        email: string
-        pending: boolean
-        redirectSlug: string | null
-      },
-      action:
-        | {
-            type: 'setField'
-            field: 'code' | 'displayName' | 'email'
-            value: string
-          }
-        | { type: 'setPending'; value: boolean }
-        | { type: 'setRedirectSlug'; value: string | null },
-    ) => {
+    (current: State, action: Action) => {
       switch (action.type) {
         case 'setField':
           return { ...current, [action.field]: action.value }
@@ -59,9 +56,7 @@ function JoinPage() {
   )
 
   useEffect(() => {
-    if (!state.redirectSlug) {
-      return
-    }
+    if (!state.redirectSlug) return
     void navigate({
       to: '/sessions/$slug',
       params: { slug: state.redirectSlug },
@@ -105,86 +100,159 @@ function JoinPage() {
   }
 
   return (
-    <div className="page-frame">
-      <div data-reveal className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="font-serif text-4xl">
-              👋 Join the crowd
-            </CardTitle>
-            <CardDescription className="text-base leading-7">
-              Enter the short join code, choose a display name, and drop
-              directly into the live lobby or active round.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Guests do not need a full account.</p>
-            <p>
-              Your vote persists across refreshes with a local session token.
-            </p>
-            <p>Model identities stay hidden until each round closes.</p>
-          </CardContent>
-        </Card>
+    <div className="shell space-y-12">
+      <section data-reveal className="mx-auto max-w-3xl text-center">
+        <p className="eyebrow">Enter the arena</p>
+        <h1 className="display mt-3 text-balance">
+          Join with a <span className="gradient-text">six-letter code.</span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+          Drop in as a spectator instantly. A username is only requested when
+          you want to vote — your ballot persists across refreshes.
+        </p>
+      </section>
 
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="font-serif text-3xl">Join by code</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="code">Join code</Label>
-                <Input
-                  id="code"
-                  value={state.code}
-                  onChange={(event) =>
-                    dispatch({
-                      type: 'setField',
-                      field: 'code',
-                      value: event.target.value.toUpperCase(),
-                    })
-                  }
-                  placeholder="A1B2C3"
-                  className="uppercase"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="displayName">Display name (optional)</Label>
-                <Input
-                  id="displayName"
-                  value={state.displayName}
-                  onChange={(event) =>
-                    dispatch({
-                      type: 'setField',
-                      field: 'displayName',
-                      value: event.target.value,
-                    })
-                  }
-                  placeholder="Radu or leave blank for an auto-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email (optional)</Label>
-                <Input
-                  id="email"
-                  value={state.email}
-                  onChange={(event) =>
-                    dispatch({
-                      type: 'setField',
-                      field: 'email',
-                      value: event.target.value,
-                    })
-                  }
-                  placeholder="radu@example.com"
-                />
-              </div>
-              <Button type="submit" size="lg" disabled={state.pending}>
-                {state.pending ? 'Joining…' : 'Join Session'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <section
+        data-reveal
+        className="mx-auto grid w-full max-w-5xl gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-16"
+      >
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <p className="eyebrow">Join code</p>
+            <Label htmlFor="code" className="sr-only">
+              Join code
+            </Label>
+            <Input
+              id="code"
+              value={state.code}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setField',
+                  field: 'code',
+                  value: e.target.value,
+                })
+              }
+              placeholder="A1B2C3"
+              className="mt-3 h-14 font-mono text-2xl tracking-[0.4em] uppercase placeholder:tracking-normal placeholder:text-muted-foreground/50"
+              maxLength={8}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Six characters, case-insensitive. Shared by the admin running the
+              session.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="displayName">
+                Display name{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="displayName"
+                value={state.displayName}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'setField',
+                    field: 'displayName',
+                    value: e.target.value,
+                  })
+                }
+                className="h-11"
+                placeholder="Auto-generated if empty"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={state.email}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'setField',
+                    field: 'email',
+                    value: e.target.value,
+                  })
+                }
+                className="h-11"
+                placeholder="you@example.com"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={state.pending}
+              className="h-11 rounded-full px-6"
+            >
+              {state.pending ? 'Joining...' : 'Join session'}
+              <ArrowRightIcon className="size-4" />
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Got a share link?{' '}
+              <Link
+                to="/"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Open it directly
+              </Link>{' '}
+              — no code needed.
+            </p>
+          </div>
+        </form>
+
+        <ul className="grid gap-7 self-start sm:grid-cols-2 lg:grid-cols-1">
+          <InfoItem
+            icon={EyeIcon}
+            title="Spectator-first"
+            copy="Watch every round in realtime without an account. Reveal happens automatically when voting closes."
+          />
+          <InfoItem
+            icon={UserRoundIcon}
+            title="Username only when voting"
+            copy="Cast your ballot, then choose a name. We never ask for more than that to take part."
+          />
+          <InfoItem
+            icon={KeyRoundIcon}
+            title="Persistent ballot"
+            copy="Refreshing or returning later keeps your vote — we anchor it with a local session token."
+          />
+          <InfoItem
+            icon={RadioIcon}
+            title="Live everything"
+            copy="Topic submissions, vote splits, and reveals all stream over Convex without any polling."
+          />
+        </ul>
+      </section>
     </div>
+  )
+}
+
+function InfoItem({
+  icon: Icon,
+  title,
+  copy,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  copy: string
+}) {
+  return (
+    <li className="flex gap-3">
+      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="size-4" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{copy}</p>
+      </div>
+    </li>
   )
 }

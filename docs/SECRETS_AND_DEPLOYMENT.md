@@ -24,7 +24,7 @@ pnpm exec convex env set --prod GOOGLE_AI_API_KEY
 pnpm exec convex env set --prod AI_ARENA_DEMO_MODE false
 pnpm exec convex env set --prod HOST_AGENT_MODEL gpt-5-mini
 pnpm exec convex env set --prod CRITIC_AGENT_MODEL gpt-5-mini
-pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-latest
+pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-preview
 ```
 
 For the first three commands, omit the value and paste it only into the
@@ -41,15 +41,15 @@ pnpm exec convex env set --prod AI_ARENA_DEMO_MODE true
 Do not configure an Opus model for this project. The model list uses Sonnet:
 
 - `anthropic-claude-sonnet-4`
-- `claude-sonnet-4-20250514`
+- `claude-sonnet-4-6`
 
 If this model is not available on the Anthropic account, replace it with the
 cheapest available Sonnet model before running a live demo.
 
 ## GitHub Secret For Convex CD
 
-The GitHub Actions workflow already deploys Convex functions on pushes to
-`main` when the repository secret exists:
+The GitHub Actions workflow deploys Convex functions on pushes to `main` using
+the repository secret:
 
 ```bash
 gh secret set CONVEX_DEPLOY_KEY
@@ -58,9 +58,9 @@ gh secret set CONVEX_DEPLOY_KEY
 Paste the deploy key into the interactive prompt. Do not pass it as `--body`
 because that can expose it in local process or command logs.
 
-After adding the secret, push a documentation-only commit to `main` and verify
-that the `Deploy Convex functions` step runs instead of the `Deployment skipped`
-step.
+This is configured for the hosted repository. The `Deploy Convex functions` step
+should run on pushes to `main`; if it is skipped, re-check that the secret exists
+in GitHub Actions.
 
 ## Vercel Frontend Deployment
 
@@ -74,6 +74,7 @@ The frontend needs these public/non-provider values in Vercel:
 - `VITE_CONVEX_URL`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` from the Clerk Vercel Marketplace
   integration, or `VITE_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`, managed by the Clerk Vercel Marketplace integration
 - Do not set `VITE_ALLOW_DEMO_ADMIN` in hosted environments unless demo admin
   access is intentionally enabled for a throwaway preview.
 
@@ -109,6 +110,6 @@ Input spend is also bounded: Critic and Judge prompts truncate model responses
 before sending them to another provider, while Stats Analyst prompts use saved
 vote/latency numbers instead of full response text.
 
-The default competition roster is GPT 5.5, Claude Sonnet 4.5, Gemini 3 Flash,
+The default competition roster is GPT 5.5, Claude Sonnet 4.6, Gemini 3 Flash,
 and Gemini 3.1 Pro. The Stats Analyst uses the cheaper Gemini 3 Flash model by
 default. Anthropic remains on Sonnet, not Opus.

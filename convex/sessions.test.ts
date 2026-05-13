@@ -24,6 +24,8 @@ describe('sessions flow', () => {
     const created = await admin.mutation(api.sessions.create, {
       title: 'Arena Prime',
       theme: 'comedy',
+      customPrompt: 'Make jokes about final exams and student life.',
+      responseLanguage: 'romanian',
       roundCount: 3,
       modelKeys: [
         'openai-gpt5',
@@ -40,6 +42,11 @@ describe('sessions flow', () => {
 
     expect(waitingView?.session.status).toBe('waiting')
     expect(waitingView?.session.joinCode).toHaveLength(6)
+    expect(waitingView?.session.customPrompt).toBe(
+      'Make jokes about final exams and student life.',
+    )
+    expect(waitingView?.session.responseLanguage).toBe('romanian')
+    expect(waitingView?.session.responseLanguageLabel).toBe('Romana')
 
     await admin.mutation(api.sessions.start, {
       sessionId: created.sessionId,
@@ -51,10 +58,13 @@ describe('sessions flow', () => {
     })
 
     expect(liveView?.session.status).toBe('active')
-    expect(liveView?.currentRound?.status).toBe('collecting_topic')
+    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.topic).toBe(
+      'Make jokes about final exams and student life.',
+    )
   })
 
-  test('the first submitted topic locks the round', async () => {
+  test('starting a session locks the admin prompt for the round', async () => {
     const t = convexTest({ schema, modules })
     const admin = t.withIdentity(adminIdentity)
 
@@ -77,23 +87,10 @@ describe('sessions flow', () => {
       existingToken: null,
     })
 
-    const guestTwo = await t.mutation(api.sessions.joinBySlug, {
-      slug: created.slug,
-      displayName: 'Mara',
-      email: null,
-      existingToken: null,
-    })
-
-    await t.mutation(api.rounds.submitTopic, {
-      slug: created.slug,
-      participantToken: guestOne.accessToken,
-      topic: 'Explain version control like I am five.',
-    })
-
     await expect(
       t.mutation(api.rounds.submitTopic, {
         slug: created.slug,
-        participantToken: guestTwo.accessToken,
+        participantToken: guestOne.accessToken,
         topic: 'This should not win.',
       }),
     ).rejects.toThrow('already has a locked topic')
@@ -103,10 +100,8 @@ describe('sessions flow', () => {
       participantToken: guestOne.accessToken,
     })
 
-    expect(liveView?.currentRound?.topic).toBe(
-      'Explain version control like I am five.',
-    )
-    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.topic).toBe('Topic Lock Test')
+    expect(liveView?.currentRound?.status).not.toBe('collecting_topic')
   })
 
   test('blank display names fall back to an auto-generated participant name', async () => {

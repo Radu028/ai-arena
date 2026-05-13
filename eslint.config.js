@@ -28,6 +28,7 @@ export default [
       'prettier.config.js',
       'convex/_generated/**',
       'src/routeTree.gen.ts',
+      '.agents/**',
       '.vercel/**',
       'dist/**',
       '.tanstack/**',

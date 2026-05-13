@@ -1,11 +1,16 @@
 import {
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   createRootRoute,
   useLocation,
 } from '@tanstack/react-router'
 import { TerminalIcon } from 'lucide-react'
+import { useEffect } from 'react'
+import { useReducedMotion } from 'motion/react'
+import { useAnimate } from 'motion/react-mini'
+import * as m from 'motion/react-m'
 import Footer from '../components/Footer'
 import Header from '../components/Header'
 import { AppProviders, useRuntimeConfig } from '#/components/AppProviders'
@@ -17,7 +22,7 @@ import {
   EmptyTitle,
 } from '#/components/ui/empty'
 import { Toaster } from '#/components/ui/sonner'
-import { useGlobalReveal } from '#/hooks/use-global-reveal'
+import { Button } from '#/components/ui/button'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -45,6 +50,8 @@ export const Route = createRootRoute({
   }),
   shellComponent: RootDocument,
   component: RootLayout,
+  errorComponent: RootErrorBoundary,
+  notFoundComponent: NotFoundPage,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -72,12 +79,44 @@ function RootLayout() {
 function RootFrame() {
   const runtime = useRuntimeConfig()
   const { pathname } = useLocation()
-  useGlobalReveal()
+  const [scope, animate] = useAnimate<HTMLDivElement>()
+  const shouldReduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    const root = scope.current
+    const targets = Array.from(root.querySelectorAll('[data-reveal]'))
+    const controls = targets.map((target, index) =>
+      animate(
+        target,
+        shouldReduceMotion
+          ? { opacity: 1, y: 0 }
+          : { opacity: [0, 1], y: [18, 0] },
+        {
+          delay: shouldReduceMotion ? 0 : index * 0.045,
+          duration: shouldReduceMotion ? 0 : 0.55,
+          ease: [0.22, 1, 0.36, 1],
+        },
+      ),
+    )
+
+    return () => {
+      controls.forEach((control) => control.stop())
+    }
+  }, [animate, pathname, scope, shouldReduceMotion])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div ref={scope} className="flex min-h-screen flex-col">
       <Header />
-      <main key={pathname} className="page-enter flex-1 pt-6 pb-16 sm:pt-10">
+      <m.main
+        key={pathname}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: shouldReduceMotion ? 0 : 0.36,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="flex-1 pt-6 pb-16 sm:pt-10"
+      >
         {runtime.hasConvex ? (
           <Outlet />
         ) : (
@@ -96,9 +135,87 @@ function RootFrame() {
             </Empty>
           </div>
         )}
-      </main>
+      </m.main>
       <Footer />
       <Toaster richColors position="top-right" />
     </div>
   )
+}
+
+function NotFoundPage() {
+  return (
+    <div className="shell">
+      <Empty className="surface rounded-2xl p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <TerminalIcon />
+          </EmptyMedia>
+          <EmptyTitle>Page not found</EmptyTitle>
+          <EmptyDescription>
+            This link does not match an AI Arena page. Use the join screen if
+            you have a code, or return to the home page.
+          </EmptyDescription>
+        </EmptyHeader>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link to="/join">Join with code</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back home</Link>
+          </Button>
+        </div>
+      </Empty>
+    </div>
+  )
+}
+
+function RootErrorBoundary({
+  error,
+  reset,
+}: {
+  error: Error
+  reset: () => void
+}) {
+  return (
+    <div className="shell">
+      <Empty className="surface rounded-2xl p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <TerminalIcon />
+          </EmptyMedia>
+          <EmptyTitle>Something went wrong</EmptyTitle>
+          <EmptyDescription>
+            The route failed while rendering. Try again, or return home and
+            reopen the page.
+          </EmptyDescription>
+          <p className="max-w-2xl break-words rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
+            {formatRootError(error)}
+          </p>
+        </EmptyHeader>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button type="button" onClick={() => reset()}>
+            Retry
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back home</Link>
+          </Button>
+        </div>
+      </Empty>
+    </div>
+  )
+}
+
+function formatRootError(error: Error) {
+  const message = error.message.trim()
+  if (!message) {
+    return 'Unknown route error'
+  }
+  if (message.startsWith('<!DOCTYPE html') || message.includes('<html')) {
+    const status =
+      message.match(/Error code\s*(\d{3})/i)?.[1] ??
+      message.match(/<title>[^<]*?\b(\d{3})\b[^<]*<\/title>/i)?.[1] ??
+      'upstream'
+    return `Upstream service returned ${status}.`
+  }
+  return message
 }

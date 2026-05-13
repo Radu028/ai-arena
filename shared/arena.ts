@@ -1,6 +1,23 @@
 export const SESSION_THEMES = ['comedy', 'debate', 'eli5', 'freeform'] as const
 export type SessionTheme = (typeof SESSION_THEMES)[number]
 
+export const RESPONSE_LANGUAGES = ['english', 'romanian'] as const
+export type ResponseLanguage = (typeof RESPONSE_LANGUAGES)[number]
+
+export const RESPONSE_LANGUAGE_COPY: Record<
+  ResponseLanguage,
+  { label: string; instruction: string }
+> = {
+  english: {
+    label: 'English',
+    instruction: 'Write all user-facing output in English.',
+  },
+  romanian: {
+    label: 'Romana',
+    instruction: 'Write all user-facing output in Romanian.',
+  },
+}
+
 export const SESSION_STATUSES = [
   'waiting',
   'active',
@@ -84,20 +101,50 @@ export const AVAILABLE_MODELS = [
     judgeStyle: 'precise, structured, and outcome-focused',
   },
   {
+    key: 'openai-gpt54-mini',
+    providerKey: 'openai',
+    label: 'OpenAI GPT-5.4 Mini',
+    modelId: 'gpt-5.4-mini',
+    description: 'Fast, capable reasoning for coding and agentic prompts.',
+    tagline: 'Compact and capable.',
+    accent: 'var(--arena-openai)',
+    judgeStyle: 'practical, concise, and implementation-aware',
+  },
+  {
+    key: 'openai-gpt5-mini',
+    providerKey: 'openai',
+    label: 'OpenAI GPT-5 Mini',
+    modelId: 'gpt-5-mini',
+    description: 'Cost-efficient GPT-5 reasoning for well-defined tasks.',
+    tagline: 'Lean and reliable.',
+    accent: 'var(--arena-openai)',
+    judgeStyle: 'efficient, direct, and clarity-focused',
+  },
+  {
     key: 'anthropic-claude-sonnet-4',
     providerKey: 'anthropic',
-    label: 'Claude Sonnet 4.5',
-    modelId: 'claude-sonnet-4-5-20250929',
+    label: 'Claude Sonnet 4.6',
+    modelId: 'claude-sonnet-4-6',
     description: 'Balanced reasoning with strong nuance and tone control.',
     tagline: 'Nuanced and composed.',
     accent: 'var(--arena-anthropic)',
     judgeStyle: 'nuanced, empathetic, and articulate',
   },
   {
+    key: 'anthropic-claude-haiku-45',
+    providerKey: 'anthropic',
+    label: 'Claude Haiku 4.5',
+    modelId: 'claude-haiku-4-5-20251001',
+    description: 'Fast Anthropic model with strong coding and agent skills.',
+    tagline: 'Fast and sharp.',
+    accent: 'var(--arena-anthropic)',
+    judgeStyle: 'quick, crisp, and practical',
+  },
+  {
     key: 'google-gemini-3-flash',
     providerKey: 'google',
     label: 'Gemini 3 Flash',
-    modelId: 'gemini-3-flash-latest',
+    modelId: 'gemini-3-flash-preview',
     description: 'Fast, low-cost synthesis with confident explanation.',
     tagline: 'Fast and budget-aware.',
     accent: 'var(--arena-google)',
@@ -107,7 +154,7 @@ export const AVAILABLE_MODELS = [
     key: 'google-gemini-31-pro',
     providerKey: 'google',
     label: 'Gemini 3.1 Pro',
-    modelId: 'gemini-3.1-pro',
+    modelId: 'gemini-3.1-pro-preview',
     description: 'Deeper comparative reasoning with broad synthesis.',
     tagline: 'Deep and analytical.',
     accent: 'var(--arena-google)',
@@ -204,14 +251,15 @@ export const MIN_ROUNDS = 1
 export const MAX_ROUNDS = 10
 export const MAX_TOPIC_LENGTH = 300
 export const MIN_TOPIC_LENGTH = 5
-export const PROVIDER_TIMEOUT_MS = 15_000
+export const MAX_CUSTOM_PROMPT_LENGTH = 500
+export const PROVIDER_TIMEOUT_MS = 65_000
 export const AGENT_TIMEOUT_MS = 8_000
-export const ROUND_MAX_OUTPUT_TOKENS = 280
+export const ROUND_MAX_OUTPUT_TOKENS = 500
 export const AGENT_MAX_OUTPUT_TOKENS = 180
 export const JUDGE_MAX_OUTPUT_TOKENS = 80
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
-export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-latest'
+export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-preview'
 
 // Approximate USD pricing per 1M tokens as of early 2026. Kept intentionally
 // coarse so the dashboard can show meaningful budget estimates without
@@ -226,9 +274,21 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputUsdPerMillionTokens: 2.5,
     outputUsdPerMillionTokens: 10,
   },
+  'openai-gpt54-mini': {
+    inputUsdPerMillionTokens: 0.75,
+    outputUsdPerMillionTokens: 4.5,
+  },
+  'openai-gpt5-mini': {
+    inputUsdPerMillionTokens: 0.25,
+    outputUsdPerMillionTokens: 2,
+  },
   'anthropic-claude-sonnet-4': {
     inputUsdPerMillionTokens: 3,
     outputUsdPerMillionTokens: 15,
+  },
+  'anthropic-claude-haiku-45': {
+    inputUsdPerMillionTokens: 1,
+    outputUsdPerMillionTokens: 5,
   },
   'google-gemini-3-flash': {
     inputUsdPerMillionTokens: 0.35,

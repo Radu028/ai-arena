@@ -1,18 +1,22 @@
+import { internal } from './_generated/api'
 import type { Doc } from './_generated/dataModel'
 import { mutation, query } from './_generated/server'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import { v } from 'convex/values'
 import {
+  MAX_CUSTOM_PROMPT_LENGTH,
   MAX_MODELS_PER_SESSION,
   MAX_ROUNDS,
   MIN_MODELS_PER_SESSION,
   MIN_ROUNDS,
+  RESPONSE_LANGUAGE_COPY,
   getThemeCopy,
   statusTone,
 } from '../shared/arena'
 import {
   appendSessionEvent,
   autoDisplayName,
+  buildAnonymizedSlots,
   clampParticipantLimit,
   countParticipantsForSession,
   defaultVotingWindowSeconds,
@@ -30,6 +34,20 @@ import {
   requireAdminIdentity,
   requireSessionOwner,
 } from './lib'
+import { responseLanguageValidator } from './validators'
+
+function getResponseLanguage(session: Doc<'sessions'>) {
+  return session.responseLanguage ?? 'english'
+}
+
+function getCustomPrompt(session: Doc<'sessions'>) {
+  const prompt = session.customPrompt?.trim()
+  return prompt ? prompt : null
+}
+
+function getRoundTopic(session: Doc<'sessions'>) {
+  return getCustomPrompt(session) ?? session.title
+}
 
 function summarizeRound(
   round: Doc<'rounds'>,
@@ -228,7 +246,7 @@ async function buildSessionView(
         humanVotes,
         aiVotes,
         artifacts,
-        round.status === 'scored',
+        round.revealAt !== null,
       ),
     )
   }
@@ -269,6 +287,10 @@ async function buildSessionView(
       title: session.title,
       theme: session.theme,
       themeLabel: getThemeCopy(session.theme).label,
+      customPrompt: getCustomPrompt(session),
+      responseLanguage: getResponseLanguage(session),
+      responseLanguageLabel:
+        RESPONSE_LANGUAGE_COPY[getResponseLanguage(session)].label,
       status: session.status,
       statusLabel: statusTone(session.status),
       roundCount: session.roundCount,
@@ -289,11 +311,7 @@ async function buildSessionView(
           canVote: Boolean(
             currentRound && currentRound.status === 'voting' && !viewerHasVoted,
           ),
-          canSubmitTopic: Boolean(
-            currentRound &&
-            currentRound.status === 'collecting_topic' &&
-            session.status === 'active',
-          ),
+          canSubmitTopic: false,
         }
       : null,
     participants: participants.map((participant) => ({
@@ -338,6 +356,8 @@ export const listAdminSessions = query({
         joinCode: session.joinCode,
         status: session.status,
         theme: session.theme,
+        customPrompt: getCustomPrompt(session),
+        responseLanguage: getResponseLanguage(session),
         roundCount: session.roundCount,
         currentRoundNumber: session.currentRoundNumber,
         createdAt: session.createdAt,
@@ -372,6 +392,9 @@ export const getAdminSession = query({
             (round) => round.roundNumber === session.currentRoundNumber,
           ) ?? null)
         : null
+    const hasUnrevealedScoredRound = rounds.some(
+      (round) => round.status === 'scored' && round.revealAt === null,
+    )
     return {
       id: session._id,
       slug: session.slug,
@@ -379,10 +402,15 @@ export const getAdminSession = query({
       joinCode: session.joinCode,
       theme: session.theme,
       themeLabel: getThemeCopy(session.theme).label,
+      customPrompt: getCustomPrompt(session),
+      responseLanguage: getResponseLanguage(session),
+      responseLanguageLabel:
+        RESPONSE_LANGUAGE_COPY[getResponseLanguage(session)].label,
       status: session.status,
       roundCount: session.roundCount,
       currentRoundNumber: session.currentRoundNumber,
       currentRoundStatus: currentRound?.status ?? null,
+      hasUnrevealedScoredRound,
       selectedModels: session.selectedModelsSnapshot,
       maxParticipants: session.maxParticipants,
       createdAt: session.createdAt,
@@ -417,6 +445,8 @@ export const create = mutation({
       v.literal('eli5'),
       v.literal('freeform'),
     ),
+    customPrompt: v.optional(v.string()),
+    responseLanguage: v.optional(responseLanguageValidator),
     roundCount: v.number(),
     modelKeys: v.array(v.string()),
     maxParticipants: v.optional(v.number()),
@@ -427,6 +457,12 @@ export const create = mutation({
     if (title.length < 3) {
       throw new Error('Session title must be at least 3 characters.')
     }
+    const customPrompt = args.customPrompt?.trim() ?? ''
+    if (customPrompt.length > MAX_CUSTOM_PROMPT_LENGTH) {
+      throw new Error(
+        `Custom prompt must stay under ${MAX_CUSTOM_PROMPT_LENGTH} characters.`,
+      )
+    }
     if (args.roundCount < MIN_ROUNDS || args.roundCount > MAX_ROUNDS) {
       throw new Error('Round count is out of range.')
     }
@@ -434,7 +470,9 @@ export const create = mutation({
       args.modelKeys.length < MIN_MODELS_PER_SESSION ||
       args.modelKeys.length > MAX_MODELS_PER_SESSION
     ) {
-      throw new Error('Select between two and five models.')
+      throw new Error(
+        `Select between ${MIN_MODELS_PER_SESSION} and ${MAX_MODELS_PER_SESSION} models.`,
+      )
     }
 
     const selectedModelsSnapshot = ensureModelSnapshots(args.modelKeys)
@@ -443,6 +481,8 @@ export const create = mutation({
       joinCode: await generateUniqueJoinCode(ctx),
       title,
       theme: args.theme,
+      customPrompt,
+      responseLanguage: args.responseLanguage ?? 'english',
       status: 'waiting',
       createdByIdentity: identity.tokenIdentifier,
       createdByName: identity.name ?? identity.email ?? 'Arena Admin',
@@ -523,17 +563,52 @@ export const start = mutation({
       currentRoundNumber: 1,
       startedAt: now(),
     })
+    const topic = getRoundTopic(session)
+    const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+    const startedAt = now()
     await ctx.db.patch(firstRound._id, {
-      status: 'collecting_topic',
+      status: 'generating',
+      topic,
+      topicSubmittedByParticipantId: null,
+      topicLockedAt: startedAt,
+      generatingStartedAt: startedAt,
     })
+
+    for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+      await ctx.db.insert('roundResponses', {
+        sessionId: session._id,
+        roundId: firstRound._id,
+        providerKey: model.providerKey,
+        modelKey: model.key,
+        modelId: model.modelId,
+        modelLabel: model.label,
+        anonymizedSlot: slots[index],
+        promptVersion: 'v2',
+        responseText: null,
+        status: 'pending',
+        latencyMs: null,
+        tokenUsageInput: null,
+        tokenUsageOutput: null,
+        costMicrosUsd: null,
+        errorCode: null,
+        errorMessage: null,
+        createdAt: startedAt,
+        completedAt: null,
+      })
+    }
 
     await appendSessionEvent(ctx, {
       sessionId: session._id,
       roundId: firstRound._id,
       type: 'session_started',
       title: 'Session started',
-      description: 'Round 1 is live and waiting for the first topic.',
+      description: 'Round 1 started from the admin prompt.',
       meta: {},
+    })
+
+    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
+      sessionId: session._id,
+      roundId: firstRound._id,
     })
 
     return {

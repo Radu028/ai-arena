@@ -1,15 +1,16 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useMutation, useQuery } from 'convex/react'
+import { useEffect, useMemo, useState } from 'react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   ArrowRightIcon,
-  CoinsIcon,
   CopyIcon,
   PlusIcon,
-  ShieldCheckIcon,
+  SearchIcon,
   ShieldIcon,
   SparklesIcon,
+  UserMinusIcon,
+  UserPlusIcon,
   Wand2Icon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -27,7 +28,6 @@ import {
 } from '#/components/ui/empty'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import {
   Table,
@@ -41,6 +41,9 @@ import { formatDateTime } from '#/lib/format'
 
 type AdminCostSummary = FunctionReturnType<typeof api.stats.getAdminCostSummary>
 type AdminUsersResult = FunctionReturnType<typeof api.admins.list>
+type SignedUpUsersResult = FunctionReturnType<
+  typeof api.admins.listSignedUpUsers
+>
 type AdminSessionsResult = FunctionReturnType<
   typeof api.sessions.listAdminSessions
 >
@@ -50,25 +53,97 @@ export const Route = createFileRoute('/admin/')({
 })
 
 function AdminDashboard() {
+  return (
+    <div className="shell space-y-16">
+      <AdminGuard title="Admin console">
+        <AdminDashboardContent />
+      </AdminGuard>
+    </div>
+  )
+}
+
+function AdminDashboardContent() {
   const data = useQuery(api.sessions.listAdminSessions, {})
   const costs = useQuery(api.stats.getAdminCostSummary, {})
   const adminUsers = useQuery(api.admins.list, {})
   const grantAdmin = useMutation(api.admins.grant)
+  const revokeAdmin = useMutation(api.admins.revoke)
+  const listSignedUpUsers = useAction(api.admins.listSignedUpUsers)
   const [adminEmail, setAdminEmail] = useState('')
-  const [grantingAdmin, setGrantingAdmin] = useState(false)
+  const [grantingAdminEmail, setGrantingAdminEmail] = useState<string | null>(
+    null,
+  )
+  const [revokingAdminEmail, setRevokingAdminEmail] = useState<string | null>(
+    null,
+  )
+  const [userSearch, setUserSearch] = useState('')
+  const [signedUpUsers, setSignedUpUsers] =
+    useState<SignedUpUsersResult | null>(null)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersError, setUsersError] = useState<string | null>(null)
   const hasAdminAccess = data?.isAuthenticated !== false
+  const canLoadUsers = adminUsers?.isAuthenticated === true
+
+  useEffect(() => {
+    if (!canLoadUsers) {
+      return
+    }
+
+    let cancelled = false
+    const timeout = window.setTimeout(() => {
+      setLoadingUsers(true)
+      setUsersError(null)
+      void listSignedUpUsers({
+        query: userSearch.trim() || undefined,
+        limit: 100,
+      })
+        .then((result) => {
+          if (!cancelled) {
+            setSignedUpUsers(result)
+          }
+        })
+        .catch((error: unknown) => {
+          if (!cancelled) {
+            setUsersError(
+              error instanceof Error
+                ? error.message
+                : 'Could not load signed-up users.',
+            )
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoadingUsers(false)
+          }
+        })
+    }, 250)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+    }
+  }, [canLoadUsers, listSignedUpUsers, userSearch])
 
   async function handleGrantAdmin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const email = adminEmail.trim().toLowerCase()
+    await handleGrantAdminEmail(adminEmail, { clearManualInput: true })
+  }
+
+  async function handleGrantAdminEmail(
+    rawEmail: string,
+    options: { clearManualInput?: boolean } = {},
+  ) {
+    const email = rawEmail.trim().toLowerCase()
     if (!email) {
       toast.error('Enter an email address.')
       return
     }
-    setGrantingAdmin(true)
+    setGrantingAdminEmail(email)
     try {
       const result = await grantAdmin({ email })
-      setAdminEmail('')
+      if (options.clearManualInput) {
+        setAdminEmail('')
+      }
       toast.success(
         result.alreadyAdmin
           ? `${result.email} is already an admin.`
@@ -81,182 +156,191 @@ function AdminDashboard() {
           : 'Could not grant admin access.',
       )
     } finally {
-      setGrantingAdmin(false)
+      setGrantingAdminEmail(null)
+    }
+  }
+
+  async function handleRevokeAdminEmail(rawEmail: string) {
+    const email = rawEmail.trim().toLowerCase()
+    setRevokingAdminEmail(email)
+    try {
+      const result = await revokeAdmin({ email })
+      toast.success(
+        result.alreadyRevoked
+          ? `${result.email} was already removed.`
+          : `Admin access removed from ${result.email}.`,
+      )
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not remove admin access.',
+      )
+    } finally {
+      setRevokingAdminEmail(null)
     }
   }
 
   return (
-    <div className="shell space-y-8">
-      <AdminGuard title="Admin console">
-        {data && !data.isAuthenticated ? (
-          <Empty className="surface rounded-2xl p-10">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <ShieldIcon />
-              </EmptyMedia>
-              <EmptyTitle>Admin access required</EmptyTitle>
-              <EmptyDescription>
-                You&rsquo;re signed in but this email isn&rsquo;t on the
-                allowlist. Ask <code>radupopa028@gmail.com</code> to grant
-                access from this page.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+    <>
+      {data && !data.isAuthenticated ? (
+        <Empty className="rounded-2xl border border-border/60 bg-card/40 p-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ShieldIcon />
+            </EmptyMedia>
+            <EmptyTitle>Admin access required</EmptyTitle>
+            <EmptyDescription>
+              You&rsquo;re signed in but this email isn&rsquo;t on the
+              allowlist. Ask <code>radupopa028@gmail.com</code> to grant access
+              from this page.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : null}
+
+      <header
+        data-reveal
+        className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div>
+          <p className="eyebrow">Admin console</p>
+          <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
+            Sessions
+          </h1>
+          <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
+            Create waiting rooms, start battles manually, and stop sessions when
+            you want to cut off provider spend.
+          </p>
+        </div>
+        {hasAdminAccess ? (
+          <Button asChild size="lg" className="h-11 rounded-full px-5">
+            <Link to="/admin/sessions/new">
+              <PlusIcon className="size-4" />
+              New session
+            </Link>
+          </Button>
         ) : null}
+      </header>
 
-        <header
-          data-reveal
-          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div>
-            <p className="eyebrow">Admin console</p>
-            <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
-              Sessions
-            </h1>
-            <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
-              Create waiting rooms, start battles manually, and stop sessions
-              when you want to cut off provider spend.
-            </p>
-          </div>
-          {hasAdminAccess ? (
-            <Button asChild size="lg" className="h-11 rounded-full px-5">
-              <Link to="/admin/sessions/new">
-                <PlusIcon className="size-4" />
-                New session
-              </Link>
-            </Button>
-          ) : null}
-        </header>
+      {hasAdminAccess && costs && costs.isAuthenticated ? (
+        <CostSection costs={costs} />
+      ) : null}
 
-        {hasAdminAccess && costs && costs.isAuthenticated ? (
-          <CostSection costs={costs} />
-        ) : null}
+      {hasAdminAccess ? <SessionListSection data={data} /> : null}
 
-        {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
-          <AdminAccessSection
-            adminUsers={adminUsers}
-            adminEmail={adminEmail}
-            onAdminEmailChange={setAdminEmail}
-            onSubmit={handleGrantAdmin}
-            granting={grantingAdmin}
-          />
-        ) : null}
-
-        {hasAdminAccess ? <SessionListSection data={data} /> : null}
-      </AdminGuard>
-    </div>
+      {hasAdminAccess && adminUsers && adminUsers.isAuthenticated ? (
+        <AdminAccessSection
+          adminUsers={adminUsers}
+          adminEmail={adminEmail}
+          onAdminEmailChange={setAdminEmail}
+          onSubmit={handleGrantAdmin}
+          grantingEmail={grantingAdminEmail}
+          signedUpUsers={signedUpUsers}
+          userSearch={userSearch}
+          onUserSearchChange={setUserSearch}
+          loadingUsers={loadingUsers}
+          usersError={usersError}
+          onGrantEmail={handleGrantAdminEmail}
+          revokingEmail={revokingAdminEmail}
+          onRevokeEmail={handleRevokeAdminEmail}
+        />
+      ) : null}
+    </>
   )
 }
 
 function CostSection({ costs }: { costs: NonNullable<AdminCostSummary> }) {
   return (
-    <section data-reveal className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-      <div className="surface rounded-2xl p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-300">
-              <CoinsIcon className="size-5" />
-            </div>
-            <p className="text-sm font-semibold">Cost tracking</p>
-          </div>
-          <Badge
-            variant="outline"
-            className="font-mono text-[0.65rem] uppercase"
-          >
-            estimated
-          </Badge>
-        </div>
-
-        <div className="mt-5">
-          <p className="eyebrow">Total spend</p>
-          <p className="mt-1 font-mono text-4xl font-semibold tabular-nums">
+    <section data-reveal className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Cost tracking</p>
+          <p className="display mt-2 text-4xl tabular-nums sm:text-5xl">
             {formatMicrosUsd(costs.totals.costMicrosUsd)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Aggregated across {costs.totals.sessions} sessions and{' '}
-            {costs.totals.rounds} rounds.
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Estimated spend across {costs.totals.sessions} session
+            {costs.totals.sessions === 1 ? '' : 's'} and {costs.totals.rounds}{' '}
+            round{costs.totals.rounds === 1 ? '' : 's'}.
           </p>
         </div>
-
-        <Separator className="my-6 opacity-60" />
-
-        <div className="grid grid-cols-2 gap-3">
-          <MiniStat
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4 sm:divide-x sm:divide-border/50">
+          <KpiStat
             label="Sessions"
             value={costs.totals.sessions.toLocaleString()}
           />
-          <MiniStat
+          <KpiStat
             label="Rounds"
             value={costs.totals.rounds.toLocaleString()}
           />
-          <MiniStat
-            label="Input tokens"
+          <KpiStat
+            label="Tokens in"
             value={costs.totals.tokensIn.toLocaleString()}
           />
-          <MiniStat
-            label="Output tokens"
+          <KpiStat
+            label="Tokens out"
             value={costs.totals.tokensOut.toLocaleString()}
           />
         </div>
       </div>
 
-      <div className="surface overflow-hidden rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <p className="text-sm font-semibold">Cost by model</p>
-          <Badge
-            variant="outline"
-            className="font-mono text-[0.65rem] uppercase"
-          >
+          <span className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
             top spend first
-          </Badge>
+          </span>
         </div>
         {costs.byModel.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Model</TableHead>
-                  <TableHead className="text-right">Calls</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {costs.byModel.map((row) => (
-                  <TableRow key={row.modelKey}>
-                    <TableCell>
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          aria-hidden
-                          className="size-2 rounded-full"
-                          style={{ backgroundColor: row.accent }}
-                        />
-                        {row.label}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {row.calls}
-                      {row.failures > 0 ? (
-                        <span className="ml-1 text-[0.7rem] text-muted-foreground">
-                          ({row.failures} failed)
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                      {row.tokensIn.toLocaleString()}
-                      <span className="mx-1 opacity-40">/</span>
-                      {row.tokensOut.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums">
-                      {formatMicrosUsd(row.costMicrosUsd)}
-                    </TableCell>
+          <div className="overflow-hidden rounded-xl border border-border/40">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Model</TableHead>
+                    <TableHead className="text-right">Calls</TableHead>
+                    <TableHead className="text-right">Tokens</TableHead>
+                    <TableHead className="text-right">Cost</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {costs.byModel.map((row) => (
+                    <TableRow key={row.modelKey}>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-2">
+                          <span
+                            aria-hidden
+                            className="size-2 rounded-full"
+                            style={{ backgroundColor: row.accent }}
+                          />
+                          {row.label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {row.calls}
+                        {row.failures > 0 ? (
+                          <span className="ml-1 text-[0.7rem] text-muted-foreground">
+                            ({row.failures} failed)
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                        {row.tokensIn.toLocaleString()}
+                        <span className="mx-1 opacity-40">/</span>
+                        {row.tokensOut.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {formatMicrosUsd(row.costMicrosUsd)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         ) : (
-          <Empty className="py-10">
+          <Empty className="rounded-xl border border-dashed border-border/50 py-10">
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <SparklesIcon />
@@ -278,30 +362,53 @@ function AdminAccessSection({
   adminEmail,
   onAdminEmailChange,
   onSubmit,
-  granting,
+  grantingEmail,
+  signedUpUsers,
+  userSearch,
+  onUserSearchChange,
+  loadingUsers,
+  usersError,
+  onGrantEmail,
+  revokingEmail,
+  onRevokeEmail,
 }: {
   adminUsers: NonNullable<AdminUsersResult>
   adminEmail: string
   onAdminEmailChange: (next: string) => void
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
-  granting: boolean
+  grantingEmail: string | null
+  signedUpUsers: SignedUpUsersResult | null
+  userSearch: string
+  onUserSearchChange: (next: string) => void
+  loadingUsers: boolean
+  usersError: string | null
+  onGrantEmail: (email: string) => Promise<void>
+  revokingEmail: string | null
+  onRevokeEmail: (email: string) => Promise<void>
 }) {
+  const adminEmailSet = useMemo(
+    () =>
+      new Set([
+        ...adminUsers.bootstrapAdmins.map((email) => email.toLowerCase()),
+        ...adminUsers.admins.map((admin) => admin.email.toLowerCase()),
+      ]),
+    [adminUsers.admins, adminUsers.bootstrapAdmins],
+  )
+
   return (
-    <section data-reveal className="surface overflow-hidden rounded-2xl">
-      <div className="flex items-center gap-3 border-b border-border/60 px-6 py-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <ShieldCheckIcon className="size-5" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold">Admin access</p>
-          <p className="text-xs text-muted-foreground">
-            <code>radupopa028@gmail.com</code> is the bootstrap admin. Add
-            teammates by email after they sign in with Clerk.
-          </p>
-        </div>
+    <section data-reveal className="space-y-6">
+      <div>
+        <p className="eyebrow">Admin access</p>
+        <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+          Who can run the arena
+        </h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          <code>radupopa028@gmail.com</code> is the bootstrap admin. Add
+          teammates by email after they sign in with Clerk.
+        </p>
       </div>
 
-      <div className="grid gap-6 px-6 py-5 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label htmlFor="adminEmail">New admin email</Label>
@@ -314,18 +421,19 @@ function AdminAccessSection({
               className="h-10"
             />
           </div>
-          <Button type="submit" disabled={granting}>
+          <Button type="submit" disabled={grantingEmail !== null}>
             <Wand2Icon className="size-4" />
-            {granting ? 'Granting...' : 'Grant admin'}
+            {grantingEmail ? 'Granting...' : 'Grant admin'}
           </Button>
         </form>
 
-        <div className="overflow-hidden rounded-xl border border-border/60">
+        <div className="overflow-hidden rounded-xl border border-border/40">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead className="text-right">Access</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -340,21 +448,198 @@ function AdminAccessSection({
                       bootstrap
                     </Badge>
                   </TableCell>
-                </TableRow>
-              ))}
-              {adminUsers.admins.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell className="font-medium">{admin.email}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    Granted by {admin.grantedByEmail ?? 'admin'}
+                  <TableCell className="text-right">
+                    <Badge variant="outline">Permanent</Badge>
                   </TableCell>
                 </TableRow>
               ))}
+              {adminUsers.admins.map((admin) => {
+                const isRevoking = revokingEmail === admin.email.toLowerCase()
+                return (
+                  <TableRow key={admin.id}>
+                    <TableCell className="font-medium">{admin.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      Granted by {admin.grantedByEmail ?? 'admin'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={revokingEmail !== null}
+                        onClick={() => void onRevokeEmail(admin.email)}
+                      >
+                        <UserMinusIcon className="size-3.5" />
+                        {isRevoking ? 'Removing...' : 'Remove'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <div className="space-y-4 rounded-2xl border border-border/40 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="eyebrow">Signed-up users</p>
+            <h3 className="mt-2 text-lg font-semibold tracking-tight">
+              Grant access from Clerk users
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Search everyone who has signed in, then click once to make them an
+              admin.
+            </p>
+          </div>
+          {signedUpUsers ? (
+            <p className="font-mono text-xs text-muted-foreground">
+              {signedUpUsers.users.length} shown
+              {signedUpUsers.totalCount > signedUpUsers.users.length
+                ? ` of ${signedUpUsers.totalCount}`
+                : ''}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={userSearch}
+            onChange={(event) => onUserSearchChange(event.target.value)}
+            placeholder="Search by name or email"
+            className="h-10 pl-9"
+          />
+        </div>
+
+        {usersError ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {usersError}
+          </p>
+        ) : null}
+
+        <SignedUpUsersTable
+          users={signedUpUsers?.users ?? []}
+          adminEmailSet={adminEmailSet}
+          loading={loadingUsers}
+          grantingEmail={grantingEmail}
+          onGrantEmail={onGrantEmail}
+        />
+      </div>
     </section>
+  )
+}
+
+function SignedUpUsersTable({
+  users,
+  adminEmailSet,
+  loading,
+  grantingEmail,
+  onGrantEmail,
+}: {
+  users: NonNullable<SignedUpUsersResult>['users']
+  adminEmailSet: Set<string>
+  loading: boolean
+  grantingEmail: string | null
+  onGrantEmail: (email: string) => Promise<void>
+}) {
+  if (loading && users.length === 0) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-12 w-full" />
+        ))}
+      </div>
+    )
+  }
+
+  if (!loading && users.length === 0) {
+    return (
+      <Empty className="rounded-xl border border-dashed border-border/50 py-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <UserPlusIcon />
+          </EmptyMedia>
+          <EmptyTitle>No users found</EmptyTitle>
+          <EmptyDescription>
+            Try a different search, or ask the user to sign in once with Google.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/40">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Signed up</TableHead>
+              <TableHead>Last sign-in</TableHead>
+              <TableHead className="text-right">Access</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => {
+              const isAdmin = adminEmailSet.has(user.email.toLowerCase())
+              const isGranting = grantingEmail === user.email.toLowerCase()
+              return (
+                <TableRow key={user.id || user.email}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {user.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt=""
+                          className="size-8 rounded-full border border-border/50"
+                        />
+                      ) : (
+                        <span className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase">
+                          {user.email.slice(0, 1)}
+                        </span>
+                      )}
+                      <div>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {user.createdAt ? formatDateTime(user.createdAt) : '—'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {user.lastSignInAt
+                      ? formatDateTime(user.lastSignInAt)
+                      : 'Never'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isAdmin ? (
+                      <Badge variant="secondary">Admin</Badge>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={grantingEmail !== null}
+                        onClick={() => void onGrantEmail(user.email)}
+                      >
+                        <UserPlusIcon className="size-3.5" />
+                        {isGranting ? 'Granting...' : 'Make admin'}
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   )
 }
 
@@ -364,71 +649,85 @@ function SessionListSection({
   data: AdminSessionsResult | undefined
 }) {
   return (
-    <section data-reveal className="surface overflow-hidden rounded-2xl">
-      <div className="border-b border-border/60 px-6 py-4">
-        <p className="text-sm font-semibold">Recent sessions</p>
-        <p className="text-xs text-muted-foreground">
-          Sessions appear here once Clerk authentication is configured.
-        </p>
+    <section data-reveal className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Recent sessions</p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+            {data?.sessions.length
+              ? `${data.sessions.length} session${data.sessions.length === 1 ? '' : 's'} created so far`
+              : 'No arenas yet'}
+          </h2>
+        </div>
+        {data && data.sessions.length > 0 ? (
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/sessions/new">
+              <PlusIcon className="size-3.5" />
+              New
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {data && data.sessions.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Theme</TableHead>
-                <TableHead className="text-right">Rounds</TableHead>
-                <TableHead>Join code</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.sessions.map((session) => (
-                <TableRow key={session.id} className="group">
-                  <TableCell>
-                    <Link
-                      to="/admin/sessions/$sessionId"
-                      params={{ sessionId: session.id }}
-                      className="font-medium text-foreground transition-colors hover:text-primary"
-                    >
-                      {session.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <SessionStatusPill status={session.status} />
-                  </TableCell>
-                  <TableCell className="capitalize text-muted-foreground">
-                    {session.theme}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
-                    {session.roundCount}
-                  </TableCell>
-                  <TableCell>
-                    <JoinCodeChip code={session.joinCode} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDateTime(session.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      to="/admin/sessions/$sessionId"
-                      params={{ sessionId: session.id }}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary"
-                    >
-                      open <ArrowRightIcon className="size-3" />
-                    </Link>
-                  </TableCell>
+        <div className="overflow-hidden rounded-xl border border-border/40">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Theme</TableHead>
+                  <TableHead className="text-right">Rounds</TableHead>
+                  <TableHead>Join code</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.sessions.map((session) => (
+                  <TableRow key={session.id} className="group">
+                    <TableCell>
+                      <Link
+                        to="/admin/sessions/$sessionId"
+                        params={{ sessionId: session.id }}
+                        className="font-medium text-foreground transition-colors hover:text-primary"
+                      >
+                        {session.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <SessionStatusPill status={session.status} />
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground">
+                      {session.theme}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                      {session.roundCount}
+                    </TableCell>
+                    <TableCell>
+                      <JoinCodeChip code={session.joinCode} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDateTime(session.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        to="/admin/sessions/$sessionId"
+                        params={{ sessionId: session.id }}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary"
+                      >
+                        open <ArrowRightIcon className="size-3" />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       ) : data ? (
-        <Empty className="flex-none py-12">
+        <Empty className="flex-none rounded-xl border border-dashed border-border/50 py-12">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <SparklesIcon />
@@ -446,7 +745,7 @@ function SessionListSection({
           </Button>
         </Empty>
       ) : (
-        <div className="space-y-2 p-6">
+        <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -493,13 +792,13 @@ function JoinCodeChip({ code }: { code: string }) {
   )
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function KpiStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5">
-      <p className="text-[0.62rem] uppercase tracking-[0.16em] text-muted-foreground">
+    <div className="px-0 sm:px-5 sm:first:pl-0">
+      <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-0.5 font-mono text-base font-semibold tabular-nums">
+      <p className="mt-1 font-mono text-base font-semibold tabular-nums">
         {value}
       </p>
     </div>

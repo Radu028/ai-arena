@@ -1,0 +1,42 @@
+flowchart LR
+  Guest((Guest viewer))
+  Voter((Guest voter))
+  Admin((Admin))
+  Model((AI model agent))
+  Host((Host agent))
+  Critic((Critic agent))
+  Stats((Stats analyst agent))
+
+  subgraph System["AI Arena"]
+    ViewSession[View live session]
+    JoinByQr[Join through QR/link/code]
+    SubmitTopic[Submit round topic]
+    Vote[Vote for anonymous response]
+    WatchReveal[Watch winner reveal]
+    ViewLeaderboard[View leaderboard/history]
+    RegisterLogin[Register / login]
+    CreateSession[Create session]
+    StartStop[Start / stop session]
+    ManageAdmins[Grant admin access]
+    GenerateAnswers[Generate model answers]
+    JudgeAnswers[Judge peer responses]
+    HostCopy[Generate host copy]
+    CriticCopy[Generate critic analysis]
+    StatsCopy[Generate stats summary]
+  end
+
+  Guest --> ViewSession
+  Guest --> JoinByQr
+  Guest --> WatchReveal
+  Guest --> ViewLeaderboard
+  Voter --> SubmitTopic
+  Voter --> Vote
+  Admin --> RegisterLogin
+  Admin --> CreateSession
+  Admin --> StartStop
+  Admin --> ManageAdmins
+  Model --> GenerateAnswers
+  Model --> JudgeAnswers
+  Host --> HostCopy
+  Critic --> CriticCopy
+  Stats --> StatsCopy

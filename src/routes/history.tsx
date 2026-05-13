@@ -1,17 +1,25 @@
 import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
-import { ChevronLeftIcon, ChevronRightIcon, HistoryIcon } from 'lucide-react'
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  HistoryIcon,
+  TrophyIcon,
+} from 'lucide-react'
 import { api } from '@convex/_generated/api'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '#/components/ui/empty'
+import { Skeleton } from '#/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -52,129 +60,174 @@ function HistoryPage() {
   }
 
   return (
-    <div className="page-frame space-y-6">
-      <section
-        data-reveal
-        className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12"
-      >
-        <div className="space-y-4">
-          <Badge className="rounded-full bg-[var(--arena-signal)] px-4 py-1.5 text-white">
-            Public archive
-          </Badge>
-          <p className="eyebrow">Session history</p>
-          <h1 className="display max-w-3xl text-balance">
-            📚 Every finished arena session, round-by-round.
-          </h1>
-          <p className="max-w-2xl text-base leading-7 text-muted-foreground">
-            Browse past battles to see how each topic played out, who won, and
-            which model the audience rallied behind.
-          </p>
-        </div>
+    <div className="shell space-y-12">
+      <section data-reveal className="mx-auto max-w-3xl text-center">
+        <p className="eyebrow">Public archive</p>
+        <h1 className="display mt-3 text-balance">
+          Every finished arena,{' '}
+          <span className="gradient-text">round by round.</span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+          Browse past battles to see how each topic landed, who won, and which
+          model the audience rallied behind.
+        </p>
       </section>
 
-      <Card data-reveal className="arena-panel">
-        <CardHeader>
-          <CardTitle className="font-serif text-3xl">
-            <span className="inline-flex items-center gap-3">
-              <HistoryIcon className="size-6 text-[var(--arena-cobalt)]" />
-              Completed sessions
-            </span>
-          </CardTitle>
-          <CardDescription>
-            {data
-              ? `${data.rows.length} session${data.rows.length === 1 ? '' : 's'} on page ${pageNumber}.`
-              : 'Loading archive...'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {data && data.rows.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Theme</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Rounds</TableHead>
-                  <TableHead>Models</TableHead>
-                  <TableHead>Top winner</TableHead>
-                  <TableHead>Total votes</TableHead>
-                  <TableHead>Finished</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>
-                      <Link
-                        to="/sessions/$slug"
-                        params={{ slug: row.slug }}
-                        className="font-medium text-[var(--arena-cobalt)] no-underline"
-                      >
-                        {row.title}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{row.themeLabel}</TableCell>
-                    <TableCell className="capitalize">{row.status}</TableCell>
-                    <TableCell>
-                      {row.completedRounds}/{row.roundCount}
-                    </TableCell>
-                    <TableCell>{row.modelCount}</TableCell>
-                    <TableCell>
-                      {row.overallWinner ? (
-                        <span className="inline-flex items-center gap-2">
-                          {row.overallWinner.label}
-                          <Badge variant="outline">
-                            {row.overallWinner.wins} wins
-                          </Badge>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{row.totalHumanVotes}</TableCell>
-                    <TableCell>{formatDateTime(row.finishedAt)}</TableCell>
+      <section data-reveal className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="eyebrow">Completed sessions</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+              {data
+                ? `Page ${pageNumber} · ${data.rows.length} session${data.rows.length === 1 ? '' : 's'}`
+                : 'Loading session archive…'}
+            </h2>
+          </div>
+          {data?.hasMore ? (
+            <p className="text-xs text-muted-foreground">more available →</p>
+          ) : data ? (
+            <p className="text-xs text-muted-foreground">end of archive</p>
+          ) : null}
+        </div>
+
+        {data && data.rows.length > 0 ? (
+          <div className="overflow-hidden rounded-xl border border-border/40">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Theme</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Rounds</TableHead>
+                    <TableHead className="text-right">Models</TableHead>
+                    <TableHead>Top winner</TableHead>
+                    <TableHead className="text-right">Votes</TableHead>
+                    <TableHead>Finished</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="flex flex-col items-center gap-3 rounded-[1.2rem] border border-dashed border-border/80 bg-muted/40 px-4 py-12 text-center text-muted-foreground">
-              <HistoryIcon className="size-10 opacity-20" />
-              <p>{data ? 'No completed sessions yet — run your first arena!' : 'Loading...'}</p>
-            </div>
-          )}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-4">
-            <p className="text-sm text-muted-foreground">
-              Page {pageNumber}
-              {data?.hasMore
-                ? ' · more sessions available'
-                : ' · end of archive'}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={goToPreviousPage}
-                disabled={previousCursors.length === 0}
-              >
-                <ChevronLeftIcon className="size-4" />
-                Previous
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={goToNextPage}
-                disabled={!data?.nextCursor}
-              >
-                Next
-                <ChevronRightIcon className="size-4" />
-              </Button>
+                </TableHeader>
+                <TableBody>
+                  {data.rows.map((row) => (
+                    <TableRow key={row.id} className="group">
+                      <TableCell className="max-w-xs">
+                        <Link
+                          to="/sessions/$slug"
+                          params={{ slug: row.slug }}
+                          className="font-medium text-foreground transition-colors hover:text-primary"
+                        >
+                          <span className="truncate">{row.title}</span>
+                          <ArrowRightIcon className="ml-2 inline size-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-normal">
+                          {row.themeLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <StatusPill status={row.status} />
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                        {row.completedRounds}/{row.roundCount}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-muted-foreground">
+                        {row.modelCount}
+                      </TableCell>
+                      <TableCell>
+                        {row.overallWinner ? (
+                          <span className="inline-flex items-center gap-2">
+                            <TrophyIcon className="size-3.5 text-amber-500 dark:text-amber-300" />
+                            <span className="font-medium">
+                              {row.overallWinner.label}
+                            </span>
+                            <Badge variant="secondary" className="font-mono">
+                              {row.overallWinner.wins}
+                            </Badge>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {row.totalHumanVotes}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarIcon className="size-3" />
+                          {formatDateTime(row.finishedAt)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ) : data ? (
+          <Empty className="rounded-xl border border-dashed border-border/50 py-12">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <HistoryIcon />
+              </EmptyMedia>
+              <EmptyTitle>No completed sessions yet</EmptyTitle>
+              <EmptyDescription>
+                Run your first arena and it&rsquo;ll show up here.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <p className="text-xs text-muted-foreground">
+            Page <span className="font-mono">{pageNumber}</span>
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={goToPreviousPage}
+              disabled={previousCursors.length === 0}
+            >
+              <ChevronLeftIcon className="size-3.5" />
+              Prev
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={!data?.nextCursor}
+            >
+              Next
+              <ChevronRightIcon className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
+  )
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    status === 'ended'
+      ? 'bg-emerald-500/12 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300'
+      : status === 'stopped'
+        ? 'bg-red-500/12 text-red-700 dark:bg-red-400/15 dark:text-red-300'
+        : 'bg-muted text-muted-foreground'
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${tone}`}
+    >
+      <span className="size-1.5 rounded-full bg-current" />
+      {status}
+    </span>
   )
 }

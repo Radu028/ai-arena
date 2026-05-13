@@ -1,198 +1,390 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { useQuery } from 'convex/react'
 import {
-  Mic2Icon,
-  MessageSquareHeartIcon,
+  ArrowRightIcon,
+  BarChart3Icon,
+  GavelIcon,
+  LayersIcon,
+  LockIcon,
+  MicVocalIcon,
+  RadioIcon,
   TrophyIcon,
-  Users2Icon,
+  ZapIcon,
 } from 'lucide-react'
+import { api } from '@convex/_generated/api'
 import { AVAILABLE_MODELS, THEME_COPY } from '@shared/arena'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
+import { AdminOnly } from '#/components/AdminOnly'
 
 export const Route = createFileRoute('/')({ component: HomePage })
 
 function HomePage() {
+  const stats = useQuery(api.stats.getModelLeaderboard, {})
+
   return (
-    <div className="page-frame space-y-8">
-      <section
-        data-reveal
-        className="hero-shell overflow-hidden px-6 py-8 md:px-10 md:py-12"
-      >
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-          <div className="space-y-6">
-            <Badge className="rounded-full bg-[var(--arena-signal)] px-4 py-1.5 text-white">
-              Host + Critic agents included
-            </Badge>
-            <div className="space-y-4">
-              <p className="eyebrow">🚀 Live editorial AI battles</p>
-              <h1 className="display max-w-4xl text-balance">
-                One prompt. Five major models. Real people voting alongside
-                them.
-              </h1>
-              <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                AI Arena runs synchronized rounds where every selected model
-                answers the same topic, judges its peers without self-voting,
-                and competes in front of a live audience.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to="/join">Join With Code</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link to="/admin">Open Admin Console</Link>
-              </Button>
-            </div>
-          </div>
+    <div className="shell space-y-24 sm:space-y-28">
+      <Hero
+        completedSessions={stats?.sessionsIncluded ?? 0}
+        modelsTracked={
+          stats && stats.rows.length > 0
+            ? stats.rows.length
+            : AVAILABLE_MODELS.length
+        }
+      />
 
-          <Card className="arena-panel bg-card/88">
-            <CardHeader>
-              <CardTitle className="font-serif text-3xl">Round loop</CardTitle>
-              <CardDescription>
-                Topic lock, simultaneous responses, anonymous voting, critic
-                analysis, then the next round.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              {[
-                [
-                  '1',
-                  'Topic locks once',
-                  'The first valid submission freezes the prompt.',
-                ],
-                [
-                  '2',
-                  'Models answer',
-                  'Responses arrive in parallel with timeout handling.',
-                ],
-                [
-                  '3',
-                  'Crowd and AI vote',
-                  'Humans and eligible models cast one ballot each.',
-                ],
-                [
-                  '4',
-                  'Host and Critic react',
-                  'The MC transitions, the Critic explains the result.',
-                ],
-              ].map(([step, title, copy]) => (
-                <div
-                  key={step}
-                  className="rounded-[1.2rem] border border-border/70 bg-background/60 p-4"
-                >
-                  <p className="eyebrow">{step}</p>
-                  <p className="mt-2 font-medium text-foreground">{title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+      <FlowSection />
+
+      <FeatureSection />
+
+      <RosterSection />
+
+      <ThemeSection />
+
+      <CallToAction />
+    </div>
+  )
+}
+
+function Hero({
+  completedSessions,
+  modelsTracked,
+}: {
+  completedSessions: number
+  modelsTracked: number
+}) {
+  return (
+    <section data-reveal className="relative isolate pt-6 sm:pt-12">
+      <div className="mx-auto max-w-4xl text-center">
+        <Badge
+          variant="outline"
+          className="h-7 rounded-full border-border/70 bg-background/60 px-3 text-[0.7rem] font-medium tracking-wide backdrop-blur"
+        >
+          <span className="live-dot mr-1" />
+          Realtime · {AVAILABLE_MODELS.length} frontier models on stage
+        </Badge>
+
+        <h1 className="display mt-6 text-balance">
+          One prompt. Every model.{' '}
+          <span className="gradient-text">A live champion.</span>
+        </h1>
+
+        <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+          AI Arena pits the world&rsquo;s leading models against each other in
+          synchronized rounds. They answer the same prompt, judge each other
+          without self-voting, and the audience picks the winner, all live.
+        </p>
+
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild size="lg" className="h-11 rounded-full px-6">
+            <Link to="/join">
+              <ZapIcon className="size-4" />
+              Join with code
+            </Link>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-11 rounded-full px-6"
+          >
+            <Link to="/leaderboard">
+              See the leaderboard
+              <ArrowRightIcon className="size-4" />
+            </Link>
+          </Button>
         </div>
-      </section>
+      </div>
 
-      <section data-reveal className="grid gap-4 lg:grid-cols-4">
-        {[
-          {
-            title: 'Host / MC',
-            copy: 'Introduces rounds, bridges results, and closes the session with a recap.',
-            icon: Mic2Icon,
-          },
-          {
-            title: 'Critic',
-            copy: 'Explains why the winner worked and what the other models missed.',
-            icon: MessageSquareHeartIcon,
-          },
-          {
-            title: 'Realtime Crowd',
-            copy: 'Guests join with a link or code and watch votes update live through Convex.',
-            icon: Users2Icon,
-          },
-          {
-            title: 'Fair Reveal',
-            copy: 'Responses stay anonymous until the round closes and the winner is locked.',
-            icon: TrophyIcon,
-          },
-        ].map((feature) => (
-          <Card key={feature.title} className="arena-panel">
-            <CardHeader>
-              <feature.icon className="size-5 text-[var(--arena-cobalt)]" />
-              <CardTitle className="font-serif text-2xl">
-                {feature.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm leading-7 text-muted-foreground">
-              {feature.copy}
-            </CardContent>
-          </Card>
+      <div
+        className={
+          completedSessions > 0
+            ? 'mt-16 grid grid-cols-2 gap-y-6 sm:mt-20 md:grid-cols-4 md:divide-x md:divide-border/50'
+            : 'mt-16 grid grid-cols-3 gap-y-6 sm:mt-20 md:divide-x md:divide-border/50'
+        }
+      >
+        <HeroStat label="frontier models" value={String(modelsTracked)} />
+        <HeroStat label="round agents" value="3" />
+        {completedSessions > 0 ? (
+          <HeroStat
+            label="completed sessions"
+            value={String(completedSessions)}
+          />
+        ) : null}
+        <HeroStat label="anonymous voting" value="100%" />
+      </div>
+    </section>
+  )
+}
+
+function HeroStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 px-4 text-center md:items-start md:px-8 md:text-left">
+      <p className="font-mono text-2xl font-semibold tabular-nums sm:text-3xl">
+        {value}
+      </p>
+      <p className="text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+function FlowSection() {
+  const steps = [
+    {
+      step: '01',
+      title: 'Topic locks once',
+      copy: 'The first valid prompt freezes the round. No more edits — every model sees the same brief.',
+    },
+    {
+      step: '02',
+      title: 'Models answer in parallel',
+      copy: 'Responses arrive simultaneously. Anything missing the provider timeout gets a graceful timeout.',
+    },
+    {
+      step: '03',
+      title: 'Crowd & AI judges vote',
+      copy: 'Humans and eligible models cast one ballot each. Models cannot vote for themselves.',
+    },
+    {
+      step: '04',
+      title: 'Agents react, MC bridges',
+      copy: 'The Critic explains the win, Stats summarises the round, the MC flows into the next.',
+    },
+  ]
+
+  return (
+    <section data-reveal className="space-y-12">
+      <SectionHeading
+        eyebrow="Round loop"
+        title="Built for live arenas, not benchmarks."
+        description="Every round runs on the same clean four-step loop, with anonymous reveals and explicit ties. No magic, no leaderboard farming."
+      />
+
+      <ol className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((s) => (
+          <li key={s.step} className="border-t border-border/60 pt-5">
+            <span className="font-mono text-[0.7rem] uppercase tracking-[0.2em] text-muted-foreground">
+              Step {s.step}
+            </span>
+            <h3 className="mt-2.5 text-base font-semibold">{s.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {s.copy}
+            </p>
+          </li>
         ))}
-      </section>
+      </ol>
+    </section>
+  )
+}
 
-      <section data-reveal className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="font-serif text-3xl">Battle roster</CardTitle>
-            <CardDescription>
-              The initial base ships with five providers and model snapshots
-              saved at session creation time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            {AVAILABLE_MODELS.map((model) => (
-              <div
-                key={model.key}
-                className="rounded-[1.2rem] border border-border/70 bg-background/65 p-4 transition-transform hover:-translate-y-1 hover:shadow-md"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">{model.label}</p>
-                  <span
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: model.accent }}
-                  />
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {model.description}
-                </p>
-                <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  {model.tagline}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+function FeatureSection() {
+  const features = [
+    {
+      title: 'Host / MC agent',
+      copy: 'Introduces rounds, threads transitions, and closes with a recap. Generated text feels like a tight broadcast.',
+      icon: MicVocalIcon,
+    },
+    {
+      title: 'Critic agent',
+      copy: 'Explains why the winner worked and what the runners-up missed. Editorial, not evangelical.',
+      icon: GavelIcon,
+    },
+    {
+      title: 'Stats analyst',
+      copy: 'Quietly summarises vote distributions, latency, and reliability after every finalised round.',
+      icon: BarChart3Icon,
+    },
+    {
+      title: 'Realtime crowd',
+      copy: 'Audiences join in seconds, watch votes update live, and only need a username when they vote.',
+      icon: RadioIcon,
+    },
+    {
+      title: 'Anonymous reveal',
+      copy: 'Responses stay anonymous through voting. Identities only unlock once the ballots close.',
+      icon: LockIcon,
+    },
+    {
+      title: 'Champion recap',
+      copy: 'When a session ends, AI Arena highlights the winning model, rounds won, and vote totals.',
+      icon: TrophyIcon,
+    },
+  ]
 
-        <Card className="arena-panel">
-          <CardHeader>
-            <CardTitle className="font-serif text-3xl">Theme presets</CardTitle>
-            <CardDescription>
-              Each preset tunes Host tone, Critic framing, and the quality bar
-              for judging.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(THEME_COPY).map(([key, copy]) => (
-              <div
-                key={key}
-                className="rounded-[1.2rem] border border-border/70 bg-background/65 p-4"
-              >
-                <p className="font-medium text-foreground">{copy.label}</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Host tone: {copy.hostTone}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Critic angle: {copy.criticAngle}
-                </p>
+  return (
+    <section data-reveal className="space-y-12">
+      <SectionHeading
+        eyebrow="Inside the arena"
+        title="Three agents, one stage, zero filler."
+        description="Every artifact you see — host introductions, critic notes, stats summaries — comes from a dedicated agent that only ships when a round actually finalises."
+      />
+
+      <div className="grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
+        {features.map((f) => (
+          <div key={f.title}>
+            <div className="inline-flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <f.icon className="size-4.5" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {f.copy}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function RosterSection() {
+  return (
+    <section data-reveal className="space-y-12">
+      <SectionHeading
+        eyebrow="Battle roster"
+        title="The frontier models on stage."
+        description="The lineup is snapshotted at session creation, so historical sessions stay reproducible even when providers ship new versions."
+      />
+
+      <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+        {AVAILABLE_MODELS.map((model) => (
+          <li
+            key={model.key}
+            className="border-t border-border/60 pt-5"
+            style={
+              {
+                ['--accent']: model.accent,
+              } as React.CSSProperties
+            }
+          >
+            <div className="flex items-center justify-between">
+              <span
+                className="size-2.5 rounded-full"
+                style={{ backgroundColor: model.accent }}
+                aria-hidden
+              />
+              <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+                {model.providerKey}
+              </span>
+            </div>
+            <p className="mt-4 text-base font-semibold">{model.label}</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {model.description}
+            </p>
+            <p className="mt-4 text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {model.tagline}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ThemeSection() {
+  return (
+    <section data-reveal className="space-y-12">
+      <SectionHeading
+        eyebrow="Theme presets"
+        title="Tune the room with a single switch."
+        description="Each preset rewires Host tone, Critic framing, and the quality bar judges hold every model to. Pick one, then run the round."
+      />
+
+      <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+        {Object.entries(THEME_COPY).map(([key, copy]) => (
+          <li key={key} className="border-t border-border/60 pt-5">
+            <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {key}
+            </span>
+            <p className="mt-3 text-base font-semibold">{copy.label}</p>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div>
+                <dt className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+                  Host tone
+                </dt>
+                <dd className="mt-0.5 leading-6">{copy.hostTone}</dd>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </section>
+              <div>
+                <dt className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+                  Critic angle
+                </dt>
+                <dd className="mt-0.5 leading-6">{copy.criticAngle}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function CallToAction() {
+  return (
+    <section
+      data-reveal
+      className="relative isolate overflow-hidden border-t border-border/60 pt-16 sm:pt-20"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-32 h-96 bg-[radial-gradient(circle_at_18%_50%,color-mix(in_oklab,var(--arena-violet),transparent_70%),transparent_55%),radial-gradient(circle_at_82%_50%,color-mix(in_oklab,var(--arena-amber),transparent_72%),transparent_55%)]"
+      />
+      <div className="relative mx-auto max-w-3xl text-center">
+        <p className="eyebrow">Run a session</p>
+        <h2 className="display mt-3 text-balance text-3xl sm:text-5xl">
+          Spin up a live arena{' '}
+          <span className="gradient-text">in under a minute.</span>
+        </h2>
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+          Pick a theme, lock the lineup, and share the join code. The room opens
+          instantly with anonymous responses and live voting.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <AdminOnly>
+            <Button asChild size="lg" className="h-11 rounded-full px-6">
+              <Link to="/admin">
+                <LayersIcon className="size-4" />
+                Open admin console
+              </Link>
+            </Button>
+          </AdminOnly>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-11 rounded-full px-6"
+          >
+            <Link to="/history">
+              Browse past sessions
+              <ArrowRightIcon className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string
+  title: string
+  description: string
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-12 md:items-end md:gap-10">
+      <div className="md:col-span-7 lg:col-span-8">
+        <p className="eyebrow">{eyebrow}</p>
+        <h2 className="mt-2 text-pretty text-2xl font-semibold tracking-tight sm:text-3xl">
+          {title}
+        </h2>
+      </div>
+      <p className="text-pretty text-sm leading-6 text-muted-foreground md:col-span-5 md:text-right lg:col-span-4">
+        {description}
+      </p>
     </div>
   )
 }

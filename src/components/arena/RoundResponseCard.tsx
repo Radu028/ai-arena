@@ -7,6 +7,11 @@ import {
 import { cn } from '#/lib/utils'
 import { formatDurationMs } from '#/lib/format'
 import { Button } from '#/components/ui/button'
+import { usePretextBlock } from '#/lib/pretext'
+
+const MODEL_TEXT_PRETEXT_OPTIONS = {
+  whiteSpace: 'pre-wrap',
+} as const
 
 export function RoundResponseCard({
   response,
@@ -32,11 +37,17 @@ export function RoundResponseCard({
   onVote?: (responseId: string) => void
 }) {
   const failed = response.status !== 'success'
+  const { ref, metrics } = usePretextBlock<HTMLDivElement>(
+    response.text,
+    '400 15px "Source Serif 4"',
+    28,
+    MODEL_TEXT_PRETEXT_OPTIONS,
+  )
 
   return (
     <div
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all',
+        'group relative flex min-h-full flex-col overflow-visible rounded-2xl border bg-card transition-all',
         response.isWinner && revealed
           ? 'border-amber-400/50 ring-amber-400/30 ring-amber-glow [box-shadow:0_24px_60px_-24px_color-mix(in_oklab,var(--arena-amber),transparent_55%),inset_0_0_0_1px_color-mix(in_oklab,var(--arena-amber),transparent_70%)]'
           : 'border-border/60 hover:border-border',
@@ -95,9 +106,15 @@ export function RoundResponseCard({
                 'This model did not return a valid answer in time.'}
             </p>
           ) : (
-            <p className="font-editorial text-[0.95rem] leading-7 text-foreground/95">
-              {response.text}
-            </p>
+            <div
+              ref={ref}
+              data-line-count={metrics?.lineCount}
+              className="overflow-visible"
+            >
+              <p className="font-editorial whitespace-pre-wrap wrap-anywhere text-[0.95rem] leading-7 text-foreground/95">
+                {response.text}
+              </p>
+            </div>
           )}
         </div>
       </div>
