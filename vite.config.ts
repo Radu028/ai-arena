@@ -11,6 +11,7 @@ const config = defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'CLERK_PUBLISHABLE_KEY'],
   plugins: [
     devtools(),
     tailwindcss(),

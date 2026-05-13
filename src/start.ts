@@ -2,8 +2,8 @@ import { clerkMiddleware } from '@clerk/tanstack-react-start/server'
 import { createMiddleware, createStart } from '@tanstack/react-start'
 
 const publishableKey =
-  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
+  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
   process.env.CLERK_PUBLISHABLE_KEY ??
   ''
 
