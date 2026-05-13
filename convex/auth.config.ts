@@ -1,9 +1,9 @@
 const issuerKey = ['CLERK', 'JWT', 'ISSUER', 'DOMAIN'].join('_')
 const legacyIssuerKey = ['CLERK', 'ISSUER', 'URL'].join('_')
 const publishableKey = firstConfiguredEnv([
-  ['VITE', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
-  ['NEXT', 'PUBLIC', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
   ['CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
+  ['NEXT', 'PUBLIC', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
+  ['VITE', 'CLERK', 'PUBLISHABLE', 'KEY'].join('_'),
 ])
 const issuer =
   process.env[issuerKey] ??
