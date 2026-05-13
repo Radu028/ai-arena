@@ -248,6 +248,9 @@ function SessionPage() {
     sessionView.session.status === 'ended' ||
     sessionView.session.status === 'stopped'
   const winner = sessionEnded ? sessionView.scoreboard.at(0) : undefined
+  const winnerVoteLabel = winner
+    ? `${winner.totalVotes} ${winner.totalVotes === 1 ? 'vote' : 'votes'}`
+    : null
 
   return (
     <div className="shell space-y-10">
@@ -275,9 +278,8 @@ function SessionPage() {
               </h2>
               <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
                 {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
-                {winner.roundsPlayed} · {winner.totalVotes} vote
-                {winner.totalVotes !== 1 ? 's' : ''} for the winner. Generate
-                the champion portrait and download or share the card.
+                {winner.roundsPlayed} · {winnerVoteLabel} for the winner.
+                Generate the champion portrait and download or share the card.
               </p>
             </div>
           </div>
