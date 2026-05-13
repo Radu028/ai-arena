@@ -38,12 +38,16 @@ export function usePretextBlock<TElement extends HTMLElement = HTMLDivElement>(
   const [metrics, setMetrics] = useState<LayoutMetrics | null>(null)
 
   const measure = useEffectEvent(async () => {
-    if (!ref.current || !deferredText) {
+    const node = ref.current
+    if (!node || !deferredText) {
       setMetrics(null)
       return
     }
     await document.fonts.ready
-    const width = ref.current.clientWidth
+    if (!node.isConnected) {
+      return
+    }
+    const width = node.clientWidth
     if (!width) {
       return
     }

@@ -215,8 +215,14 @@ function HeaderAuth() {
 
   if (!isLoaded) {
     return (
-      <Button variant="ghost" size="sm" disabled>
-        <span className="size-2 animate-pulse rounded-full bg-muted-foreground/60" />
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled
+        className="h-9 rounded-full py-1 pl-1 pr-2.5 sm:min-w-34"
+      >
+        <span className="size-7 shrink-0 animate-pulse rounded-full bg-muted" />
+        <span className="hidden h-3 w-18 animate-pulse rounded-full bg-muted sm:inline-block" />
         <span className="sr-only">Loading session</span>
       </Button>
     )
