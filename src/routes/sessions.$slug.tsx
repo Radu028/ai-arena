@@ -275,8 +275,9 @@ function SessionPage() {
               </h2>
               <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
                 {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
-                {winner.roundsPlayed} · {winner.totalVotes} total votes cast.
-                Generate the champion portrait and download or share the card.
+                {winner.roundsPlayed} · {winner.totalVotes} vote
+                {winner.totalVotes !== 1 ? 's' : ''} for the winner. Generate
+                the champion portrait and download or share the card.
               </p>
             </div>
           </div>
