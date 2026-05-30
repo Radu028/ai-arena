@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useReducer, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
@@ -40,20 +40,17 @@ type SessionPageState = {
   displayName: string
   pendingJoin: boolean
   pendingVoteId: string | null
-  pendingAutoJoin: boolean
 }
 
 type SessionPageAction =
   | { type: 'field'; field: 'displayName'; value: string }
   | { type: 'pendingJoin'; value: boolean }
   | { type: 'pendingVoteId'; value: string | null }
-  | { type: 'pendingAutoJoin'; value: boolean }
 
 const INITIAL_STATE: SessionPageState = {
   displayName: '',
   pendingJoin: false,
   pendingVoteId: null,
-  pendingAutoJoin: false,
 }
 
 function sessionPageReducer(
@@ -67,8 +64,6 @@ function sessionPageReducer(
       return { ...current, pendingJoin: action.value }
     case 'pendingVoteId':
       return { ...current, pendingVoteId: action.value }
-    case 'pendingAutoJoin':
-      return { ...current, pendingAutoJoin: action.value }
   }
 }
 
@@ -84,36 +79,6 @@ function SessionPage() {
   const [state, dispatch] = useReducer(sessionPageReducer, INITIAL_STATE)
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const voteAfterJoinIdRef = useRef<string | null>(null)
-  const autoJoinAttemptedRef = useRef(false)
-
-  useEffect(() => {
-    if (
-      participantToken ||
-      sessionView === undefined ||
-      sessionView === null ||
-      sessionView.viewer ||
-      autoJoinAttemptedRef.current
-    ) {
-      return
-    }
-    autoJoinAttemptedRef.current = true
-    dispatch({ type: 'pendingAutoJoin', value: true })
-    void joinSession({
-      slug,
-      displayName: '',
-      email: null,
-      existingToken: null,
-    })
-      .then((result) => {
-        setParticipantToken(result.accessToken)
-      })
-      .catch(() => {
-        autoJoinAttemptedRef.current = false
-      })
-      .finally(() => {
-        dispatch({ type: 'pendingAutoJoin', value: false })
-      })
-  }, [joinSession, participantToken, sessionView, setParticipantToken, slug])
 
   async function handleVote(responseId: string) {
     if (!participantToken || !sessionView?.viewer) {
@@ -306,7 +271,6 @@ function SessionPage() {
             latestFinishedRound={sessionView.latestFinishedRound}
             state={state}
             onVote={handleVote}
-            autoJoining={state.pendingAutoJoin}
           />
         </TabsContent>
 

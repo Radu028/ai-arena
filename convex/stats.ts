@@ -11,7 +11,6 @@ import { requireAdminIdentity } from './lib'
 
 const MAX_SESSIONS_SCAN = 200
 const MAX_RESPONSES_PER_ROUND = 16
-const MAX_VOTES_PER_ROUND = 512
 const MAX_ROUNDS_PER_SESSION = 20
 
 type ModelAggregate = {
@@ -83,13 +82,13 @@ async function collectRoundData(ctx: QueryCtx, session: Doc<'sessions'>) {
       .withIndex('by_round_id_and_response_id', (queryBuilder) =>
         queryBuilder.eq('roundId', round._id),
       )
-      .take(MAX_VOTES_PER_ROUND)
+      .take(session.maxParticipants + 1)
     const aiVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_response_id', (queryBuilder) =>
         queryBuilder.eq('roundId', round._id),
       )
-      .take(MAX_VOTES_PER_ROUND)
+      .take(session.selectedModelsSnapshot.length + 1)
 
     const voteTally = new Map<Id<'roundResponses'>, number>()
     for (const response of responses) {
@@ -174,7 +173,9 @@ export const getModelLeaderboard = query({
       sessionsIncluded += 1
       const roundData = await collectRoundData(ctx, session)
       for (const entry of roundData) {
-        if (entry.round.status !== 'scored') continue
+        if (entry.round.status !== 'scored' || entry.round.revealAt === null) {
+          continue
+        }
         accumulateModelStats(
           aggregates,
           session._id,
@@ -283,7 +284,9 @@ export const listCompletedSessions = query({
         )
         .take(MAX_ROUNDS_PER_SESSION)
 
-      const scoredRounds = rounds.filter((round) => round.status === 'scored')
+      const scoredRounds = rounds.filter(
+        (round) => round.status === 'scored' && round.revealAt !== null,
+      )
       const winnerTally = new Map<string, { label: string; wins: number }>()
       let totalVotes = 0
 
@@ -299,7 +302,7 @@ export const listCompletedSessions = query({
           .withIndex('by_round_id_and_response_id', (queryBuilder) =>
             queryBuilder.eq('roundId', round._id),
           )
-          .take(MAX_VOTES_PER_ROUND)
+          .take(session.maxParticipants + 1)
         totalVotes += humanVotes.length
 
         for (const response of responses) {

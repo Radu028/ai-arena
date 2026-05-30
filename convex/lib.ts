@@ -4,6 +4,7 @@ import {
   DEFAULT_MAX_PARTICIPANTS,
   DEFAULT_SESSION_TITLE,
   DEFAULT_VOTING_WINDOW_SECONDS,
+  AVAILABLE_MODELS,
   getModelByKey,
   getRoundSlotLabel,
   resolveModelSnapshots,
@@ -242,6 +243,16 @@ export async function requireSessionOwner(
 }
 
 export function ensureModelSnapshots(modelKeys: string[]) {
+  if (new Set(modelKeys).size !== modelKeys.length) {
+    throw new Error('Pick each model once.')
+  }
+  if (
+    modelKeys.some(
+      (key) => !AVAILABLE_MODELS.some((available) => available.key === key),
+    )
+  ) {
+    throw new Error('One or more selected models are not supported.')
+  }
   const models = resolveModelSnapshots(modelKeys)
   if (models.length !== modelKeys.length) {
     throw new Error('One or more selected models are not supported.')

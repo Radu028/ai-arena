@@ -22,13 +22,13 @@ flowchart LR
   subgraph System["AI Arena"]
     ViewSession[View live session]
     JoinByQr[Join through QR/link/code]
-    SubmitTopic[Submit round topic]
     Vote[Vote for anonymous response]
     WatchReveal[Watch winner reveal]
     ViewLeaderboard[View leaderboard/history]
     RegisterLogin[Register / login]
     CreateSession[Create session]
     StartStop[Start / stop session]
+    ManageRounds[Close / reveal / advance rounds]
     ManageAdmins[Grant admin access]
     GenerateAnswers[Generate model answers]
     JudgeAnswers[Judge peer responses]
@@ -41,11 +41,11 @@ flowchart LR
   Guest --> JoinByQr
   Guest --> WatchReveal
   Guest --> ViewLeaderboard
-  Voter --> SubmitTopic
   Voter --> Vote
   Admin --> RegisterLogin
   Admin --> CreateSession
   Admin --> StartStop
+  Admin --> ManageRounds
   Admin --> ManageAdmins
   Model --> GenerateAnswers
   Model --> JudgeAnswers
@@ -152,6 +152,7 @@ classDiagram
 ```mermaid
 sequenceDiagram
   autonumber
+  actor Admin
   actor Guest
   participant UI as React session page
   participant Convex as Convex mutations/queries
@@ -162,23 +163,25 @@ sequenceDiagram
   Guest->>UI: Open QR/session link
   UI->>Convex: getPublicSessionView(slug)
   Convex-->>UI: Realtime session snapshot
-  Guest->>UI: Submit topic
-  UI->>Convex: submitTopic(slug, token, topic)
+  Admin->>UI: Start round
+  UI->>Convex: startSession() / startNextRound()
   Convex->>Scheduler: run generateRound
   Scheduler->>Orchestrator: generateRound(sessionId, roundId)
   Orchestrator->>Providers: Host intro + parallel model answers
   Providers-->>Orchestrator: Answers, latency, token usage
-  Orchestrator->>Convex: save responses and open voting
   Orchestrator->>Providers: AI judge prompts
   Providers-->>Orchestrator: AI votes + rationales
-  Orchestrator->>Convex: save AI votes
+  Orchestrator->>Convex: save responses and AI votes, then open voting
   Guest->>UI: Vote
   UI->>Convex: castHumanVote(slug, token, responseId)
-  Scheduler->>Convex: finalizeRound after voting window
+  Admin->>UI: Close round
+  UI->>Convex: closeVoting()
   Convex->>Scheduler: run afterRoundFinalized
   Scheduler->>Orchestrator: afterRoundFinalized
   Orchestrator->>Providers: Critic + Stats + Host transition/recap
   Orchestrator->>Convex: save artifacts
+  Admin->>UI: Reveal results
+  UI->>Convex: revealRound()
   Convex-->>UI: Winner reveal and agent summaries
 ```
 
@@ -188,26 +191,21 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  Start([Open live session]) --> HasTopic{Round has topic?}
-  HasTopic -- no --> Submit[Guest submits topic]
-  Submit --> Lock[Convex validates and locks topic]
-  HasTopic -- yes --> Generate
-  Lock --> Generate[Generate model answers in parallel]
+  Start([Admin starts round]) --> Generate[Generate model answers in parallel]
   Generate --> AnySuccess{Any successful responses?}
   AnySuccess -- no --> Abort[Abort round and log failure]
-  AnySuccess -- yes --> Voting[Open anonymous voting]
+  AnySuccess -- yes --> AiVotes[Collect AI judge votes]
+  AiVotes --> Voting[Open anonymous voting]
   Voting --> HumanVotes[Collect human votes]
-  Voting --> AiVotes[Collect AI judge votes]
-  HumanVotes --> Close[Close voting window]
-  AiVotes --> Close
+  HumanVotes --> Close[Admin closes voting]
   Close --> Score[Tally ballots]
-  Score --> Reveal[Reveal model identities and winners]
-  Reveal --> Artifacts[Generate Host, Critic, and Stats artifacts]
-  Artifacts --> MoreRounds{More rounds?}
-  MoreRounds -- yes --> NextRound[Open next topic collection]
-  NextRound --> HasTopic
+  Score --> Artifacts[Generate Host, Critic, and Stats artifacts]
+  Artifacts --> Reveal[Admin reveals model identities and winners]
+  Reveal --> MoreRounds{More rounds?}
+  MoreRounds -- yes --> Wait[Wait for admin]
+  Wait --> Start
   MoreRounds -- no --> End([Session ended])
-  Abort --> End
+  Abort --> MoreRounds
 ```
 
 ## 5. State Machine Diagram
@@ -218,12 +216,11 @@ flowchart TD
 stateDiagram-v2
   [*] --> Waiting
   Waiting --> Active: admin starts session
-  Active --> CollectingTopic: open round
-  CollectingTopic --> Generating: first valid topic submitted
-  Generating --> Voting: at least one model answer succeeds
+  Active --> Generating: admin starts round
+  Generating --> Voting: answers and AI ballots saved
   Generating --> Aborted: all model calls fail
-  Voting --> Scored: voting timer closes / admin ends early
-  Scored --> CollectingTopic: next round
+  Voting --> Scored: admin closes voting
+  Scored --> Generating: admin starts next round
   Scored --> Ended: final round complete
   Active --> Stopped: admin stops session
   Waiting --> Stopped: admin stops before start

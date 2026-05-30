@@ -164,7 +164,7 @@ query ergonomics.
 stateDiagram-v2
   [*] --> waiting: sessions.create
   waiting --> active: sessions.start
-  active --> active: round closes / next round opens
+  active --> active: round closes / admin reveals and advances
   active --> ended: final round finalized
   active --> stopped: sessions.stop
   waiting --> stopped: sessions.stop
@@ -177,12 +177,12 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
   [*] --> pending
-  pending --> collecting_topic: session.start or previous round closed
-  collecting_topic --> generating: first valid rounds.submitTopic
-  generating --> voting: internal.state.openVoting after model responses
+  pending --> generating: admin starts session or next round
+  generating --> voting: model responses and AI ballots saved
   generating --> aborted: all providers failed
-  voting --> scored: internal.state.finalizeRound
+  voting --> scored: admin closes voting
   voting --> aborted: session stopped mid-round
+  scored --> pending: admin starts next round
   scored --> [*]
   aborted --> [*]
 ```
@@ -192,6 +192,7 @@ stateDiagram-v2
 ```mermaid
 sequenceDiagram
   autonumber
+  actor Admin
   actor Guest
   participant UI as Frontend<br/>/sessions/$slug
   participant Convex as Convex Query/Mutation
@@ -199,9 +200,8 @@ sequenceDiagram
   participant Orchestrate as orchestration.ts (action)
   participant Providers as model APIs
 
-  Guest->>UI: submit topic
-  UI->>Convex: rounds.submitTopic(slug, token, topic)
-  Convex->>Convex: validate + lock round + insert pending responses
+  Admin->>Convex: sessions.start or rounds.startNextRound
+  Convex->>Convex: lock admin prompt + insert pending responses
   Convex->>Scheduler: runAfter(0, internal.orchestration.generateRound)
   Scheduler->>Orchestrate: generateRound(sessionId, roundId)
   Orchestrate->>Providers: Host intro (OpenAI)
@@ -212,12 +212,12 @@ sequenceDiagram
   end
   Providers-->>Orchestrate: text + token usage (or timeout)
   Orchestrate->>Convex: saveModelResponse (per provider)
-  Orchestrate->>Convex: openVoting — flip status and schedule finalize
   Orchestrate->>Orchestrate: AI judging loop (no self-voting)
+  Orchestrate->>Convex: save AI ballots, then openVoting
   Note over UI,Convex: Convex subscriptions push live updates
   Guest->>UI: vote
   UI->>Convex: votes.castHumanVote
-  Scheduler-->>Convex: finalizeRound (timer)
+  Admin->>Convex: rounds.endVotingEarly
   Convex->>Convex: tally votes, set winner(s)
   Convex->>Scheduler: runAfter(0, afterRoundFinalized)
   Scheduler->>Orchestrate: afterRoundFinalized
@@ -230,18 +230,19 @@ sequenceDiagram
 ```mermaid
 flowchart TD
   Start([Round topic locked]) --> Host[Host intro prompt<br/>theme tone + topic + models]
-  Host --> Models[Parallel model calls<br/>per provider · 15s timeout]
+  Host --> Models[Parallel model calls<br/>per provider · 65s timeout]
   Models --> Judge{Eligible responses?}
   Judge -- none --> Abort([Round aborted])
-  Judge -- some --> OpenVote[Open voting · schedule timer]
-  OpenVote --> AIJudge[AI judge loop<br/>each model votes on others]
-  AIJudge --> Humans[Humans vote in UI]
-  Humans --> Finalize[finalizeRound · pick winners<br/>human + AI ballots counted equally]
+  Judge -- some --> AIJudge[AI judge loop<br/>each model votes on others]
+  AIJudge --> OpenVote[Open voting after AI ballots settle]
+  OpenVote --> Humans[Humans vote in UI]
+  Humans --> Finalize[Admin closes round<br/>human + AI ballots counted equally]
   Finalize --> Critic[Critic explains outcome<br/>theme-aware prompt]
   Critic --> Stats[Stats Analyst summarizes<br/>votes · winner · reliability]
   Stats --> Next{Last round?}
-  Next -- no --> Transition[Host transition to next round]
-  Transition --> Start
+  Next -- no --> Transition[Host transition prepared]
+  Transition --> Wait[Wait for admin to start next round]
+  Wait --> Start
   Next -- yes --> Recap[Host recap of full scoreboard]
   Recap --> End([Session ended])
 ```

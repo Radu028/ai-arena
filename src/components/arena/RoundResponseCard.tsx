@@ -94,14 +94,14 @@ export function RoundResponseCard({
             <>{response.label ?? `Response ${response.slot}`}</>
           ) : (
             <span className="text-muted-foreground">
-              Anonymous · revealed after voting
+              Anonymous · revealed by the admin
             </span>
           )}
         </p>
 
         <div className="mt-3 text-pretty">
           {failed ? (
-            <p className="rounded-xl border border-dashed border-border/60 bg-muted/40 px-3 py-3 text-xs leading-6 text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-border/60 bg-muted/40 p-3 text-xs leading-6 text-muted-foreground">
               {response.errorMessage ??
                 'This model did not return a valid answer in time.'}
             </p>
@@ -129,7 +129,7 @@ export function RoundResponseCard({
               </span>
             </span>
           ) : (
-            <span>Anonymous until reveal</span>
+            <span>Anonymous until admin reveal</span>
           )}
           {response.latencyMs ? (
             <span className="inline-flex items-center gap-1 font-mono">

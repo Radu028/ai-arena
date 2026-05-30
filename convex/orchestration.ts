@@ -1,7 +1,7 @@
 'use node'
 
 import Anthropic from '@anthropic-ai/sdk'
-import { GoogleGenAI } from '@google/genai'
+import { GoogleGenAI, ThinkingLevel } from '@google/genai'
 import { Mistral } from '@mistralai/mistralai'
 import OpenAI from 'openai'
 import type { Doc } from './_generated/dataModel'
@@ -19,6 +19,7 @@ import {
   RESPONSE_LANGUAGE_COPY,
   STATS_AGENT_DEFAULT_MODEL,
   getModelByKey,
+  parseJudgeDecision,
 } from '../shared/arena'
 import type {
   ResponseLanguage,
@@ -109,6 +110,14 @@ function makeFallbackCopy(
   return `${modelLabel} missed the live API call, so AI Arena is using a house fallback on the topic "${topic}". The safest version is: stay clear, be specific, and land one memorable line.`
 }
 
+function makeDemoJudgeDecision(prompt: string) {
+  const firstCandidateSlot = prompt.match(/^\[([A-Z]+)\]\s/m)?.[1] ?? 'A'
+  return JSON.stringify({
+    slot: firstCandidateSlot,
+    rationale: 'Demo judge vote.',
+  })
+}
+
 function cleanModelResponseText(text: string) {
   return text
     .trim()
@@ -175,6 +184,10 @@ function buildRoundPrompt(args: {
   customPrompt: string | null
   responseLanguage: ResponseLanguage
 }) {
+  const formatInstruction =
+    args.theme.label === 'Comedy Roast'
+      ? `For comedy, write one short joke with a fast setup and punchline. Stay under 240 characters and never add commentary after the punchline.`
+      : `Keep the answer compact enough to read and compare quickly during a live vote.`
   const lines = [
     `You are competing in an AI Arena round.`,
     `Theme: ${args.theme.label}.`,
@@ -183,6 +196,7 @@ function buildRoundPrompt(args: {
     `Topic: ${args.topic}`,
     languageInstruction(args.responseLanguage),
     `Write one strong answer. Keep it concise, high-signal, audience-ready, and original.`,
+    formatInstruction,
     `Return only the final audience-facing text. Do not preface it with "sure", "here is", explanations, labels, markdown fences, horizontal rules, or decorative separators.`,
     `If this is a comedy prompt, output only the joke itself.`,
     `Do not mention your model name.`,
@@ -324,7 +338,7 @@ function buildJudgePrompt(args: {
     `Topic: ${args.topic}`,
     languageInstruction(args.responseLanguage),
     `Choose the best response among the candidates.`,
-    `Return strict JSON like {"slot":"A","rationale":"..."} and nothing else.`,
+    `Return strict JSON like {"slot":"A","rationale":"..."} and nothing else. Keep the rationale under 120 characters.`,
     ...args.candidates.map(
       (candidate) =>
         `[${candidate.slot}] ${truncateForPrompt(candidate.text, 700)}`,
@@ -380,6 +394,9 @@ async function generateWithOpenAI(
     model: modelId,
     input: prompt,
     max_output_tokens: maxOutputTokens,
+    reasoning: {
+      effort: modelId === 'gpt-5-mini' ? 'minimal' : 'none',
+    },
   })
   return {
     text: response.output_text,
@@ -445,6 +462,7 @@ async function generateWithGoogle(
   apiKey: string,
   prompt: string,
   maxOutputTokens: number,
+  responseJsonSchema?: unknown,
 ) {
   const client = new GoogleGenAI({ apiKey })
   const response = await client.models.generateContent({
@@ -452,6 +470,21 @@ async function generateWithGoogle(
     contents: prompt,
     config: {
       maxOutputTokens,
+      ...(modelId.startsWith('gemini-3')
+        ? {
+            thinkingConfig: {
+              thinkingLevel: modelId.includes('flash')
+                ? ThinkingLevel.MINIMAL
+                : ThinkingLevel.LOW,
+            },
+          }
+        : {}),
+      ...(responseJsonSchema
+        ? {
+            responseMimeType: 'application/json',
+            responseJsonSchema,
+          }
+        : {}),
     },
   })
   return {
@@ -460,6 +493,26 @@ async function generateWithGoogle(
       input: response.usageMetadata?.promptTokenCount ?? null,
       output: response.usageMetadata?.candidatesTokenCount ?? null,
     },
+  }
+}
+
+function buildJudgeResponseJsonSchema(prompt: string) {
+  const slots = Array.from(prompt.matchAll(/^\[([A-Z]+)\]\s/gm), (match) => {
+    return match[1]
+  })
+  return {
+    type: 'object',
+    properties: {
+      slot: {
+        type: 'string',
+        enum: slots,
+      },
+      rationale: {
+        type: 'string',
+      },
+    },
+    required: ['slot', 'rationale'],
+    additionalProperties: false,
   }
 }
 
@@ -509,7 +562,10 @@ async function callProvider(
     if (demoMode) {
       return {
         status: 'success',
-        text: makeFallbackCopy(topic, model.label, responseLanguage),
+        text:
+          purpose === 'judge'
+            ? makeDemoJudgeDecision(prompt)
+            : makeFallbackCopy(topic, model.label, responseLanguage),
         usage: { input: null, output: null },
         errorCode: null,
         errorMessage: null,
@@ -595,7 +651,15 @@ async function callProvider(
           }
         }
         result = await providerTimeout(
-          generateWithGoogle(model.modelId, apiKey, prompt, maxOutputTokens),
+          generateWithGoogle(
+            model.modelId,
+            apiKey,
+            prompt,
+            maxOutputTokens,
+            purpose === 'judge'
+              ? buildJudgeResponseJsonSchema(prompt)
+              : undefined,
+          ),
           PROVIDER_TIMEOUT_MS,
         )
         break
@@ -620,9 +684,21 @@ async function callProvider(
       }
     }
 
+    const text = cleanModelResponseText(result.text)
+    if (!text) {
+      return {
+        status: 'error',
+        text: null,
+        usage: result.usage,
+        errorCode: 'EMPTY_RESPONSE',
+        errorMessage: 'The provider returned an empty response.',
+        latencyMs: Date.now() - start,
+      }
+    }
+
     return {
       status: 'success',
-      text: cleanModelResponseText(result.text),
+      text,
       usage: result.usage,
       errorCode: null,
       errorMessage: null,
@@ -635,7 +711,7 @@ async function callProvider(
         text: null,
         usage: { input: null, output: null },
         errorCode: 'TIMEOUT',
-        errorMessage: 'Generation timed out after 15 seconds.',
+        errorMessage: `Generation timed out after ${PROVIDER_TIMEOUT_MS / 1000} seconds.`,
         latencyMs: Date.now() - start,
       }
     }
@@ -681,9 +757,19 @@ async function generateAgentCopy(args: {
       generateWithOpenAI(modelId, apiKey, args.prompt, AGENT_MAX_OUTPUT_TOKENS),
       AGENT_TIMEOUT_MS,
     )
+    const content = cleanModelResponseText(result.text)
+    if (!content) {
+      return {
+        status: 'fallback' as const,
+        content: args.fallback,
+        modelId,
+        failureReason: 'The agent returned an empty response.',
+        latencyMs: Date.now() - start,
+      }
+    }
     return {
       status: 'success' as const,
-      content: result.text,
+      content,
       modelId,
       failureReason: null,
       latencyMs: Date.now() - start,
@@ -724,9 +810,19 @@ async function generateStatsAgentCopy(args: {
       generateWithGoogle(modelId, apiKey, args.prompt, AGENT_MAX_OUTPUT_TOKENS),
       AGENT_TIMEOUT_MS,
     )
+    const content = cleanModelResponseText(result.text)
+    if (!content) {
+      return {
+        status: 'fallback' as const,
+        content: args.fallback,
+        modelId,
+        failureReason: 'The stats agent returned an empty response.',
+        latencyMs: Date.now() - start,
+      }
+    }
     return {
       status: 'success' as const,
-      content: result.text,
+      content,
       modelId,
       failureReason: null,
       latencyMs: Date.now() - start,
@@ -741,21 +837,6 @@ async function generateStatsAgentCopy(args: {
       latencyMs: Date.now() - start,
     }
   }
-}
-
-function parseJudgeDecision(payload: string, allowedSlots: string[]) {
-  try {
-    const parsed = JSON.parse(payload) as { slot?: string; rationale?: string }
-    if (parsed.slot && allowedSlots.includes(parsed.slot)) {
-      return {
-        slot: parsed.slot,
-        rationale: parsed.rationale?.trim() || null,
-      }
-    }
-  } catch {
-    return null
-  }
-  return null
 }
 
 export const generateRound = internalAction({
@@ -860,16 +941,11 @@ export const generateRound = internalAction({
       return null
     }
 
-    await ctx.runMutation(internal.state.openVoting, {
-      sessionId: refreshed.session._id,
-      roundId: refreshed.round._id,
-    })
-
     const reviewContext: RoundReviewContext | null = await ctx.runQuery(
       internal.state.getRoundReviewContext,
       args,
     )
-    if (!reviewContext || reviewContext.round.status !== 'voting') {
+    if (!reviewContext || reviewContext.round.status !== 'generating') {
       return null
     }
     const reviewResponseLanguage = getSessionResponseLanguage(
@@ -939,13 +1015,20 @@ export const generateRound = internalAction({
                 candidatePool.map((candidate) => candidate.slot),
               )
             : null
-          const fallbackTarget = candidatePool
-            .slice()
-            .sort((left, right) => right.text.length - left.text.length)[0]
-          const chosenSlot = parsed?.slot ?? fallbackTarget.slot
-          const chosen = chosenSlot
-            ? candidatePool.find((candidate) => candidate.slot === chosenSlot)
-            : null
+          if (decision.status !== 'success' || !parsed) {
+            console.warn(
+              `AI judge skipped for ${voter.modelKey}: ${
+                decision.errorCode ??
+                (decision.status === 'success'
+                  ? 'INVALID_JUDGE_DECISION'
+                  : 'UNKNOWN_JUDGE_FAILURE')
+              }`,
+            )
+            return
+          }
+          const chosen = candidatePool.find(
+            (candidate) => candidate.slot === parsed.slot,
+          )
 
           if (!chosen) {
             return
@@ -955,10 +1038,15 @@ export const generateRound = internalAction({
             roundId: reviewContext.round._id,
             voterModelKey: voter.modelKey,
             responseId: chosen.responseId,
-            rationale: parsed?.rationale ?? decision.errorMessage ?? null,
+            rationale: parsed.rationale,
           })
         }),
     )
+
+    await ctx.runMutation(internal.state.openVoting, {
+      sessionId: refreshed.session._id,
+      roundId: refreshed.round._id,
+    })
 
     return null
   },

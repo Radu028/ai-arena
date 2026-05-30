@@ -108,7 +108,7 @@ function JoinPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
           Drop in as a spectator instantly. A username is only requested when
-          you want to vote — your ballot persists across refreshes.
+          you want to vote; your ballot persists across refreshes.
         </p>
       </section>
 
@@ -203,7 +203,7 @@ function JoinPage() {
               >
                 Open it directly
               </Link>{' '}
-              — no code needed.
+              , no code needed.
             </p>
           </div>
         </form>
@@ -212,7 +212,7 @@ function JoinPage() {
           <InfoItem
             icon={EyeIcon}
             title="Spectator-first"
-            copy="Watch every round in realtime without an account. Reveal happens automatically when voting closes."
+            copy="Watch every round in realtime without an account. The admin closes voting and reveals the models when the room is ready."
           />
           <InfoItem
             icon={UserRoundIcon}
@@ -227,7 +227,7 @@ function JoinPage() {
           <InfoItem
             icon={RadioIcon}
             title="Live everything"
-            copy="Topic submissions, vote splits, and reveals all stream over Convex without any polling."
+            copy="Vote splits, round changes, and reveals all stream over Convex without any polling."
           />
         </ul>
       </section>

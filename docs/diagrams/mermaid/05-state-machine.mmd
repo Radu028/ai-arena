@@ -1,12 +1,11 @@
 stateDiagram-v2
   [*] --> Waiting
   Waiting --> Active: admin starts session
-  Active --> CollectingTopic: open round
-  CollectingTopic --> Generating: first valid topic submitted
-  Generating --> Voting: at least one model answer succeeds
+  Active --> Generating: admin starts round
+  Generating --> Voting: answers and AI ballots saved
   Generating --> Aborted: all model calls fail
-  Voting --> Scored: voting timer closes / admin ends early
-  Scored --> CollectingTopic: next round
+  Voting --> Scored: admin closes voting
+  Scored --> Generating: admin starts next round
   Scored --> Ended: final round complete
   Active --> Stopped: admin stops session
   Waiting --> Stopped: admin stops before start

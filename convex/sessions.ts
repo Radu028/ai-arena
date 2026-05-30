@@ -56,6 +56,7 @@ function summarizeRound(
   aiVotes: Array<Doc<'roundAiVotes'>>,
   artifacts: Array<Doc<'roundArtifacts'>>,
   revealModels: boolean,
+  revealHostTransition: boolean,
 ) {
   const voteCount = new Map<string, number>()
   for (const response of responses) {
@@ -92,18 +93,22 @@ function summarizeRound(
       hostIntro:
         artifacts.find((artifact) => artifact.type === 'host_intro')?.content ??
         null,
-      hostTransition:
-        artifacts.find((artifact) => artifact.type === 'host_transition')
-          ?.content ?? null,
-      criticAnalysis:
-        artifacts.find((artifact) => artifact.type === 'critic_analysis')
-          ?.content ?? null,
-      hostRecap:
-        artifacts.find((artifact) => artifact.type === 'host_recap')?.content ??
-        null,
-      statsSummary:
-        artifacts.find((artifact) => artifact.type === 'stats_summary')
-          ?.content ?? null,
+      hostTransition: revealHostTransition
+        ? (artifacts.find((artifact) => artifact.type === 'host_transition')
+            ?.content ?? null)
+        : null,
+      criticAnalysis: revealModels
+        ? (artifacts.find((artifact) => artifact.type === 'critic_analysis')
+            ?.content ?? null)
+        : null,
+      hostRecap: revealModels
+        ? (artifacts.find((artifact) => artifact.type === 'host_recap')
+            ?.content ?? null)
+        : null,
+      statsSummary: revealModels
+        ? (artifacts.find((artifact) => artifact.type === 'stats_summary')
+            ?.content ?? null)
+        : null,
     },
     totals: {
       humanVotes: humanVotes.length,
@@ -112,7 +117,12 @@ function summarizeRound(
   }
 }
 
-async function buildScoreboard(ctx: QueryCtx, rounds: Array<Doc<'rounds'>>) {
+async function buildScoreboard(
+  ctx: QueryCtx,
+  session: Doc<'sessions'>,
+  rounds: Array<Doc<'rounds'>>,
+  revealedOnly = false,
+) {
   const scoreByModel = new Map<
     string,
     {
@@ -124,24 +134,27 @@ async function buildScoreboard(ctx: QueryCtx, rounds: Array<Doc<'rounds'>>) {
   >()
 
   for (const round of rounds) {
+    if (revealedOnly && round.revealAt === null) {
+      continue
+    }
     const responses = await ctx.db
       .query('roundResponses')
       .withIndex('by_round_id_and_anonymized_slot', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(16)
+      .take(session.selectedModelsSnapshot.length + 2)
     const humanVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_response_id', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.maxParticipants + 1)
     const aiVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_response_id', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.selectedModelsSnapshot.length + 1)
 
     const tally = new Map<string, number>()
     for (const response of responses) {
@@ -228,13 +241,13 @@ async function buildSessionView(
       .withIndex('by_round_id_and_response_id', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.maxParticipants + 1)
     const aiVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_response_id', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.selectedModelsSnapshot.length + 1)
     const artifacts = await ctx.db
       .query('roundArtifacts')
       .withIndex('by_round_id_and_type', (q) => q.eq('roundId', round._id))
@@ -247,6 +260,12 @@ async function buildSessionView(
         aiVotes,
         artifacts,
         round.revealAt !== null,
+        round.roundNumber <= 1 ||
+          rounds.some(
+            (candidate) =>
+              candidate.roundNumber === round.roundNumber - 1 &&
+              (candidate.revealAt !== null || candidate.status === 'aborted'),
+          ),
       ),
     )
   }
@@ -277,7 +296,7 @@ async function buildSessionView(
         )
       : false
 
-  const scoreboard = await buildScoreboard(ctx, rounds)
+  const scoreboard = await buildScoreboard(ctx, session, rounds, true)
 
   return {
     session: {
@@ -300,7 +319,6 @@ async function buildSessionView(
       endedAt: session.endedAt,
       maxParticipants: session.maxParticipants,
       participantCount: participants.length,
-      selectedModels: session.selectedModelsSnapshot,
     },
     viewer: viewer
       ? {
@@ -395,6 +413,13 @@ export const getAdminSession = query({
     const hasUnrevealedScoredRound = rounds.some(
       (round) => round.status === 'scored' && round.revealAt === null,
     )
+    const canStartNextRound = Boolean(
+      session.status === 'active' &&
+      currentRound &&
+      (currentRound.status === 'scored' || currentRound.status === 'aborted') &&
+      (currentRound.status === 'aborted' || currentRound.revealAt !== null) &&
+      currentRound.roundNumber < session.roundCount,
+    )
     return {
       id: session._id,
       slug: session.slug,
@@ -411,13 +436,14 @@ export const getAdminSession = query({
       currentRoundNumber: session.currentRoundNumber,
       currentRoundStatus: currentRound?.status ?? null,
       hasUnrevealedScoredRound,
+      canStartNextRound,
       selectedModels: session.selectedModelsSnapshot,
       maxParticipants: session.maxParticipants,
       createdAt: session.createdAt,
       startedAt: session.startedAt,
       stoppedAt: session.stoppedAt,
       endedAt: session.endedAt,
-      scoreboard: await buildScoreboard(ctx, rounds),
+      scoreboard: await buildScoreboard(ctx, session, rounds),
     }
   },
 })
@@ -698,10 +724,27 @@ async function joinSession(
     session._id,
     session.maxParticipants + 1,
   )
-  const displayName = args.displayName.trim() || autoDisplayName()
+  const requestedDisplayName = args.displayName.trim()
+  if (requestedDisplayName.length > 40) {
+    throw new Error('Display names must stay under 40 characters.')
+  }
+  const email = args.email?.trim() || null
+  if (
+    email &&
+    (email.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+  ) {
+    throw new Error('Use a valid email address.')
+  }
+  const displayName = requestedDisplayName || autoDisplayName()
   const identity = await ctx.auth.getUserIdentity()
   const accessToken = args.existingToken ?? generateGuestAccessToken()
   const accessTokenHash = await hashToken(accessToken)
+  const existingByToken = await ctx.db
+    .query('sessionParticipants')
+    .withIndex('by_session_id_and_access_token_hash', (q) =>
+      q.eq('sessionId', session._id).eq('accessTokenHash', accessTokenHash),
+    )
+    .unique()
 
   if (identity) {
     const existingByIdentity = await ctx.db
@@ -714,9 +757,12 @@ async function joinSession(
       .unique()
 
     if (existingByIdentity) {
+      if (existingByToken && existingByToken._id !== existingByIdentity._id) {
+        throw new Error('This participant token belongs to a different seat.')
+      }
       await ctx.db.patch(existingByIdentity._id, {
         displayName,
-        email: args.email ?? null,
+        email,
         accessTokenHash,
         lastSeenAt: now(),
       })
@@ -730,23 +776,16 @@ async function joinSession(
     }
   }
 
-  const existing = await ctx.db
-    .query('sessionParticipants')
-    .withIndex('by_session_id_and_access_token_hash', (q) =>
-      q.eq('sessionId', session._id).eq('accessTokenHash', accessTokenHash),
-    )
-    .unique()
-
-  if (existing) {
-    await ctx.db.patch(existing._id, {
+  if (existingByToken) {
+    await ctx.db.patch(existingByToken._id, {
       displayName,
-      email: args.email ?? null,
+      email,
       lastSeenAt: now(),
     })
     return {
       slug: session.slug,
       sessionId: session._id,
-      participantId: existing._id,
+      participantId: existingByToken._id,
       accessToken,
       displayName,
     }
@@ -763,7 +802,7 @@ async function joinSession(
         ? 'admin'
         : 'guest',
     displayName,
-    email: args.email ?? null,
+    email,
     clerkTokenIdentifier: identity?.tokenIdentifier ?? null,
     accessTokenHash,
     joinedAt: now(),

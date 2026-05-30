@@ -62,7 +62,7 @@ As a user, I want to submit a topic so that all selected AI models generate resp
 - [x] After submission, the topic is locked and visible to all session participants
 - [x] All active AI models in the session begin generating responses immediately after submission
 - [x] A loading indicator is shown while responses are being generated
-- [x] If generation takes longer than 15 seconds, a timeout notice is displayed
+- [x] If generation exceeds the configured provider timeout, a timeout notice is displayed
 
 ---
 
@@ -112,7 +112,7 @@ As a user, I want to see votes updating in real time as other participants vote,
 - [x] Vote counts update within 1 second of another user voting (Convex real-time subscription)
 - [x] A user can only vote once per round
 - [x] After voting, I see a live bar chart / progress indicator showing the distribution of votes
-- [x] The round result (winner) is shown to all users simultaneously when the admin ends the round or a timer expires
+- [x] The round result is revealed to all users simultaneously when the admin reveals the scored round
 
 ---
 

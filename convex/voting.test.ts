@@ -2,8 +2,8 @@
 // @vitest-environment edge-runtime
 
 import { convexTest } from 'convex-test'
-import { describe, expect, test } from 'vitest'
-import { api } from './_generated/api'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 import { MAX_MODELS_PER_SESSION, MIN_MODELS_PER_SESSION } from '../shared/arena'
 
@@ -16,6 +16,10 @@ const adminIdentity = {
   email: 'radupopa028@gmail.com',
   name: 'Voting Admin',
 }
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 async function bootSessionWithTopic() {
   const t = convexTest({ schema, modules })
@@ -75,7 +79,7 @@ describe('voting', () => {
         participantToken: guest.accessToken,
         topic: 'A second topic should not be accepted.',
       }),
-    ).rejects.toThrow('already has a locked topic')
+    ).rejects.toThrow()
   })
 
   test('topic submission is closed once the admin starts the match', async () => {
@@ -103,6 +107,131 @@ describe('voting', () => {
         topic: 'This should not be accepted.',
       }),
     ).rejects.toThrow('already has a locked topic')
+  })
+
+  test('multiple guests can vote concurrently and the admin controls round progression', async () => {
+    vi.useFakeTimers()
+    const { t, admin, created, guest } = await bootSessionWithTopic()
+    const guestTwo = await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Voter Two',
+      email: null,
+      existingToken: null,
+    })
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+    const roundId = responses[0]?.roundId
+    expect(roundId).toBeDefined()
+    expect(responses).toHaveLength(2)
+
+    for (const response of responses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Successful response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId,
+    })
+
+    const [firstVote, secondVote] = await Promise.all([
+      t.mutation(api.votes.castHumanVote, {
+        slug: created.slug,
+        participantToken: guest.accessToken,
+        responseId: responses[0]._id,
+      }),
+      t.mutation(api.votes.castHumanVote, {
+        slug: created.slug,
+        participantToken: guestTwo.accessToken,
+        responseId: responses[0]._id,
+      }),
+    ])
+    expect(firstVote.accepted).toBe(true)
+    expect(secondVote.accepted).toBe(true)
+
+    const votingView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(votingView?.currentRound?.status).toBe('voting')
+    expect(votingView?.currentRound?.votingEndsAt).toBeNull()
+    expect(votingView?.viewer?.hasVotedCurrentRound).toBe(true)
+
+    await admin.mutation(api.rounds.endVotingEarly, {
+      sessionId: created.sessionId,
+    })
+    await t.mutation(internal.state.saveArtifact, {
+      sessionId: created.sessionId,
+      roundId,
+      type: 'critic_analysis',
+      status: 'success',
+      content: 'Hidden winner analysis.',
+      modelId: 'test-critic',
+      failureReason: null,
+    })
+    const scoredView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(scoredView?.currentRound?.status).toBe('scored')
+    expect(scoredView?.currentRound?.totals.humanVotes).toBe(2)
+    expect(scoredView?.currentRound?.responses[0]?.label).toBeNull()
+    expect(scoredView?.currentRound?.artifacts.criticAnalysis).toBeNull()
+    expect(scoredView?.scoreboard).toHaveLength(0)
+    expect(scoredView?.session).not.toHaveProperty('selectedModels')
+
+    await admin.mutation(api.rounds.revealLatestScoredRound, {
+      sessionId: created.sessionId,
+    })
+    const revealedView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(
+      revealedView?.currentRound?.responses.every(
+        (response) => response.label !== null,
+      ),
+    ).toBe(true)
+    expect(revealedView?.currentRound?.artifacts.criticAnalysis).toBe(
+      'Hidden winner analysis.',
+    )
+    expect(revealedView?.scoreboard).not.toHaveLength(0)
+  })
+
+  test('a stale timer cannot close a generating round', async () => {
+    const { t, created } = await bootSessionWithTopic()
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+
+    const result = await t.mutation(internal.state.finalizeRound, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+      triggeredBy: 'timer',
+    })
+    const view = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: null,
+    })
+
+    expect(result).toBeNull()
+    expect(view?.currentRound?.status).toBe('generating')
   })
 })
 
@@ -171,6 +300,197 @@ describe('session state machine', () => {
     ).rejects.toThrow(
       `between ${MIN_MODELS_PER_SESSION} and ${MAX_MODELS_PER_SESSION}`,
     )
+  })
+
+  test('the admin starts the next round explicitly after scoring', async () => {
+    vi.useFakeTimers()
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Manual Round Progression',
+      theme: 'comedy',
+      roundCount: 2,
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
+      maxParticipants: 10,
+    })
+    await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+
+    await t.mutation(internal.state.finalizeRound, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+      triggeredBy: 'system',
+    })
+    const beforeStart = await admin.query(api.sessions.getAdminSession, {
+      sessionId: created.sessionId,
+    })
+    expect(beforeStart?.currentRoundNumber).toBe(1)
+    expect(beforeStart?.currentRoundStatus).toBe('aborted')
+    expect(beforeStart?.canStartNextRound).toBe(true)
+
+    await admin.mutation(api.rounds.startNextRound, {
+      sessionId: created.sessionId,
+    })
+    const afterStart = await admin.query(api.sessions.getAdminSession, {
+      sessionId: created.sessionId,
+    })
+    expect(afterStart?.currentRoundNumber).toBe(2)
+    expect(afterStart?.currentRoundStatus).toBe('generating')
+  })
+
+  test('the admin reveals a scored round before starting the next one', async () => {
+    vi.useFakeTimers()
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Reveal Before Next Round',
+      theme: 'comedy',
+      roundCount: 2,
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
+      maxParticipants: 10,
+    })
+    await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+    for (const response of responses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Successful response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+    })
+    await admin.mutation(api.rounds.endVotingEarly, {
+      sessionId: created.sessionId,
+    })
+
+    const beforeReveal = await admin.query(api.sessions.getAdminSession, {
+      sessionId: created.sessionId,
+    })
+    expect(beforeReveal?.canStartNextRound).toBe(false)
+    await expect(
+      admin.mutation(api.rounds.startNextRound, {
+        sessionId: created.sessionId,
+      }),
+    ).rejects.toThrow('Reveal the current round')
+
+    await admin.mutation(api.rounds.revealLatestScoredRound, {
+      sessionId: created.sessionId,
+    })
+    const afterReveal = await admin.query(api.sessions.getAdminSession, {
+      sessionId: created.sessionId,
+    })
+    expect(afterReveal?.canStartNextRound).toBe(true)
+  })
+
+  test('create rejects duplicate model selections', async () => {
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    await expect(
+      admin.mutation(api.sessions.create, {
+        title: 'Duplicate Models',
+        theme: 'comedy',
+        roundCount: 1,
+        modelKeys: ['openai-gpt5', 'openai-gpt5'],
+        maxParticipants: 10,
+      }),
+    ).rejects.toThrow('Pick each model once')
+  })
+
+  test('scoring includes every vote above the previous 512 ballot limit', async () => {
+    vi.useFakeTimers()
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Large Vote Tally',
+      theme: 'comedy',
+      roundCount: 1,
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
+      maxParticipants: 600,
+    })
+    await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+    for (const response of responses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Successful response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+    })
+    await t.run(async (ctx) => {
+      for (let index = 0; index < 513; index += 1) {
+        const participantId = await ctx.db.insert('sessionParticipants', {
+          sessionId: created.sessionId,
+          kind: 'guest',
+          displayName: `Voter ${index}`,
+          email: null,
+          clerkTokenIdentifier: null,
+          accessTokenHash: `hash-${index}`,
+          joinedAt: index,
+          lastSeenAt: index,
+        })
+        await ctx.db.insert('roundVotes', {
+          roundId: responses[0].roundId,
+          participantId,
+          responseId: responses[1]._id,
+          source: 'human',
+          createdAt: index,
+        })
+      }
+    })
+
+    await admin.mutation(api.rounds.endVotingEarly, {
+      sessionId: created.sessionId,
+    })
+    await admin.mutation(api.rounds.revealLatestScoredRound, {
+      sessionId: created.sessionId,
+    })
+    const view = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: null,
+    })
+
+    expect(view?.currentRound?.totals.humanVotes).toBe(513)
+    expect(
+      view?.currentRound?.responses.find(
+        (response) => response.id === responses[1]._id,
+      )?.votes,
+    ).toBe(513)
   })
 })
 

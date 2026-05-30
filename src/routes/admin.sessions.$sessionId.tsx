@@ -5,6 +5,7 @@ import {
   EyeIcon,
   ExternalLinkIcon,
   PlayIcon,
+  SkipForwardIcon,
   SquareIcon,
   TimerOffIcon,
 } from 'lucide-react'
@@ -49,6 +50,7 @@ function AdminSessionDetailContent() {
   const startSession = useMutation(api.sessions.start)
   const stopSession = useMutation(api.sessions.stop)
   const endVotingEarly = useMutation(api.rounds.endVotingEarly)
+  const startNextRound = useMutation(api.rounds.startNextRound)
   const revealLatestScoredRound = useMutation(
     api.rounds.revealLatestScoredRound,
   )
@@ -99,6 +101,20 @@ function AdminSessionDetailContent() {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not reveal models.',
+      )
+    }
+  }
+
+  async function handleStartNextRound() {
+    if (!session) return
+    try {
+      await startNextRound({ sessionId: session.id })
+      toast.success('Next round started.')
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not start the next round.',
       )
     }
   }
@@ -172,7 +188,15 @@ function AdminSessionDetailContent() {
                 disabled={session.currentRoundStatus !== 'voting'}
               >
                 <TimerOffIcon className="size-4" />
-                End voting early
+                Close round
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleStartNextRound}
+                disabled={!session.canStartNextRound}
+              >
+                <SkipForwardIcon className="size-4" />
+                Start next round
               </Button>
               <Button
                 variant="outline"

@@ -5,7 +5,6 @@ import { v } from 'convex/values'
 import { getThemeCopy } from '../shared/arena'
 import {
   appendSessionEvent,
-  buildAnonymizedSlots,
   getEligibleResponses,
   getRoundByNumber,
   now,
@@ -65,13 +64,13 @@ export const getRoundReviewContext = internalQuery({
       .withIndex('by_round_id_and_response_id', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.maxParticipants + 1)
     const aiVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_response_id', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.selectedModelsSnapshot.length + 1)
     const nextRound =
       round.roundNumber < session.roundCount
         ? await getRoundByNumber(ctx, session._id, round.roundNumber + 1)
@@ -127,13 +126,13 @@ export const getSessionScoreboard = internalQuery({
         .withIndex('by_round_id_and_response_id', (query) =>
           query.eq('roundId', round._id),
         )
-        .take(512)
+        .take(session.maxParticipants + 1)
       const aiVotes = await ctx.db
         .query('roundAiVotes')
         .withIndex('by_round_id_and_response_id', (query) =>
           query.eq('roundId', round._id),
         )
-        .take(512)
+        .take(session.selectedModelsSnapshot.length + 1)
 
       const tally = new Map<string, number>()
       for (const response of responses) {
@@ -279,15 +278,26 @@ export const saveAiVote = internalMutation({
   },
   handler: async (ctx, args) => {
     const round = await ctx.db.get(args.roundId)
-    if (!round || round.status !== 'voting') {
+    if (!round || round.status !== 'generating') {
       return null
     }
     const response = await ctx.db.get(args.responseId)
     if (
       !response ||
       response.roundId !== args.roundId ||
+      response.status !== 'success' ||
+      !response.responseText ||
       response.modelKey === args.voterModelKey
     ) {
+      return null
+    }
+    const voterResponse = await ctx.db
+      .query('roundResponses')
+      .withIndex('by_round_id_and_model_key', (query) =>
+        query.eq('roundId', args.roundId).eq('modelKey', args.voterModelKey),
+      )
+      .unique()
+    if (voterResponse?.status !== 'success' || !voterResponse.responseText) {
       return null
     }
     const existing = await ctx.db
@@ -330,7 +340,7 @@ export const openVoting = internalMutation({
     await ctx.db.patch(round._id, {
       status: 'voting',
       votingStartedAt: openedAt,
-      votingEndsAt: openedAt + session.votingWindowSeconds * 1000,
+      votingEndsAt: null,
     })
     await appendSessionEvent(ctx, {
       sessionId: session._id,
@@ -338,18 +348,9 @@ export const openVoting = internalMutation({
       type: 'voting_opened',
       title: `Round ${round.roundNumber} voting is live`,
       description:
-        'Responses are locked in and votes are now updating in real time.',
+        'Responses are locked in. Votes update in real time until the admin closes the round.',
       meta: {},
     })
-    await ctx.scheduler.runAfter(
-      session.votingWindowSeconds * 1000,
-      internal.state.finalizeRound,
-      {
-        sessionId: session._id,
-        roundId: round._id,
-        triggeredBy: 'timer',
-      },
-    )
     return round._id
   },
 })
@@ -380,6 +381,12 @@ export const finalizeRound = internalMutation({
         isLastRound: round.roundNumber >= session.roundCount,
       }
     }
+    if (
+      round.status !== 'voting' &&
+      !(args.triggeredBy === 'system' && round.status === 'generating')
+    ) {
+      return null
+    }
 
     const responses = await ctx.db
       .query('roundResponses')
@@ -393,13 +400,13 @@ export const finalizeRound = internalMutation({
       .withIndex('by_round_id_and_response_id', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.maxParticipants + 1)
     const aiVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_response_id', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(512)
+      .take(session.selectedModelsSnapshot.length + 1)
 
     const tally = new Map<string, number>()
     for (const response of eligibleResponses) {
@@ -427,8 +434,9 @@ export const finalizeRound = internalMutation({
     }
 
     const closedAt = now()
+    const roundStatus = eligibleResponses.length > 0 ? 'scored' : 'aborted'
     await ctx.db.patch(round._id, {
-      status: 'scored',
+      status: roundStatus,
       closedAt,
       revealAt: null,
       resultStatus,
@@ -449,48 +457,8 @@ export const finalizeRound = internalMutation({
         session._id,
         round.roundNumber + 1,
       )
-      if (nextRound) {
-        const topic = session.customPrompt?.trim() || session.title
-        const slots = buildAnonymizedSlots(
-          session.selectedModelsSnapshot.length,
-        )
-        await ctx.db.patch(nextRound._id, {
-          status: 'generating',
-          topic,
-          topicSubmittedByParticipantId: null,
-          topicLockedAt: closedAt,
-          generatingStartedAt: closedAt,
-        })
-        for (const [index, model] of session.selectedModelsSnapshot.entries()) {
-          await ctx.db.insert('roundResponses', {
-            sessionId: session._id,
-            roundId: nextRound._id,
-            providerKey: model.providerKey,
-            modelKey: model.key,
-            modelId: model.modelId,
-            modelLabel: model.label,
-            anonymizedSlot: slots[index],
-            promptVersion: 'v2',
-            responseText: null,
-            status: 'pending',
-            latencyMs: null,
-            tokenUsageInput: null,
-            tokenUsageOutput: null,
-            costMicrosUsd: null,
-            errorCode: null,
-            errorMessage: null,
-            createdAt: closedAt,
-            completedAt: null,
-          })
-        }
-        await ctx.db.patch(session._id, {
-          currentRoundNumber: nextRound.roundNumber,
-        })
+      if (nextRound?.status === 'pending') {
         nextRoundId = nextRound._id
-        await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
-          sessionId: session._id,
-          roundId: nextRound._id,
-        })
       }
     }
 
