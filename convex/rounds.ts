@@ -131,6 +131,99 @@ export const endVotingEarly = mutation({
   },
 })
 
+export const startNextRound = mutation({
+  args: {
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const { session } = await requireSessionOwner(ctx, args.sessionId)
+    if (session.status !== 'active') {
+      throw new Error('Only active sessions can start another round.')
+    }
+
+    const currentRound = await getRoundByNumber(
+      ctx,
+      session._id,
+      session.currentRoundNumber,
+    )
+    if (
+      !currentRound ||
+      (currentRound.status !== 'scored' && currentRound.status !== 'aborted')
+    ) {
+      throw new Error('Close the current round before starting the next one.')
+    }
+    if (currentRound.roundNumber >= session.roundCount) {
+      throw new Error('This session has no remaining rounds.')
+    }
+    if (currentRound.status === 'scored' && currentRound.revealAt === null) {
+      throw new Error('Reveal the current round before starting the next one.')
+    }
+
+    const nextRound = await getRoundByNumber(
+      ctx,
+      session._id,
+      currentRound.roundNumber + 1,
+    )
+    if (!nextRound || nextRound.status !== 'pending') {
+      throw new Error('The next round is not ready to start.')
+    }
+
+    const startedAt = now()
+    const topic = session.customPrompt?.trim() || session.title
+    const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+    await ctx.db.patch(nextRound._id, {
+      status: 'generating',
+      topic,
+      topicSubmittedByParticipantId: null,
+      topicLockedAt: startedAt,
+      generatingStartedAt: startedAt,
+    })
+
+    for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+      await ctx.db.insert('roundResponses', {
+        sessionId: session._id,
+        roundId: nextRound._id,
+        providerKey: model.providerKey,
+        modelKey: model.key,
+        modelId: model.modelId,
+        modelLabel: model.label,
+        anonymizedSlot: slots[index],
+        promptVersion: 'v2',
+        responseText: null,
+        status: 'pending',
+        latencyMs: null,
+        tokenUsageInput: null,
+        tokenUsageOutput: null,
+        costMicrosUsd: null,
+        errorCode: null,
+        errorMessage: null,
+        createdAt: startedAt,
+        completedAt: null,
+      })
+    }
+    await ctx.db.patch(session._id, {
+      currentRoundNumber: nextRound.roundNumber,
+    })
+    await appendSessionEvent(ctx, {
+      sessionId: session._id,
+      roundId: nextRound._id,
+      type: 'round_started',
+      title: `Round ${nextRound.roundNumber} started`,
+      description: 'The admin started the next round.',
+      meta: {},
+    })
+    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
+      sessionId: session._id,
+      roundId: nextRound._id,
+    })
+
+    return {
+      ok: true,
+      roundId: nextRound._id,
+    }
+  },
+})
+
 export const revealLatestScoredRound = mutation({
   args: {
     sessionId: v.id('sessions'),

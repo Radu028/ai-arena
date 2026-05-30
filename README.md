@@ -142,10 +142,13 @@ your real Clerk issuer before relying on admin auth.
 ### Round lifecycle
 
 - `pending`
-- `collecting_topic`
 - `generating`
 - `voting`
 - `scored`
+- `aborted`
+
+The admin starts each round explicitly, closes voting when the room is ready,
+and reveals model identities manually after scoring.
 
 ### Scoring
 

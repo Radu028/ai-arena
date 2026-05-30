@@ -254,9 +254,9 @@ export const MIN_TOPIC_LENGTH = 5
 export const MAX_CUSTOM_PROMPT_LENGTH = 500
 export const PROVIDER_TIMEOUT_MS = 65_000
 export const AGENT_TIMEOUT_MS = 8_000
-export const ROUND_MAX_OUTPUT_TOKENS = 500
-export const AGENT_MAX_OUTPUT_TOKENS = 180
-export const JUDGE_MAX_OUTPUT_TOKENS = 80
+export const ROUND_MAX_OUTPUT_TOKENS = 180
+export const AGENT_MAX_OUTPUT_TOKENS = 500
+export const JUDGE_MAX_OUTPUT_TOKENS = 1_024
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-preview'
@@ -271,8 +271,8 @@ export type ModelPricing = {
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   'openai-gpt5': {
-    inputUsdPerMillionTokens: 2.5,
-    outputUsdPerMillionTokens: 10,
+    inputUsdPerMillionTokens: 5,
+    outputUsdPerMillionTokens: 30,
   },
   'openai-gpt54-mini': {
     inputUsdPerMillionTokens: 0.75,
@@ -291,12 +291,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     outputUsdPerMillionTokens: 5,
   },
   'google-gemini-3-flash': {
-    inputUsdPerMillionTokens: 0.35,
-    outputUsdPerMillionTokens: 1.05,
+    inputUsdPerMillionTokens: 0.5,
+    outputUsdPerMillionTokens: 3,
   },
   'google-gemini-31-pro': {
-    inputUsdPerMillionTokens: 1.25,
-    outputUsdPerMillionTokens: 5,
+    inputUsdPerMillionTokens: 2,
+    outputUsdPerMillionTokens: 12,
   },
   'google-gemini-25-pro': {
     inputUsdPerMillionTokens: 1.25,
@@ -335,6 +335,63 @@ export function formatMicrosUsd(micros: number): string {
   if (usd < 0.01) return `$${usd.toFixed(4)}`
   if (usd < 1) return `$${usd.toFixed(3)}`
   return `$${usd.toFixed(2)}`
+}
+
+export function parseJudgeDecision(
+  payload: string,
+  allowedSlots: readonly string[],
+) {
+  const parseCandidate = (candidate: string) => {
+    try {
+      const parsed = JSON.parse(candidate) as {
+        slot?: unknown
+        rationale?: unknown
+      }
+      if (
+        typeof parsed.slot !== 'string' ||
+        !allowedSlots.includes(parsed.slot)
+      ) {
+        return null
+      }
+      return {
+        slot: parsed.slot,
+        rationale:
+          typeof parsed.rationale === 'string'
+            ? parsed.rationale.trim() || null
+            : null,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  const trimmed = payload
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim()
+  const strict = parseCandidate(trimmed)
+  if (strict) {
+    return strict
+  }
+
+  for (
+    let start = trimmed.indexOf('{');
+    start !== -1;
+    start = trimmed.indexOf('{', start + 1)
+  ) {
+    for (
+      let end = trimmed.lastIndexOf('}');
+      end > start;
+      end = trimmed.lastIndexOf('}', end - 1)
+    ) {
+      const extracted = parseCandidate(trimmed.slice(start, end + 1))
+      if (extracted) {
+        return extracted
+      }
+    }
+  }
+  return null
 }
 
 const MODEL_MAP = new Map<string, ArenaModelDefinition>(

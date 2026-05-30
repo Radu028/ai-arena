@@ -10,13 +10,13 @@ flowchart LR
   subgraph System["AI Arena"]
     ViewSession[View live session]
     JoinByQr[Join through QR/link/code]
-    SubmitTopic[Submit round topic]
     Vote[Vote for anonymous response]
     WatchReveal[Watch winner reveal]
     ViewLeaderboard[View leaderboard/history]
     RegisterLogin[Register / login]
     CreateSession[Create session]
     StartStop[Start / stop session]
+    ManageRounds[Close / reveal / advance rounds]
     ManageAdmins[Grant admin access]
     GenerateAnswers[Generate model answers]
     JudgeAnswers[Judge peer responses]
@@ -29,11 +29,11 @@ flowchart LR
   Guest --> JoinByQr
   Guest --> WatchReveal
   Guest --> ViewLeaderboard
-  Voter --> SubmitTopic
   Voter --> Vote
   Admin --> RegisterLogin
   Admin --> CreateSession
   Admin --> StartStop
+  Admin --> ManageRounds
   Admin --> ManageAdmins
   Model --> GenerateAnswers
   Model --> JudgeAnswers

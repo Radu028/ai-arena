@@ -32,7 +32,6 @@ type SessionPageState = {
   displayName: string
   pendingJoin: boolean
   pendingVoteId: string | null
-  pendingAutoJoin: boolean
 }
 
 export function SessionOverviewSection({
@@ -83,7 +82,7 @@ export function SessionOverviewSection({
           <CalendarClockIcon className="size-4" />
           {sessionView.viewer
             ? `Ready to vote as ${sessionView.viewer.displayName}`
-            : 'Opening your seat...'}
+            : 'Watching as a spectator'}
         </span>
       </div>
 
@@ -128,14 +127,12 @@ export function LiveSessionTab({
   latestFinishedRound,
   state,
   onVote,
-  autoJoining,
 }: {
   sessionView: PublicSessionView
   liveRound: PublicSessionView['currentRound']
   latestFinishedRound: PublicSessionView['latestFinishedRound']
   state: SessionPageState
   onVote: (responseId: string) => Promise<void>
-  autoJoining: boolean
 }) {
   return (
     <div className="space-y-5">
@@ -149,7 +146,6 @@ export function LiveSessionTab({
           round={liveRound}
           state={state}
           onVote={onVote}
-          autoJoining={autoJoining}
         />
       ) : (
         <Empty className="rounded-2xl border border-dashed border-border/50 p-10">
@@ -182,13 +178,13 @@ function FinishedRoundRecap({
         </Badge>
         <Badge variant="secondary">just closed</Badge>
       </header>
-      {round.artifacts.criticAnalysis ? (
+      {isRoundRevealed(round) && round.artifacts.criticAnalysis ? (
         <MeasuredEditorialText
           label="Critic"
           text={round.artifacts.criticAnalysis}
         />
       ) : null}
-      {round.artifacts.statsSummary ? (
+      {isRoundRevealed(round) && round.artifacts.statsSummary ? (
         <MeasuredEditorialText
           label="Stats"
           text={round.artifacts.statsSummary}
@@ -213,14 +209,14 @@ function LiveRoundCard({
   round,
   state,
   onVote,
-  autoJoining,
 }: {
   sessionView: PublicSessionView
   round: NonNullable<PublicSessionView['currentRound']>
   state: SessionPageState
   onVote: (responseId: string) => Promise<void>
-  autoJoining: boolean
 }) {
+  const revealed = isRoundRevealed(round)
+
   return (
     <section className="surface relative overflow-hidden rounded-2xl">
       <div
@@ -242,17 +238,17 @@ function LiveRoundCard({
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <RadioIcon className="size-3.5" />
-          live
+          {round.status === 'voting' ? 'voting live' : round.status}
         </div>
       </header>
 
-      <div className="space-y-6 px-6 py-6">
+      <div className="space-y-6 p-6">
         <div>
           <p className="eyebrow">Topic</p>
           <h2 className="mt-1.5 font-display text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
             {round.topic ?? (
               <span className="text-muted-foreground">
-                Waiting for a topic...
+                Waiting for a topic&hellip;
               </span>
             )}
           </h2>
@@ -265,13 +261,12 @@ function LiveRoundCard({
           />
         ) : null}
 
-        {round.status === 'generating' || autoJoining ? (
+        {round.status === 'generating' ? (
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             <span className="live-dot mt-1" />
             <p>
-              {autoJoining
-                ? 'Opening your spectator seat from the invite link...'
-                : 'Models are generating now. Any provider that misses the 15 second window is marked with a timeout and the round continues.'}
+              Models are generating now. A provider timeout is isolated so the
+              round can continue with the responses that arrived successfully.
             </p>
           </div>
         ) : null}
@@ -318,20 +313,24 @@ function LiveRoundCard({
           </div>
         ) : null}
 
-        {round.status === 'scored' && round.artifacts.criticAnalysis ? (
+        {revealed &&
+        round.status === 'scored' &&
+        round.artifacts.criticAnalysis ? (
           <MeasuredEditorialText
             label="Critic"
             text={round.artifacts.criticAnalysis}
           />
         ) : null}
-        {round.status === 'scored' && round.artifacts.statsSummary ? (
+        {revealed &&
+        round.status === 'scored' &&
+        round.artifacts.statsSummary ? (
           <MeasuredEditorialText
             label="Stats"
             text={round.artifacts.statsSummary}
             accent="cyan"
           />
         ) : null}
-        {round.status === 'scored' && round.artifacts.hostRecap ? (
+        {revealed && round.status === 'scored' && round.artifacts.hostRecap ? (
           <MeasuredEditorialText
             label="Host"
             text={round.artifacts.hostRecap}
@@ -399,13 +398,13 @@ export function SessionHistoryTab({
                 text={round.artifacts.hostIntro}
               />
             ) : null}
-            {round.artifacts.criticAnalysis ? (
+            {isRoundRevealed(round) && round.artifacts.criticAnalysis ? (
               <MeasuredEditorialText
                 label="Critic"
                 text={round.artifacts.criticAnalysis}
               />
             ) : null}
-            {round.artifacts.statsSummary ? (
+            {isRoundRevealed(round) && round.artifacts.statsSummary ? (
               <MeasuredEditorialText
                 label="Stats"
                 text={round.artifacts.statsSummary}
@@ -482,6 +481,10 @@ export function SessionEventLogTab({
       )}
     </section>
   )
+}
+
+function isRoundRevealed(round: PublicSessionView['rounds'][number]) {
+  return round.responses.some((response) => response.label !== null)
 }
 
 function SessionStatusPill({

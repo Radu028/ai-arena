@@ -162,4 +162,37 @@ describe('sessions flow', () => {
 
     expect(sessionView?.viewer?.displayName).toBe('Arena Admin Updated')
   })
+
+  test('an authenticated rejoin cannot claim another participant token', async () => {
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Identity Collision Test',
+      theme: 'debate',
+      roundCount: 1,
+      modelKeys: ['openai-gpt5', 'anthropic-claude-sonnet-4'],
+      maxParticipants: 20,
+    })
+    await admin.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Arena Admin',
+      email: null,
+      existingToken: null,
+    })
+    const guestJoin = await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Guest',
+      email: null,
+      existingToken: null,
+    })
+
+    await expect(
+      admin.mutation(api.sessions.joinBySlug, {
+        slug: created.slug,
+        displayName: 'Arena Admin',
+        email: null,
+        existingToken: guestJoin.accessToken,
+      }),
+    ).rejects.toThrow('belongs to a different seat')
+  })
 })

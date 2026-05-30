@@ -7,13 +7,13 @@ Keep the demo short, deterministic, and focused on the grading rubric.
 
 1. Confirm the production app opens: https://ai-arena-seven.vercel.app.
 2. Confirm Convex has either real provider keys or `AI_ARENA_DEMO_MODE=true`.
-3. Use a short topic to avoid unnecessary token spend.
+3. Use a short arena prompt to avoid unnecessary token spend.
 4. Keep the selected model count at two or three for the paid demo.
-5. Keep the voting window short if the admin UI allows it.
+5. Close voting manually as soon as the required ballots are visible.
 6. Open one normal browser window for the admin and one incognito/private window
    for the guest.
 
-## Suggested Low-Cost Topic
+## Suggested Low-Cost Arena Prompt
 
 > Explain why automated tests matter using a pizza delivery analogy.
 
@@ -30,12 +30,12 @@ This is short, easy to judge, and produces reliable answers across providers.
 4. Show the generated join link and join code.
 5. Open the guest window and join through the public flow.
 6. Start the session from the admin window.
-7. Submit the suggested topic from the guest window.
-8. Show the model agents competing on the same prompt.
-9. Wait for model responses and explain that model identity stays hidden during
+7. Show the model agents competing on the admin prompt.
+8. Wait for model responses and explain that model identity stays hidden during
    voting.
-10. Cast a human vote.
-11. Show the AI judge votes and final result.
+9. Cast a human vote.
+10. Close the round manually from the admin window.
+11. Reveal the models manually and show the final result.
 12. Show the Stats Analyst summary after the winner is revealed.
 13. Open leaderboard and history to prove persistence.
 14. Open admin cost tracking to show token/cost accounting.

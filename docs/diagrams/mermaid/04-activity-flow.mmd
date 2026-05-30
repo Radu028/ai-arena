@@ -1,21 +1,16 @@
 flowchart TD
-  Start([Open live session]) --> HasTopic{Round has topic?}
-  HasTopic -- no --> Submit[Guest submits topic]
-  Submit --> Lock[Convex validates and locks topic]
-  HasTopic -- yes --> Generate
-  Lock --> Generate[Generate model answers in parallel]
+  Start([Admin starts round]) --> Generate[Generate model answers in parallel]
   Generate --> AnySuccess{Any successful responses?}
   AnySuccess -- no --> Abort[Abort round and log failure]
-  AnySuccess -- yes --> Voting[Open anonymous voting]
+  AnySuccess -- yes --> AiVotes[Collect AI judge votes]
+  AiVotes --> Voting[Open anonymous voting]
   Voting --> HumanVotes[Collect human votes]
-  Voting --> AiVotes[Collect AI judge votes]
-  HumanVotes --> Close[Close voting window]
-  AiVotes --> Close
+  HumanVotes --> Close[Admin closes voting]
   Close --> Score[Tally ballots]
-  Score --> Reveal[Reveal model identities and winners]
-  Reveal --> Artifacts[Generate Host, Critic, and Stats artifacts]
-  Artifacts --> MoreRounds{More rounds?}
-  MoreRounds -- yes --> NextRound[Open next topic collection]
-  NextRound --> HasTopic
+  Score --> Artifacts[Generate Host, Critic, and Stats artifacts]
+  Artifacts --> Reveal[Admin reveals model identities and winners]
+  Reveal --> MoreRounds{More rounds?}
+  MoreRounds -- yes --> Wait[Wait for admin]
+  Wait --> Start
   MoreRounds -- no --> End([Session ended])
-  Abort --> End
+  Abort --> MoreRounds

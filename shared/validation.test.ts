@@ -6,6 +6,7 @@ import {
   getModelByKey,
   getModelPricing,
   getThemeCopy,
+  parseJudgeDecision,
   resolveModelSnapshots,
 } from './arena'
 import {
@@ -93,10 +94,10 @@ describe('arena helpers', () => {
   })
 
   test('computeCostMicrosUsd produces expected dollar amounts', () => {
-    // GPT-5: $2.50 / 1M input + $10.00 / 1M output
-    // 1000 input + 500 output = 1000 * 2.5e-6 + 500 * 10e-6 = 0.0025 + 0.005 = 0.0075 USD
+    // GPT-5.5: $5.00 / 1M input + $30.00 / 1M output
+    // 1000 input + 500 output = 1000 * 5e-6 + 500 * 30e-6 = 0.005 + 0.015 = 0.02 USD
     const micros = computeCostMicrosUsd('openai-gpt5', 1000, 500)
-    expect(micros).toBe(7500)
+    expect(micros).toBe(20_000)
   })
 
   test('formatMicrosUsd formats small and large values', () => {
@@ -112,5 +113,25 @@ describe('arena helpers', () => {
       expect(copy.hostTone.length).toBeGreaterThan(0)
       expect(copy.criticAngle.length).toBeGreaterThan(0)
     }
+  })
+
+  test('parseJudgeDecision accepts provider-wrapped JSON for allowed slots', () => {
+    expect(
+      parseJudgeDecision(
+        '```json\n{"slot":"B","rationale":" Best punchline. "}\n```',
+        ['A', 'B'],
+      ),
+    ).toEqual({ slot: 'B', rationale: 'Best punchline.' })
+    expect(
+      parseJudgeDecision('Decision: {"slot":"A","rationale":"Clearer."}', [
+        'A',
+        'B',
+      ]),
+    ).toEqual({ slot: 'A', rationale: 'Clearer.' })
+  })
+
+  test('parseJudgeDecision rejects invalid or disallowed votes', () => {
+    expect(parseJudgeDecision('{"slot":"C"}', ['A', 'B'])).toBeNull()
+    expect(parseJudgeDecision('Choose response A.', ['A', 'B'])).toBeNull()
   })
 })
