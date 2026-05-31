@@ -323,8 +323,8 @@ export function SessionPage() {
               </h2>
               <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
                 Won {winner.wins} of {winner.roundsPlayed} round
-                {winner.roundsPlayed !== 1 ? 's' : ''} with {winnerVoteLabel} from
-                the audience.
+                {winner.roundsPlayed !== 1 ? 's' : ''} with {winnerVoteLabel}{' '}
+                from the audience.
               </p>
             </div>
           </div>
