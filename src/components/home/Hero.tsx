@@ -20,7 +20,7 @@ export function Hero({
           className="h-7 rounded-full border-border/70 bg-background/60 px-3 text-[0.7rem] font-medium tracking-wide backdrop-blur"
         >
           <span className="live-dot mr-1" />
-          Realtime · {AVAILABLE_MODELS.length} frontier models on stage
+          Live · {AVAILABLE_MODELS.length} models on stage
         </Badge>
 
         <h1 className="display mt-6 text-balance">
@@ -54,21 +54,13 @@ export function Hero({
         </div>
       </div>
 
-      <div className="mt-16 grid grid-cols-2 gap-y-6 sm:mt-20 md:grid-cols-4 md:divide-x md:divide-border/50">
-        <HeroStat label="frontier models" value={String(modelsTracked)} />
-        <HeroStat label="round agents" value="3" />
+      <div className="mx-auto mt-16 grid max-w-2xl grid-cols-3 gap-y-6 sm:mt-20 md:divide-x md:divide-border/50">
+        <HeroStat label="models" value={String(modelsTracked)} />
+        <HeroStat label="AI agents" value="3" />
         {completedSessions > 0 ? (
-          <HeroStat
-            label="completed sessions"
-            value={String(completedSessions)}
-          />
+          <HeroStat label="sessions run" value={String(completedSessions)} />
         ) : (
-          <HeroStat label="anonymous voting" value="100%" />
-        )}
-        {completedSessions > 0 ? (
-          <HeroStat label="anonymous voting" value="100%" />
-        ) : (
-          <HeroStat label="live results" value="realtime" />
+          <HeroStat label="theme presets" value="4" />
         )}
       </div>
     </section>

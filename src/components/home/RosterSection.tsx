@@ -6,34 +6,25 @@ export function RosterSection() {
     <section data-reveal className="space-y-12">
       <SectionHeading
         eyebrow="Battle roster"
-        title="The frontier models on stage."
-        description="Locked in when a session starts, so past battles stay reproducible."
+        title="The models on stage."
+        description="Locked in when a session starts, so every past battle stays reproducible."
       />
 
-      <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
         {AVAILABLE_MODELS.map((model) => (
           <li
             key={model.key}
-            className="border-t border-border/60 pt-5"
-            style={{ '--accent': model.accent } as React.CSSProperties}
+            className="flex items-center gap-3 border-t border-border/60 py-3.5"
           >
-            <div className="flex items-center justify-between">
-              <span
-                className="size-2.5 rounded-full"
-                style={{ backgroundColor: model.accent }}
-                aria-hidden
-              />
-              <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
-                {model.providerKey}
-              </span>
-            </div>
-            <p className="mt-4 text-base font-semibold">{model.label}</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {model.description}
-            </p>
-            <p className="mt-4 text-[0.7rem] uppercase tracking-[0.16em] text-muted-foreground">
-              {model.tagline}
-            </p>
+            <span
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: model.accent }}
+              aria-hidden
+            />
+            <span className="text-sm font-medium">{model.label}</span>
+            <span className="ml-auto font-mono text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">
+              {model.providerKey}
+            </span>
           </li>
         ))}
       </ul>
