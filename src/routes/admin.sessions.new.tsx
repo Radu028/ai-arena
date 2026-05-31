@@ -24,11 +24,11 @@ function NewSessionPage() {
         <header data-reveal>
           <p className="eyebrow">Session setup</p>
           <h1 className="display mt-2 text-balance text-4xl sm:text-5xl">
-            Configure the battle
+            Create a session
           </h1>
           <p className="mt-3 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
-            Pick a theme, choose the lineup, and we&rsquo;ll mint a join code
-            and share link the moment it&rsquo;s created.
+            Pick a theme, choose the lineup, and we&rsquo;ll generate a join
+            code and share link the moment it&rsquo;s created.
           </p>
         </header>
 

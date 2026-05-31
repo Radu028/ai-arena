@@ -20,8 +20,7 @@ export function SsoCallbackPage() {
         </div>
         <h1 className="display mt-6 text-2xl">Finishing sign-in</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Hold tight, we&rsquo;re verifying your Google account and creating
-          your AI&nbsp;Arena session.
+          Verifying your Google account and opening your session.
         </p>
         {runtime.hasClerk ? (
           <OAuthCallback />

@@ -169,8 +169,8 @@ export function LiveSessionTab({
             </EmptyMedia>
             <EmptyTitle>Waiting for the admin</EmptyTitle>
             <EmptyDescription>
-              The room is open. As soon as the admin starts the session a round
-              will appear here in real time.
+              The room is open. The first round appears here the moment the
+              admin starts it.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

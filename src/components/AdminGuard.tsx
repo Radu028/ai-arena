@@ -83,7 +83,7 @@ function ConfiguredAdminGuard({
           Checking your session…
         </p>
         <p className="text-xs text-muted-foreground">
-          Loading authentication state from Clerk and Convex.
+          Confirming your admin access.
         </p>
       </div>
     )
