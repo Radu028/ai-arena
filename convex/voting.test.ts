@@ -233,6 +233,49 @@ describe('voting', () => {
     expect(result).toBeNull()
     expect(view?.currentRound?.status).toBe('generating')
   })
+
+  test('a stale timer cannot close a voting round', async () => {
+    const { t, created } = await bootSessionWithTopic()
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(2)
+    })
+
+    for (const response of responses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Successful response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+    })
+
+    const result = await t.mutation(internal.state.finalizeRound, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+      triggeredBy: 'timer',
+    })
+    const view = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: null,
+    })
+
+    expect(result).toBeNull()
+    expect(view?.currentRound?.status).toBe('voting')
+    expect(view?.currentRound?.votingEndsAt).toBeNull()
+  })
 })
 
 describe('session state machine', () => {

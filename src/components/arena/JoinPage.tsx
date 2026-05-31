@@ -5,7 +5,6 @@ import {
   ArrowRightIcon,
   EyeIcon,
   KeyRoundIcon,
-  RadioIcon,
   UserRoundIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -104,8 +103,8 @@ export function JoinPage() {
           Join with a <span className="gradient-text">six-letter code.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-          Drop in as a spectator instantly. A username is only requested when
-          you want to vote; your ballot persists across refreshes.
+          Watch instantly as a spectator. You only pick a username when you
+          vote.
         </p>
       </section>
 
@@ -208,23 +207,18 @@ export function JoinPage() {
         <ul className="grid gap-7 self-start sm:grid-cols-2 lg:grid-cols-1">
           <JoinInfoItem
             icon={EyeIcon}
-            title="Spectator-first"
-            copy="Watch every round in realtime without an account. The admin closes voting and reveals the models when the room is ready."
+            title="Watch without an account"
+            copy="Spectate every round in real time. No signup needed."
           />
           <JoinInfoItem
             icon={UserRoundIcon}
-            title="Username only when voting"
-            copy="Cast your ballot, then choose a name. We never ask for more than that to take part."
+            title="Name only when you vote"
+            copy="Pick a username the moment you cast a ballot — nothing more."
           />
           <JoinInfoItem
             icon={KeyRoundIcon}
-            title="Persistent ballot"
-            copy="Refreshing or returning later keeps your vote - we anchor it with a local session token."
-          />
-          <JoinInfoItem
-            icon={RadioIcon}
-            title="Live everything"
-            copy="Vote splits, round changes, and reveals all stream over Convex without any polling."
+            title="Your vote sticks"
+            copy="Refresh or come back later — your ballot stays put."
           />
         </ul>
       </section>

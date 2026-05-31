@@ -8,16 +8,16 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'CLERK_PUBLISHABLE_KEY'],
   resolve: {
     tsconfigPaths: true,
   },
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'CLERK_PUBLISHABLE_KEY'],
   plugins: [
     devtools(),
-    tailwindcss(),
     tanstackStart(),
     nitro({ preset: process.env.NITRO_PRESET ?? 'vercel' }),
     viteReact(),
+    tailwindcss(),
   ],
 })
 

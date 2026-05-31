@@ -121,6 +121,26 @@ export const AVAILABLE_MODELS = [
     judgeStyle: 'efficient, direct, and clarity-focused',
   },
   {
+    key: 'anthropic-claude-opus-48',
+    providerKey: 'anthropic',
+    label: 'Claude Opus 4.8',
+    modelId: 'claude-opus-4-8',
+    description: 'Highest-end Anthropic model for nuance and creative polish.',
+    tagline: 'Premium and expressive.',
+    accent: 'var(--arena-anthropic)',
+    judgeStyle: 'careful, original, and taste-aware',
+  },
+  {
+    key: 'google-gemini-35-flash',
+    providerKey: 'google',
+    label: 'Gemini 3.5 Flash',
+    modelId: 'gemini-3.5-flash',
+    description: 'Fast Gemini model with strong live-response quality.',
+    tagline: 'Fast and witty.',
+    accent: 'var(--arena-google)',
+    judgeStyle: 'broad, quick, and entertainment-aware',
+  },
+  {
     key: 'anthropic-claude-sonnet-4',
     providerKey: 'anthropic',
     label: 'Claude Sonnet 4.6',
@@ -141,16 +161,6 @@ export const AVAILABLE_MODELS = [
     judgeStyle: 'quick, crisp, and practical',
   },
   {
-    key: 'google-gemini-3-flash',
-    providerKey: 'google',
-    label: 'Gemini 3 Flash',
-    modelId: 'gemini-3-flash-preview',
-    description: 'Fast, low-cost synthesis with confident explanation.',
-    tagline: 'Fast and budget-aware.',
-    accent: 'var(--arena-google)',
-    judgeStyle: 'broad, insightful, and comparative',
-  },
-  {
     key: 'google-gemini-31-pro',
     providerKey: 'google',
     label: 'Gemini 3.1 Pro',
@@ -160,9 +170,29 @@ export const AVAILABLE_MODELS = [
     accent: 'var(--arena-google)',
     judgeStyle: 'broad, rigorous, and comparative',
   },
+  {
+    key: 'google-gemini-31-flash-lite',
+    providerKey: 'google',
+    label: 'Gemini 3.1 Flash-Lite',
+    modelId: 'gemini-3.1-flash-lite',
+    description: 'Lowest-latency Gemini option for quick live rounds.',
+    tagline: 'Light and quick.',
+    accent: 'var(--arena-google)',
+    judgeStyle: 'fast, simple, and crowd-aware',
+  },
 ] as const satisfies readonly ArenaModelDefinition[]
 
 const LEGACY_MODEL_DEFINITIONS = [
+  {
+    key: 'google-gemini-3-flash',
+    providerKey: 'google',
+    label: 'Gemini 3 Flash',
+    modelId: 'gemini-3-flash-preview',
+    description: 'Legacy Gemini Flash preview kept for historical sessions.',
+    tagline: 'Legacy preview model.',
+    accent: 'var(--arena-google)',
+    judgeStyle: 'broad, insightful, and comparative',
+  },
   {
     key: 'google-gemini-25-pro',
     providerKey: 'google',
@@ -259,7 +289,7 @@ export const AGENT_MAX_OUTPUT_TOKENS = 500
 export const JUDGE_MAX_OUTPUT_TOKENS = 1_024
 export const HOST_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
 export const CRITIC_AGENT_DEFAULT_MODEL = 'gpt-5-mini'
-export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3-flash-preview'
+export const STATS_AGENT_DEFAULT_MODEL = 'gemini-3.1-flash-lite'
 
 // Approximate USD pricing per 1M tokens as of early 2026. Kept intentionally
 // coarse so the dashboard can show meaningful budget estimates without
@@ -282,6 +312,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputUsdPerMillionTokens: 0.25,
     outputUsdPerMillionTokens: 2,
   },
+  'anthropic-claude-opus-48': {
+    inputUsdPerMillionTokens: 15,
+    outputUsdPerMillionTokens: 75,
+  },
   'anthropic-claude-sonnet-4': {
     inputUsdPerMillionTokens: 3,
     outputUsdPerMillionTokens: 15,
@@ -294,9 +328,17 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     inputUsdPerMillionTokens: 0.5,
     outputUsdPerMillionTokens: 3,
   },
+  'google-gemini-35-flash': {
+    inputUsdPerMillionTokens: 0.5,
+    outputUsdPerMillionTokens: 3,
+  },
   'google-gemini-31-pro': {
     inputUsdPerMillionTokens: 2,
     outputUsdPerMillionTokens: 12,
+  },
+  'google-gemini-31-flash-lite': {
+    inputUsdPerMillionTokens: 0.15,
+    outputUsdPerMillionTokens: 0.6,
   },
   'google-gemini-25-pro': {
     inputUsdPerMillionTokens: 1.25,

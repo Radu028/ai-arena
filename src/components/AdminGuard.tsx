@@ -124,8 +124,7 @@ function ConfiguredAdminGuard({
               label="Sign in with Google"
             />
             <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-              We never see your password. Google handles 2FA, lockouts, and
-              recovery for you.
+              Google handles 2FA, lockouts, and recovery for this sign-in.
             </p>
           </div>
         </div>

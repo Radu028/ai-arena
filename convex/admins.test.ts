@@ -130,7 +130,7 @@ describe('admin access control', () => {
         title: 'Unauthorized Arena',
         theme: 'comedy',
         roundCount: 1,
-        modelKeys: ['openai-gpt5', 'google-gemini-3-flash'],
+        modelKeys: ['openai-gpt5', 'google-gemini-35-flash'],
         maxParticipants: 20,
       }),
     ).rejects.toThrow('not an admin')

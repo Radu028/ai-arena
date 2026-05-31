@@ -465,17 +465,19 @@ async function generateWithGoogle(
   responseJsonSchema?: unknown,
 ) {
   const client = new GoogleGenAI({ apiKey })
+  const thinkingLevel = getGeminiThinkingLevel(
+    modelId,
+    Boolean(responseJsonSchema),
+  )
   const response = await client.models.generateContent({
     model: modelId,
     contents: prompt,
     config: {
       maxOutputTokens,
-      ...(modelId.startsWith('gemini-3')
+      ...(thinkingLevel
         ? {
             thinkingConfig: {
-              thinkingLevel: modelId.includes('flash')
-                ? ThinkingLevel.MINIMAL
-                : ThinkingLevel.LOW,
+              thinkingLevel,
             },
           }
         : {}),
@@ -494,6 +496,25 @@ async function generateWithGoogle(
       output: response.usageMetadata?.candidatesTokenCount ?? null,
     },
   }
+}
+
+function getGeminiThinkingLevel(
+  modelId: string,
+  structuredOutput: boolean,
+): ThinkingLevel | null {
+  if (!modelId.startsWith('gemini-3')) {
+    return null
+  }
+
+  if (modelId.includes('flash-lite')) {
+    return ThinkingLevel.MINIMAL
+  }
+
+  if (modelId.includes('flash')) {
+    return structuredOutput ? ThinkingLevel.MINIMAL : ThinkingLevel.LOW
+  }
+
+  return ThinkingLevel.LOW
 }
 
 function buildJudgeResponseJsonSchema(prompt: string) {
