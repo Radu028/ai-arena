@@ -7,6 +7,7 @@ import {
   appendSessionEvent,
   getEligibleResponses,
   getRoundByNumber,
+  maxRoundResponsesForSession,
   now,
 } from './lib'
 import {
@@ -32,7 +33,7 @@ export const getRoundGenerationContext = internalQuery({
       .withIndex('by_round_id_and_anonymized_slot', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(session.selectedModelsSnapshot.length + 2)
+      .take(maxRoundResponsesForSession(session))
     return {
       session,
       round,
@@ -58,7 +59,7 @@ export const getRoundReviewContext = internalQuery({
       .withIndex('by_round_id_and_anonymized_slot', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(session.selectedModelsSnapshot.length + 2)
+      .take(maxRoundResponsesForSession(session))
     const humanVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_response_id', (query) =>
@@ -120,7 +121,7 @@ export const getSessionScoreboard = internalQuery({
         .withIndex('by_round_id_and_anonymized_slot', (query) =>
           query.eq('roundId', round._id),
         )
-        .take(16)
+        .take(maxRoundResponsesForSession(session))
       const humanVotes = await ctx.db
         .query('roundVotes')
         .withIndex('by_round_id_and_response_id', (query) =>
@@ -396,7 +397,7 @@ export const finalizeRound = internalMutation({
       .withIndex('by_round_id_and_anonymized_slot', (query) =>
         query.eq('roundId', round._id),
       )
-      .take(session.selectedModelsSnapshot.length + 2)
+      .take(maxRoundResponsesForSession(session))
     const eligibleResponses = getEligibleResponses(responses)
     const humanVotes = await ctx.db
       .query('roundVotes')

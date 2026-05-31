@@ -44,6 +44,22 @@ async function bootSessionWithTopic() {
   return { t, admin, created, guest }
 }
 
+async function startAiGenerationAndListResponses(
+  t: Awaited<ReturnType<typeof bootSessionWithTopic>>['t'],
+  admin: Awaited<ReturnType<typeof bootSessionWithTopic>>['admin'],
+  sessionId: Awaited<
+    ReturnType<typeof bootSessionWithTopic>
+  >['created']['sessionId'],
+) {
+  await admin.mutation(api.rounds.endResponseCollection, { sessionId })
+  return await t.run(async (ctx) => {
+    return await ctx.db
+      .query('roundResponses')
+      .withIndex('by_round_id_and_anonymized_slot')
+      .take(16)
+  })
+}
+
 describe('voting', () => {
   test('a guest cannot vote before voting opens', async () => {
     const { t, created, guest } = await bootSessionWithTopic()
@@ -54,7 +70,7 @@ describe('voting', () => {
     })
 
     expect(view).not.toBeNull()
-    expect(view?.currentRound?.status).toBe('generating')
+    expect(view?.currentRound?.status).toBe('collecting_responses')
 
     // There are no responses yet so vote attempts reference a missing doc
     // and must be rejected.
@@ -109,6 +125,101 @@ describe('voting', () => {
     ).rejects.toThrow('already has a locked topic')
   })
 
+  test('participants can optionally submit jokes that AI judges can vote for', async () => {
+    const { t, admin, created } = await bootSessionWithTopic()
+    const submittingGuest = await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Funny Guest',
+      email: null,
+      existingToken: null,
+    })
+    await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Quiet Guest',
+      email: null,
+      existingToken: null,
+    })
+
+    const submitted = await t.mutation(api.rounds.submitParticipantResponse, {
+      slug: created.slug,
+      participantToken: submittingGuest.accessToken,
+      responseText: 'Demo-ul live e perfect: pica doar cand apare publicul.',
+    })
+    expect(submitted.accepted).toBe(true)
+
+    const collectingView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: submittingGuest.accessToken,
+    })
+    expect(collectingView?.currentRound?.status).toBe('collecting_responses')
+    expect(collectingView?.viewer?.hasSubmittedCurrentRound).toBe(true)
+    expect(collectingView?.currentRound?.responses).toHaveLength(1)
+    expect(collectingView?.currentRound?.responses[0]?.kind).toBe('participant')
+
+    await admin.mutation(api.rounds.endResponseCollection, {
+      sessionId: created.sessionId,
+    })
+    const responses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(8)
+    })
+    const participantResponse = responses.find(
+      (response) => response.responseKind === 'participant',
+    )
+    const modelResponses = responses.filter(
+      (response) => response.responseKind !== 'participant',
+    )
+    expect(participantResponse).toBeDefined()
+    expect(modelResponses).toHaveLength(2)
+
+    for (const response of modelResponses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Model response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    for (const response of modelResponses) {
+      await t.mutation(internal.state.saveAiVote, {
+        roundId: response.roundId,
+        voterModelKey: response.modelKey,
+        responseId: participantResponse!._id,
+        rationale: 'Funniest human joke.',
+      })
+    }
+
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId: participantResponse!.roundId,
+    })
+    await admin.mutation(api.rounds.endVotingEarly, {
+      sessionId: created.sessionId,
+    })
+    await admin.mutation(api.rounds.revealLatestScoredRound, {
+      sessionId: created.sessionId,
+    })
+
+    const revealedView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: submittingGuest.accessToken,
+    })
+    const revealedParticipant = revealedView?.currentRound?.responses.find(
+      (response) => response.id === participantResponse!._id,
+    )
+    expect(revealedView?.currentRound?.totals.aiVotes).toBe(2)
+    expect(revealedParticipant?.label).toBe('Funny Guest')
+    expect(revealedParticipant?.isWinner).toBe(true)
+  })
+
   test('multiple guests can vote concurrently and the admin controls round progression', async () => {
     vi.useFakeTimers()
     const { t, admin, created, guest } = await bootSessionWithTopic()
@@ -118,12 +229,11 @@ describe('voting', () => {
       email: null,
       existingToken: null,
     })
-    const responses = await t.run(async (ctx) => {
-      return await ctx.db
-        .query('roundResponses')
-        .withIndex('by_round_id_and_anonymized_slot')
-        .take(2)
-    })
+    const responses = await startAiGenerationAndListResponses(
+      t,
+      admin,
+      created.sessionId,
+    )
     const roundId = responses[0]?.roundId
     expect(roundId).toBeDefined()
     expect(responses).toHaveLength(2)
@@ -212,13 +322,12 @@ describe('voting', () => {
   })
 
   test('a stale timer cannot close a generating round', async () => {
-    const { t, created } = await bootSessionWithTopic()
-    const responses = await t.run(async (ctx) => {
-      return await ctx.db
-        .query('roundResponses')
-        .withIndex('by_round_id_and_anonymized_slot')
-        .take(2)
-    })
+    const { t, admin, created } = await bootSessionWithTopic()
+    const responses = await startAiGenerationAndListResponses(
+      t,
+      admin,
+      created.sessionId,
+    )
 
     const result = await t.mutation(internal.state.finalizeRound, {
       sessionId: created.sessionId,
@@ -235,13 +344,12 @@ describe('voting', () => {
   })
 
   test('a stale timer cannot close a voting round', async () => {
-    const { t, created } = await bootSessionWithTopic()
-    const responses = await t.run(async (ctx) => {
-      return await ctx.db
-        .query('roundResponses')
-        .withIndex('by_round_id_and_anonymized_slot')
-        .take(2)
-    })
+    const { t, admin, created } = await bootSessionWithTopic()
+    const responses = await startAiGenerationAndListResponses(
+      t,
+      admin,
+      created.sessionId,
+    )
 
     for (const response of responses) {
       await t.mutation(internal.state.saveModelResponse, {
@@ -357,6 +465,9 @@ describe('session state machine', () => {
       maxParticipants: 10,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    await admin.mutation(api.rounds.endResponseCollection, {
+      sessionId: created.sessionId,
+    })
     const responses = await t.run(async (ctx) => {
       return await ctx.db
         .query('roundResponses')
@@ -383,7 +494,7 @@ describe('session state machine', () => {
       sessionId: created.sessionId,
     })
     expect(afterStart?.currentRoundNumber).toBe(2)
-    expect(afterStart?.currentRoundStatus).toBe('generating')
+    expect(afterStart?.currentRoundStatus).toBe('collecting_responses')
   })
 
   test('the admin reveals a scored round before starting the next one', async () => {
@@ -398,6 +509,9 @@ describe('session state machine', () => {
       maxParticipants: 10,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    await admin.mutation(api.rounds.endResponseCollection, {
+      sessionId: created.sessionId,
+    })
     const responses = await t.run(async (ctx) => {
       return await ctx.db
         .query('roundResponses')
@@ -471,6 +585,9 @@ describe('session state machine', () => {
       maxParticipants: 600,
     })
     await admin.mutation(api.sessions.start, { sessionId: created.sessionId })
+    await admin.mutation(api.rounds.endResponseCollection, {
+      sessionId: created.sessionId,
+    })
     const responses = await t.run(async (ctx) => {
       return await ctx.db
         .query('roundResponses')

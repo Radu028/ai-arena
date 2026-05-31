@@ -1,16 +1,88 @@
 import { internal } from './_generated/api'
 import { mutation } from './_generated/server'
+import type { MutationCtx } from './_generated/server'
+import type { Doc } from './_generated/dataModel'
 import { v } from 'convex/values'
 import {
   buildAnonymizedSlots,
   getParticipantByToken,
   getRoundByNumber,
   getSessionBySlug,
+  maxRoundResponsesForSession,
   now,
   appendSessionEvent,
+  participantResponseModelKey,
   requireSessionOwner,
 } from './lib'
-import { MAX_TOPIC_LENGTH, MIN_TOPIC_LENGTH } from '../shared/arena'
+import {
+  MAX_PARTICIPANT_RESPONSE_LENGTH,
+  MAX_TOPIC_LENGTH,
+  MIN_PARTICIPANT_RESPONSE_LENGTH,
+  MIN_TOPIC_LENGTH,
+  getRoundSlotLabel,
+} from '../shared/arena'
+
+function getRoundTopic(session: Doc<'sessions'>) {
+  const prompt = session.customPrompt?.trim()
+  return prompt ? prompt : session.title
+}
+
+async function prepareRoundResponses(
+  ctx: MutationCtx,
+  session: Doc<'sessions'>,
+  round: Doc<'rounds'>,
+  promptVersion: string,
+) {
+  const startedAt = now()
+  const participantResponses = await ctx.db
+    .query('roundResponses')
+    .withIndex('by_round_id_and_anonymized_slot', (query) =>
+      query.eq('roundId', round._id),
+    )
+    .take(maxRoundResponsesForSession(session))
+  const slots = buildAnonymizedSlots(
+    participantResponses.length + session.selectedModelsSnapshot.length,
+  )
+
+  await ctx.db.patch(round._id, {
+    status: 'generating',
+    topic: getRoundTopic(session),
+    topicSubmittedByParticipantId: null,
+    topicLockedAt: round.topicLockedAt ?? startedAt,
+    generatingStartedAt: startedAt,
+  })
+
+  for (const [index, response] of participantResponses.entries()) {
+    await ctx.db.patch(response._id, {
+      anonymizedSlot: slots[index],
+    })
+  }
+
+  for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+    await ctx.db.insert('roundResponses', {
+      sessionId: session._id,
+      roundId: round._id,
+      responseKind: 'model',
+      participantId: null,
+      providerKey: model.providerKey,
+      modelKey: model.key,
+      modelId: model.modelId,
+      modelLabel: model.label,
+      anonymizedSlot: slots[participantResponses.length + index],
+      promptVersion,
+      responseText: null,
+      status: 'pending',
+      latencyMs: null,
+      tokenUsageInput: null,
+      tokenUsageOutput: null,
+      costMicrosUsd: null,
+      errorCode: null,
+      errorMessage: null,
+      createdAt: startedAt,
+      completedAt: null,
+    })
+  }
+}
 
 export const submitTopic = mutation({
   args: {
@@ -66,6 +138,8 @@ export const submitTopic = mutation({
       await ctx.db.insert('roundResponses', {
         sessionId: session._id,
         roundId: round._id,
+        responseKind: 'model',
+        participantId: null,
         providerKey: model.providerKey,
         modelKey: model.key,
         modelId: model.modelId,
@@ -105,6 +179,147 @@ export const submitTopic = mutation({
       ok: true,
       roundId: round._id,
       topic,
+    }
+  },
+})
+
+export const submitParticipantResponse = mutation({
+  args: {
+    slug: v.string(),
+    participantToken: v.string(),
+    responseText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await getSessionBySlug(ctx, args.slug)
+    if (!session) {
+      throw new Error('Session not found.')
+    }
+    if (session.status !== 'active') {
+      throw new Error('The session is not currently live.')
+    }
+
+    const participant = await getParticipantByToken(
+      ctx,
+      session._id,
+      args.participantToken,
+    )
+    if (!participant) {
+      throw new Error('Join the session before submitting a joke.')
+    }
+
+    const round = await getRoundByNumber(
+      ctx,
+      session._id,
+      session.currentRoundNumber,
+    )
+    if (!round || round.status !== 'collecting_responses') {
+      throw new Error('Participant joke submissions are closed right now.')
+    }
+
+    const responseText = args.responseText.trim()
+    if (
+      responseText.length < MIN_PARTICIPANT_RESPONSE_LENGTH ||
+      responseText.length > MAX_PARTICIPANT_RESPONSE_LENGTH
+    ) {
+      throw new Error('Joke length is invalid.')
+    }
+
+    const existing = await ctx.db
+      .query('roundResponses')
+      .withIndex('by_round_id_and_participant_id', (query) =>
+        query.eq('roundId', round._id).eq('participantId', participant._id),
+      )
+      .unique()
+    const submittedAt = now()
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        responseText,
+        status: 'success',
+        modelLabel: participant.displayName,
+        completedAt: submittedAt,
+      })
+      await ctx.db.patch(participant._id, { lastSeenAt: submittedAt })
+      return {
+        accepted: true,
+        updated: true,
+        responseId: existing._id,
+      }
+    }
+
+    const existingResponses = await ctx.db
+      .query('roundResponses')
+      .withIndex('by_round_id_and_anonymized_slot', (query) =>
+        query.eq('roundId', round._id),
+      )
+      .take(maxRoundResponsesForSession(session))
+    const responseId = await ctx.db.insert('roundResponses', {
+      sessionId: session._id,
+      roundId: round._id,
+      responseKind: 'participant',
+      participantId: participant._id,
+      providerKey: 'participant',
+      modelKey: participantResponseModelKey(participant._id),
+      modelId: participant._id,
+      modelLabel: participant.displayName,
+      anonymizedSlot: getRoundSlotLabel(existingResponses.length),
+      promptVersion: 'participant-v1',
+      responseText,
+      status: 'success',
+      latencyMs: null,
+      tokenUsageInput: null,
+      tokenUsageOutput: null,
+      costMicrosUsd: null,
+      errorCode: null,
+      errorMessage: null,
+      createdAt: submittedAt,
+      completedAt: submittedAt,
+    })
+    await ctx.db.patch(participant._id, { lastSeenAt: submittedAt })
+
+    return {
+      accepted: true,
+      updated: false,
+      responseId,
+    }
+  },
+})
+
+export const endResponseCollection = mutation({
+  args: {
+    sessionId: v.id('sessions'),
+  },
+  handler: async (ctx, args) => {
+    const { session } = await requireSessionOwner(ctx, args.sessionId)
+    if (session.status !== 'active') {
+      throw new Error('Only active sessions can start model generation.')
+    }
+    const round = await getRoundByNumber(
+      ctx,
+      session._id,
+      session.currentRoundNumber,
+    )
+    if (!round || round.status !== 'collecting_responses') {
+      throw new Error('There is no open participant submission stage.')
+    }
+
+    await prepareRoundResponses(ctx, session, round, 'v2')
+    await appendSessionEvent(ctx, {
+      sessionId: session._id,
+      roundId: round._id,
+      type: 'participant_submissions_closed',
+      title: `Round ${round.roundNumber} participant submissions closed`,
+      description:
+        'The admin closed optional user jokes and started AI generation.',
+      meta: {},
+    })
+    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
+      sessionId: session._id,
+      roundId: round._id,
+    })
+
+    return {
+      ok: true,
+      roundId: round._id,
     }
   },
 })
@@ -169,38 +384,14 @@ export const startNextRound = mutation({
     }
 
     const startedAt = now()
-    const topic = session.customPrompt?.trim() || session.title
-    const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+    const topic = getRoundTopic(session)
     await ctx.db.patch(nextRound._id, {
-      status: 'generating',
+      status: 'collecting_responses',
       topic,
       topicSubmittedByParticipantId: null,
       topicLockedAt: startedAt,
-      generatingStartedAt: startedAt,
+      generatingStartedAt: null,
     })
-
-    for (const [index, model] of session.selectedModelsSnapshot.entries()) {
-      await ctx.db.insert('roundResponses', {
-        sessionId: session._id,
-        roundId: nextRound._id,
-        providerKey: model.providerKey,
-        modelKey: model.key,
-        modelId: model.modelId,
-        modelLabel: model.label,
-        anonymizedSlot: slots[index],
-        promptVersion: 'v2',
-        responseText: null,
-        status: 'pending',
-        latencyMs: null,
-        tokenUsageInput: null,
-        tokenUsageOutput: null,
-        costMicrosUsd: null,
-        errorCode: null,
-        errorMessage: null,
-        createdAt: startedAt,
-        completedAt: null,
-      })
-    }
     await ctx.db.patch(session._id, {
       currentRoundNumber: nextRound.roundNumber,
     })
@@ -209,12 +400,9 @@ export const startNextRound = mutation({
       roundId: nextRound._id,
       type: 'round_started',
       title: `Round ${nextRound.roundNumber} started`,
-      description: 'The admin started the next round.',
+      description:
+        'The admin opened optional participant jokes for the next round.',
       meta: {},
-    })
-    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
-      sessionId: session._id,
-      roundId: nextRound._id,
     })
 
     return {

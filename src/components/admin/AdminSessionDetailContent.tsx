@@ -20,6 +20,7 @@ export function AdminSessionDetailContent() {
   )
   const startSession = useMutation(api.sessions.start)
   const stopSession = useMutation(api.sessions.stop)
+  const endResponseCollection = useMutation(api.rounds.endResponseCollection)
   const endVotingEarly = useMutation(api.rounds.endVotingEarly)
   const startNextRound = useMutation(api.rounds.startNextRound)
   const revealLatestScoredRound = useMutation(
@@ -46,6 +47,20 @@ export function AdminSessionDetailContent() {
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Could not stop the session.',
+      )
+    }
+  }
+
+  async function handleEndResponseCollection() {
+    if (!session) return
+    try {
+      await endResponseCollection({ sessionId: session.id })
+      toast.success('Participant jokes closed. AI responses started.')
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Could not start AI responses.',
       )
     }
   }
@@ -99,6 +114,7 @@ export function AdminSessionDetailContent() {
       <AdminSessionHeader
         session={session}
         onStart={handleStart}
+        onEndResponseCollection={handleEndResponseCollection}
         onCloseVoting={handleEndVoting}
         onStartNextRound={handleStartNextRound}
         onReveal={handleReveal}

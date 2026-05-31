@@ -20,6 +20,7 @@ import { formatDateTime } from '#/lib/format'
 export function AdminSessionHeader({
   session,
   onStart,
+  onEndResponseCollection,
   onCloseVoting,
   onStartNextRound,
   onReveal,
@@ -27,6 +28,7 @@ export function AdminSessionHeader({
 }: {
   session: AdminSession
   onStart: () => Promise<void>
+  onEndResponseCollection: () => Promise<void>
   onCloseVoting: () => Promise<void>
   onStartNextRound: () => Promise<void>
   onReveal: () => Promise<void>
@@ -98,6 +100,14 @@ export function AdminSessionHeader({
           <Button onClick={onStart} disabled={session.status !== 'waiting'}>
             <PlayIcon className="size-4" />
             Start session
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onEndResponseCollection}
+            disabled={!session.canEndResponseCollection}
+          >
+            <PlayIcon className="size-4" />
+            Start AI responses
           </Button>
           <Button
             variant="outline"

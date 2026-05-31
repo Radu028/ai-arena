@@ -104,6 +104,23 @@ export function buildAnonymizedSlots(count: number) {
   )
 }
 
+export function maxRoundResponsesForSession(session: Doc<'sessions'>) {
+  return session.selectedModelsSnapshot.length + session.maxParticipants + 1
+}
+
+export function participantResponseModelKey(
+  participantId: Id<'sessionParticipants'>,
+) {
+  return `participant:${participantId}`
+}
+
+export function isParticipantResponse(response: Doc<'roundResponses'>) {
+  return (
+    response.responseKind === 'participant' ||
+    response.providerKey === 'participant'
+  )
+}
+
 export function createSlug(baseTitle: string) {
   const normalized = baseTitle
     .toLowerCase()

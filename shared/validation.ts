@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import {
   MAX_CUSTOM_PROMPT_LENGTH,
+  MAX_PARTICIPANT_RESPONSE_LENGTH,
   MAX_MODELS_PER_SESSION,
   MAX_ROUNDS,
   MAX_TOPIC_LENGTH,
+  MIN_PARTICIPANT_RESPONSE_LENGTH,
   MIN_MODELS_PER_SESSION,
   MIN_ROUNDS,
   MIN_TOPIC_LENGTH,
@@ -81,6 +83,20 @@ export const topicSchema = z.object({
     .max(
       MAX_TOPIC_LENGTH,
       `Topic must stay under ${MAX_TOPIC_LENGTH} characters.`,
+    ),
+})
+
+export const participantResponseSchema = z.object({
+  responseText: z
+    .string()
+    .trim()
+    .min(
+      MIN_PARTICIPANT_RESPONSE_LENGTH,
+      `Joke must be at least ${MIN_PARTICIPANT_RESPONSE_LENGTH} characters.`,
+    )
+    .max(
+      MAX_PARTICIPANT_RESPONSE_LENGTH,
+      `Keep your joke under ${MAX_PARTICIPANT_RESPONSE_LENGTH} characters.`,
     ),
 })
 

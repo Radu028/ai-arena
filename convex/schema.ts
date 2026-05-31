@@ -97,6 +97,10 @@ export default defineSchema({
   roundResponses: defineTable({
     sessionId: v.id('sessions'),
     roundId: v.id('rounds'),
+    responseKind: v.optional(
+      v.union(v.literal('model'), v.literal('participant')),
+    ),
+    participantId: v.optional(v.union(v.id('sessionParticipants'), v.null())),
     providerKey: v.string(),
     modelKey: v.string(),
     modelId: v.string(),
@@ -115,6 +119,7 @@ export default defineSchema({
     completedAt: nullableNumberValidator,
   })
     .index('by_round_id_and_model_key', ['roundId', 'modelKey'])
+    .index('by_round_id_and_participant_id', ['roundId', 'participantId'])
     .index('by_round_id_and_anonymized_slot', ['roundId', 'anonymizedSlot']),
 
   roundVotes: defineTable({

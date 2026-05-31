@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react'
 import type { FunctionReturnType } from 'convex/server'
 import {
   CalendarClockIcon,
@@ -5,12 +6,14 @@ import {
   HourglassIcon,
   RadioIcon,
   ScrollTextIcon,
+  SparklesIcon,
   Users2Icon,
 } from 'lucide-react'
 import type { api } from '@convex/_generated/api'
 import { formatClock, formatDateTime, initials } from '#/lib/format'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import {
   Empty,
   EmptyDescription,
@@ -20,6 +23,7 @@ import {
 } from '#/components/ui/empty'
 import { ScrollArea } from '#/components/ui/scroll-area'
 import { StatusPill } from '#/components/ui/status-pill'
+import { Textarea } from '#/components/ui/textarea'
 import { LiveVoteChart } from '#/components/arena/LiveVoteChart'
 import { MeasuredEditorialText } from '#/components/arena/MeasuredEditorialText'
 import { RoundResponseCard } from '#/components/arena/RoundResponseCard'
@@ -31,6 +35,8 @@ export type PublicSessionView = NonNullable<
 type SessionPageState = {
   displayName: string
   pendingJoin: boolean
+  responseText: string
+  pendingResponse: boolean
   pendingVoteId: string | null
 }
 
@@ -126,17 +132,23 @@ export function LiveSessionTab({
   liveRound,
   latestFinishedRound,
   state,
+  onResponseTextChange,
+  onSubmitResponse,
   onVote,
 }: {
   sessionView: PublicSessionView
   liveRound: PublicSessionView['currentRound']
   latestFinishedRound: PublicSessionView['latestFinishedRound']
   state: SessionPageState
+  onResponseTextChange: (value: string) => void
+  onSubmitResponse: (event: FormEvent<HTMLFormElement>) => Promise<void>
   onVote: (responseId: string) => Promise<void>
 }) {
   return (
     <div className="space-y-5">
-      {latestFinishedRound && liveRound?.status === 'collecting_topic' ? (
+      {latestFinishedRound &&
+      (liveRound?.status === 'collecting_topic' ||
+        liveRound?.status === 'collecting_responses') ? (
         <FinishedRoundRecap round={latestFinishedRound} />
       ) : null}
 
@@ -145,6 +157,8 @@ export function LiveSessionTab({
           sessionView={sessionView}
           round={liveRound}
           state={state}
+          onResponseTextChange={onResponseTextChange}
+          onSubmitResponse={onSubmitResponse}
           onVote={onVote}
         />
       ) : (
@@ -208,11 +222,15 @@ function LiveRoundCard({
   sessionView,
   round,
   state,
+  onResponseTextChange,
+  onSubmitResponse,
   onVote,
 }: {
   sessionView: PublicSessionView
   round: NonNullable<PublicSessionView['currentRound']>
   state: SessionPageState
+  onResponseTextChange: (value: string) => void
+  onSubmitResponse: (event: FormEvent<HTMLFormElement>) => Promise<void>
   onVote: (responseId: string) => Promise<void>
 }) {
   const revealed = isRoundRevealed(round)
@@ -278,6 +296,15 @@ function LiveRoundCard({
           </div>
         ) : null}
 
+        {round.status === 'collecting_responses' ? (
+          <ParticipantResponsePanel
+            sessionView={sessionView}
+            state={state}
+            onResponseTextChange={onResponseTextChange}
+            onSubmitResponse={onSubmitResponse}
+          />
+        ) : null}
+
         {round.responses.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {round.responses.map((response) => (
@@ -339,6 +366,71 @@ function LiveRoundCard({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function ParticipantResponsePanel({
+  sessionView,
+  state,
+  onResponseTextChange,
+  onSubmitResponse,
+}: {
+  sessionView: PublicSessionView
+  state: SessionPageState
+  onResponseTextChange: (value: string) => void
+  onSubmitResponse: (event: FormEvent<HTMLFormElement>) => Promise<void>
+}) {
+  if (!sessionView.viewer) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+        <span className="live-dot mt-1" />
+        <p>
+          Choose a username to enter, then you can optionally submit one joke.
+        </p>
+      </div>
+    )
+  }
+
+  if (sessionView.viewer.hasSubmittedCurrentRound) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+        <SparklesIcon className="mt-0.5 size-4" />
+        <p>
+          Your joke is in. You can relax until the admin starts AI responses.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <form
+      onSubmit={onSubmitResponse}
+      className="space-y-3 rounded-2xl border border-border/60 bg-muted/20 p-4"
+    >
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">Submit your joke (optional)</p>
+        <p className="text-sm text-muted-foreground">
+          Not everyone has to submit. The admin decides when this stage closes.
+        </p>
+      </div>
+      <Textarea
+        value={state.responseText}
+        onChange={(event) => onResponseTextChange(event.target.value)}
+        placeholder="Write one short joke for this round..."
+        maxLength={280}
+        disabled={state.pendingResponse}
+        className="min-h-24"
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {state.responseText.trim().length}/280 characters
+        </p>
+        <Button type="submit" disabled={state.pendingResponse}>
+          <SparklesIcon className="size-4" />
+          {state.pendingResponse ? 'Submitting...' : 'Submit joke'}
+        </Button>
+      </div>
+    </form>
   )
 }
 
