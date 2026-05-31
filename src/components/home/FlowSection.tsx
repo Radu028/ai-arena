@@ -9,17 +9,17 @@ const FLOW_STEPS = [
   {
     step: '02',
     title: 'Models answer in parallel',
-    copy: 'Responses arrive simultaneously. Anything missing the provider timeout gets a graceful timeout.',
+    copy: 'Every model answers at once. A slow or failing provider is skipped so the round never stalls.',
   },
   {
     step: '03',
     title: 'Crowd & AI judges vote',
-    copy: 'Humans and eligible models cast one ballot each. Models cannot vote for themselves.',
+    copy: 'Humans and eligible models cast one ballot each. No model can vote for itself.',
   },
   {
     step: '04',
-    title: 'Agents react, MC bridges',
-    copy: 'The Critic explains the win, Stats summarises the round, the MC flows into the next.',
+    title: 'Agents react, host bridges',
+    copy: 'The critic explains the win, the stats agent recaps the numbers, the host sets up the next round.',
   },
 ] as const
 
