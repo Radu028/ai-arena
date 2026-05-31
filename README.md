@@ -52,6 +52,20 @@ The current base includes:
 - `convex/orchestration.ts` provider calls, Host, Critic, Stats Analyst, AI
   judging
 
+### Fast navigation for maintainers and LLM agents
+
+- `shared/arena.ts` is the source of truth for model roster, pricing,
+  statuses, round constants, and theme copy.
+- `shared/validation.ts` validates client-facing form payloads before Convex
+  mutations run.
+- `convex/lib.ts` centralizes auth/admin checks, session ownership, and model
+  snapshot validation.
+- `convex/state.ts` owns internal lifecycle transitions. Prefer adding state
+  changes there instead of scattering patches across public mutations.
+- `src/components/arena/` contains the public session/join UI. Route files
+  should stay thin and delegate page sections into components.
+- `src/components/ui/` contains reusable app primitives such as `StatusPill`.
+
 ## Local setup
 
 ### 1. Install
@@ -185,6 +199,8 @@ production deploy key is available.
   recording script with low-cost provider guardrails
 - [`docs/SECRETS_AND_DEPLOYMENT.md`](docs/SECRETS_AND_DEPLOYMENT.md) — safe
   production secret setup and deployment checklist
+- [`docs/STACK_AUDIT.md`](docs/STACK_AUDIT.md) — official-doc audit for Convex,
+  Clerk, TanStack Start/Router, Tailwind, and deployment wiring
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component, data model,
   session/round lifecycles, sequence and agent workflow diagrams
 - [`docs/UML_DIAGRAMS.md`](docs/UML_DIAGRAMS.md) — dedicated GitHub-rendered UML

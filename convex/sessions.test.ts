@@ -30,7 +30,7 @@ describe('sessions flow', () => {
       modelKeys: [
         'openai-gpt5',
         'anthropic-claude-sonnet-4',
-        'google-gemini-3-flash',
+        'google-gemini-35-flash',
       ],
       maxParticipants: 50,
     })

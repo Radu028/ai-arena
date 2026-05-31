@@ -71,7 +71,7 @@ function FooterLink({
   return (
     <Link
       to={to}
-      className="text-muted-foreground transition-colors hover:text-foreground"
+      className="rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       {children}
     </Link>

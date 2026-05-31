@@ -19,7 +19,7 @@ import {
   EmptyTitle,
 } from '#/components/ui/empty'
 import { ScrollArea } from '#/components/ui/scroll-area'
-import { cn } from '#/lib/utils'
+import { StatusPill } from '#/components/ui/status-pill'
 import { LiveVoteChart } from '#/components/arena/LiveVoteChart'
 import { MeasuredEditorialText } from '#/components/arena/MeasuredEditorialText'
 import { RoundResponseCard } from '#/components/arena/RoundResponseCard'
@@ -39,15 +39,12 @@ export function SessionOverviewSection({
 }: {
   sessionView: PublicSessionView
 }) {
-  const isLive = sessionView.session.status === 'active'
-
   return (
     <section data-reveal className="space-y-6 pb-2">
       <div className="flex flex-wrap items-center gap-2">
         <SessionStatusPill
           status={sessionView.session.status}
           statusLabel={sessionView.session.statusLabel}
-          isLive={isLive}
         />
         <Badge variant="outline">{sessionView.session.themeLabel}</Badge>
         <Badge variant="secondary">
@@ -490,67 +487,13 @@ function isRoundRevealed(round: PublicSessionView['rounds'][number]) {
 function SessionStatusPill({
   status,
   statusLabel,
-  isLive,
 }: {
   status: string
   statusLabel: string
-  isLive: boolean
 }) {
-  if (isLive) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
-        <span className="live-dot" />
-        {statusLabel}
-      </span>
-    )
-  }
-
-  const tone =
-    status === 'ended'
-      ? 'bg-primary/12 text-primary dark:bg-primary/20'
-      : status === 'stopped'
-        ? 'bg-red-500/12 text-red-700 dark:bg-red-400/15 dark:text-red-300'
-        : 'bg-muted text-muted-foreground'
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
-        tone,
-      )}
-    >
-      <span className="size-1.5 rounded-full bg-current" />
-      {statusLabel}
-    </span>
-  )
+  return <StatusPill status={status} label={statusLabel} />
 }
 
 function RoundStatusPill({ status }: { status: string }) {
-  const isLiveLike = status === 'voting' || status === 'generating'
-  const tone =
-    status === 'scored'
-      ? 'bg-amber-500/12 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300'
-      : status === 'voting'
-        ? 'bg-primary/12 text-primary'
-        : status === 'generating'
-          ? 'bg-cyan-500/12 text-cyan-700 dark:bg-cyan-400/15 dark:text-cyan-300'
-          : status === 'collecting_topic'
-            ? 'bg-violet-500/12 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300'
-            : 'bg-muted text-muted-foreground'
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
-        tone,
-      )}
-    >
-      {isLiveLike ? (
-        <span className="live-dot" />
-      ) : (
-        <span className="size-1.5 rounded-full bg-current" />
-      )}
-      {status.replaceAll('_', ' ')}
-    </span>
-  )
+  return <StatusPill status={status} />
 }

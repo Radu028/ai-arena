@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { useAuth, useClerk, useUser } from '@clerk/tanstack-react-start'
 import {
@@ -43,23 +43,40 @@ const ADMIN_NAV_LINK = {
   icon: ShieldIcon,
 } as const
 
+interface MobileMenuState {
+  pathname: string
+  open: boolean
+}
+
 export default function Header() {
   const runtime = useRuntimeConfig()
   const { pathname } = useLocation()
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
+  const [mobileMenu, setMobileMenu] = useState<MobileMenuState>({
+    pathname: '',
+    open: false,
+  })
+  const scrolled = useSyncExternalStore(
+    subscribeToScroll,
+    getScrollSnapshot,
+    getServerScrollSnapshot,
+  )
+  const mobileOpen = mobileMenu.pathname === pathname && mobileMenu.open
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  function closeMobileMenu() {
+    setMobileMenu({ pathname, open: false })
+  }
 
-  // Close the mobile menu whenever the route changes
+  // Let Escape dismiss the open mobile menu, matching standard overlay behavior.
   useEffect(() => {
-    setMobileOpen(false)
-  }, [pathname])
+    if (!mobileOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileMenu({ pathname, open: false })
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mobileOpen, pathname])
 
   return (
     <header
@@ -130,10 +147,17 @@ export default function Header() {
 
           <button
             type="button"
-            className="inline-flex size-9 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
+            className="inline-flex size-10 items-center justify-center rounded-full border border-border/70 bg-background/60 text-foreground transition-colors hover:bg-muted md:hidden"
+            onClick={() => {
+              setMobileMenu((current) => {
+                const currentOpen =
+                  current.pathname === pathname ? current.open : false
+                return { pathname, open: !currentOpen }
+              })
+            }}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
           >
             {mobileOpen ? (
               <XIcon className="size-4" />
@@ -145,10 +169,11 @@ export default function Header() {
       </nav>
 
       <div
+        id="mobile-nav"
         className={cn(
           'overflow-hidden border-t border-border/0 bg-background/95 backdrop-blur-xl transition-[max-height,border-color,opacity] duration-300 ease-out md:hidden',
           mobileOpen
-            ? 'max-h-[420px] border-border/60 opacity-100'
+            ? 'max-h-[80vh] overflow-y-auto border-border/60 opacity-100'
             : 'pointer-events-none max-h-0 opacity-0',
         )}
         aria-hidden={!mobileOpen}
@@ -161,18 +186,18 @@ export default function Header() {
               label={label}
               icon={Icon}
               mobile
-              onNavigate={() => setMobileOpen(false)}
+              onNavigate={closeMobileMenu}
             />
           ))}
           <AdminOnly>
             <HeaderNavLink
               {...ADMIN_NAV_LINK}
               mobile
-              onNavigate={() => setMobileOpen(false)}
+              onNavigate={closeMobileMenu}
             />
           </AdminOnly>
           {runtime.hasClerk ? (
-            <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
+            <MobileAuthLinks onNavigate={closeMobileMenu} />
           ) : null}
         </div>
       </div>
@@ -404,7 +429,7 @@ function Avatar({
 
 // Compute the current location-based redirect target for auth links. We
 // intentionally derive this synchronously from the router rather than gating it
-// behind a `mounted` flag — TanStack Start's SSR pipeline renders some
+// behind a `mounted` flag. TanStack Start's SSR pipeline renders some
 // components more than once and the post-effect render is the one that ends up
 // in the served HTML, so a `useEffect`-driven swap creates a hydration
 // mismatch when the client picks up the pre-effect value. `useLocation` returns
@@ -424,4 +449,18 @@ function computeInitials(value: string) {
   if (parts.length === 0) return ''
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function subscribeToScroll(onStoreChange: () => void) {
+  if (typeof window === 'undefined') return () => {}
+  window.addEventListener('scroll', onStoreChange, { passive: true })
+  return () => window.removeEventListener('scroll', onStoreChange)
+}
+
+function getScrollSnapshot() {
+  return typeof window !== 'undefined' && window.scrollY > 4
+}
+
+function getServerScrollSnapshot() {
+  return false
 }

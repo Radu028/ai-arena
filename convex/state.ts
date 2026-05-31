@@ -381,10 +381,13 @@ export const finalizeRound = internalMutation({
         isLastRound: round.roundNumber >= session.roundCount,
       }
     }
-    if (
-      round.status !== 'voting' &&
-      !(args.triggeredBy === 'system' && round.status === 'generating')
-    ) {
+    if (round.status === 'voting' && args.triggeredBy !== 'manual') {
+      return null
+    }
+    if (round.status === 'generating' && args.triggeredBy !== 'system') {
+      return null
+    }
+    if (round.status !== 'voting' && round.status !== 'generating') {
       return null
     }
 

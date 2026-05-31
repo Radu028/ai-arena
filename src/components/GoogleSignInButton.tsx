@@ -1,4 +1,4 @@
-import { useSignIn } from '@clerk/tanstack-react-start/legacy'
+import { useSignIn } from '@clerk/tanstack-react-start'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { cn } from '#/lib/utils'
@@ -28,31 +28,39 @@ export function GoogleSignInButton({
   className,
   fullWidth = true,
 }: GoogleSignInButtonProps) {
-  const { signIn, isLoaded } = useSignIn()
+  const { signIn, fetchStatus } = useSignIn()
   const [pending, setPending] = useState(false)
+  const isPending = pending || fetchStatus === 'fetching'
 
-  const handleClick = async () => {
-    if (!isLoaded) return
+  const startGoogleSignIn = async () => {
+    if (isPending) return
     try {
       setPending(true)
-      await signIn.authenticateWithRedirect({
+      const redirectCallbackUrl = `/sso-callback?redirect=${encodeURIComponent(
+        redirectTo,
+      )}`
+      const { error } = await signIn.sso({
         strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: redirectTo,
+        redirectCallbackUrl,
+        redirectUrl: redirectTo,
       })
+      if (error) {
+        setPending(false)
+        toast.error(
+          getClerkErrorMessage(error, 'Could not start Google login.'),
+        )
+      }
     } catch (error) {
       setPending(false)
-      const message =
-        error instanceof Error ? error.message : 'Could not start Google login.'
-      toast.error(message)
+      toast.error(getClerkErrorMessage(error, 'Could not start Google login.'))
     }
   }
 
   return (
     <button
       type="button"
-      onClick={handleClick}
-      disabled={!isLoaded || pending}
+      onClick={startGoogleSignIn}
+      disabled={isPending}
       data-variant={variant}
       className={cn('gsi-material-button', fullWidth && 'w-full', className)}
       aria-label={label}
@@ -63,11 +71,36 @@ export function GoogleSignInButton({
           <GoogleLogo />
         </span>
         <span className="gsi-material-button-contents">
-          {pending ? 'Connecting…' : label}
+          {isPending ? 'Connecting…' : label}
         </span>
       </span>
     </button>
   )
+}
+
+function getClerkErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof error.message === 'string' &&
+    error.message
+  ) {
+    return error.message
+  }
+  if (
+    error &&
+    typeof error === 'object' &&
+    'longMessage' in error &&
+    typeof error.longMessage === 'string' &&
+    error.longMessage
+  ) {
+    return error.longMessage
+  }
+  return fallback
 }
 
 function GoogleLogo() {

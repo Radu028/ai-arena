@@ -6,6 +6,7 @@ dist
 .vercel
 .tanstack
 .wrangler
+.agents
 convex/_generated
 .convex
 docs/diagrams

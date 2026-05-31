@@ -77,6 +77,13 @@
   --arena-xai: oklch(0.62 0.22 25);
   --arena-mistral: oklch(0.6 0.13 292);
 
+  /* Semantic status tokens — readable as text on a soft tint of themselves.
+   * Used by the shared StatusPill so the same state reads identically
+   * everywhere. "danger" reuses --destructive on purpose. */
+  --success: oklch(0.55 0.13 150);
+  --warning: oklch(0.5 0.11 70);
+  --info: oklch(0.52 0.12 230);
+
   --radius: 0.75rem;
 }
 
@@ -105,6 +112,16 @@
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.74 0.18 274);
+
+  /* Track the brighter dark-mode primary so violet glows / icon tints don't
+   * drift away from buttons in dark. */
+  --arena-violet: oklch(0.74 0.18 274);
+  --arena-violet-soft: oklch(0.8 0.14 274);
+
+  /* Lifted status tokens for dark surfaces */
+  --success: oklch(0.8 0.15 150);
+  --warning: oklch(0.84 0.13 85);
+  --info: oklch(0.78 0.12 230);
 
   --sidebar: var(--card);
   --sidebar-foreground: var(--foreground);
@@ -209,9 +226,15 @@ body::after {
   opacity: 0.6;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Must live in @layer base so Tailwind color utilities (in @layer utilities)
+ * win over it. Unlayered, this `inherit` would override `text-primary-foreground`
+ * on every anchor-based button (Button asChild → <a>), forcing dark text onto
+ * the dark primary fill. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 code,
@@ -254,6 +277,14 @@ code,
   letter-spacing: -0.04em;
   line-height: 0.98;
   font-size: clamp(2.5rem, 6vw, 4.75rem);
+}
+
+/* On narrow phones the headline wraps to 3-4 lines; give it a touch more
+ * leading there so the lines don't visually collide. */
+@media (max-width: 480px) {
+  .display {
+    line-height: 1.05;
+  }
 }
 
 /* Subtle inset card surface used on most pages — replaces the old
@@ -306,6 +337,26 @@ code,
   inset: 0;
   border-radius: 9999px;
   background: var(--arena-live);
+  animation: live-pulse 1.7s ease-out infinite;
+}
+
+/* Pulsing status dot that inherits the surrounding text color, so a "live"
+ * pill pulses in its own tone instead of a fixed lime. */
+.pulse-dot {
+  position: relative;
+  display: inline-flex;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
   animation: live-pulse 1.7s ease-out infinite;
 }
 
@@ -414,6 +465,11 @@ code,
   background: color-mix(in oklab, var(--foreground), transparent 86%);
 }
 
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 /* Theme switch transition — only fires when .theme-switching is present */
 .theme-switching *,
 .theme-switching *::before,
@@ -431,6 +487,7 @@ code,
   [data-reveal],
   .gradient-text,
   .live-dot::after,
+  .pulse-dot::after,
   .sheen-on-hover::before {
     animation: none !important;
     opacity: 1 !important;
@@ -621,6 +678,10 @@ code,
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
 
   --radius-xs: 0.25rem;
   --radius-sm: calc(var(--radius) - 0.25rem);

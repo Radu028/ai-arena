@@ -24,7 +24,7 @@ pnpm exec convex env set --prod GOOGLE_AI_API_KEY
 pnpm exec convex env set --prod AI_ARENA_DEMO_MODE false
 pnpm exec convex env set --prod HOST_AGENT_MODEL gpt-5-mini
 pnpm exec convex env set --prod CRITIC_AGENT_MODEL gpt-5-mini
-pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3-flash-preview
+pnpm exec convex env set --prod STATS_AGENT_MODEL gemini-3.1-flash-lite
 ```
 
 For the first three commands, omit the value and paste it only into the
@@ -36,15 +36,23 @@ For a zero-cost fallback demo, use:
 pnpm exec convex env set --prod AI_ARENA_DEMO_MODE true
 ```
 
-## Anthropic Cost Guardrail
+## Model Cost Guardrail
 
-Do not configure an Opus model for this project. The model list uses Sonnet:
+The active roster includes Opus for premium creative quality, but it is much
+more expensive than Sonnet/Flash-class models. Keep the default helper agents on
+mini or Flash-Lite models unless a live demo explicitly needs more quality:
 
+- `anthropic-claude-opus-48`
+- `claude-opus-4-8`
 - `anthropic-claude-sonnet-4`
 - `claude-sonnet-4-6`
+- `google-gemini-35-flash`
+- `gemini-3.5-flash`
+- `google-gemini-31-flash-lite`
+- `gemini-3.1-flash-lite`
 
-If this model is not available on the Anthropic account, replace it with the
-cheapest available Sonnet model before running a live demo.
+If Opus is not available on the Anthropic account, replace it with Sonnet before
+running a live demo.
 
 ## GitHub Secret For Convex CD
 
