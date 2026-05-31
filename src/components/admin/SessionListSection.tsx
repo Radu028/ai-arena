@@ -35,7 +35,7 @@ export function SessionListSection({
           <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
             {data?.sessions.length
               ? `${data.sessions.length} session${data.sessions.length === 1 ? '' : 's'} created so far`
-              : 'No arenas yet'}
+              : 'No sessions yet'}
           </h2>
         </div>
         {data && data.sessions.length > 0 ? (
@@ -116,7 +116,7 @@ export function SessionListSection({
             </EmptyMedia>
             <EmptyTitle>No sessions yet</EmptyTitle>
             <EmptyDescription>
-              Create your first arena to see it listed here.
+              Create your first session to see it listed here.
             </EmptyDescription>
           </EmptyHeader>
           <Button asChild>

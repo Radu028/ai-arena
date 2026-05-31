@@ -11,12 +11,9 @@ export function AdminSessionScoreboard({
         <div>
           <p className="eyebrow">Scoreboard</p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
-            Live summary
+            Wins and votes by model
           </h2>
         </div>
-        <span className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
-          live
-        </span>
       </div>
 
       <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">

@@ -20,9 +20,9 @@ export function AuthPanel() {
       data-reveal
       className="rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9"
     >
-      <p className="eyebrow">Sign in</p>
+      <p className="eyebrow">Admin access</p>
       <h2 className="font-display mt-2 text-balance text-3xl leading-tight sm:text-4xl">
-        Step into the arena.
+        Sign in with Google
       </h2>
 
       <div className="mt-6">

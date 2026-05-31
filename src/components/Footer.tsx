@@ -22,12 +22,12 @@ export default function Footer() {
         </div>
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-[0.825rem] sm:grid-cols-3">
-          <FooterCol title="Product">
+          <FooterCol title="Explore">
             <FooterLink to="/">Home</FooterLink>
             <FooterLink to="/join">Join</FooterLink>
-            <FooterLink to="/leaderboard">Leaderboard</FooterLink>
           </FooterCol>
-          <FooterCol title="Stage">
+          <FooterCol title="Results">
+            <FooterLink to="/leaderboard">Leaderboard</FooterLink>
             <FooterLink to="/history">History</FooterLink>
             <AdminOnly>
               <FooterLink to="/admin">Admin</FooterLink>

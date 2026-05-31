@@ -259,9 +259,7 @@ export function SessionPage() {
               <RadioIcon />
             </EmptyMedia>
             <EmptyTitle>Opening session&hellip;</EmptyTitle>
-            <EmptyDescription>
-              Loading the live room and preparing your spectator seat.
-            </EmptyDescription>
+            <EmptyDescription>Connecting to the live room.</EmptyDescription>
           </EmptyHeader>
         </Empty>
       </div>

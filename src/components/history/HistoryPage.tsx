@@ -66,7 +66,7 @@ export function HistoryPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
           Browse past battles to see how each topic landed, who won, and which
-          model the audience rallied behind.
+          model the audience voted for.
         </p>
       </section>
 

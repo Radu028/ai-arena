@@ -4,7 +4,7 @@ import { usePretextBlock } from '#/lib/pretext'
 export function MeasuredEditorialText({
   text,
   className,
-  fallback = 'No copy available yet.',
+  fallback = 'No commentary for this round.',
   label,
   accent = 'primary',
 }: {
