@@ -47,16 +47,16 @@ export function RoundResponseCard({
   return (
     <div
       className={cn(
-        'group relative flex min-h-full flex-col overflow-visible rounded-2xl border bg-card transition-all',
+        'group relative flex min-h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all',
         response.isWinner && revealed
-          ? 'border-amber-400/50 ring-amber-400/30 ring-amber-glow [box-shadow:0_24px_60px_-24px_color-mix(in_oklab,var(--arena-amber),transparent_55%),inset_0_0_0_1px_color-mix(in_oklab,var(--arena-amber),transparent_70%)]'
+          ? 'border-amber-400/55 [box-shadow:0_22px_55px_-30px_color-mix(in_oklab,var(--arena-amber),transparent_45%)]'
           : 'border-border/60 hover:border-border',
       )}
     >
       {response.isWinner && revealed ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_-20%,color-mix(in_oklab,var(--arena-amber),transparent_55%),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(135%_120%_at_85%_-25%,color-mix(in_oklab,var(--arena-amber),transparent_74%),transparent_60%)]"
         />
       ) : null}
 

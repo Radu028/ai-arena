@@ -196,7 +196,7 @@ export function JoinPage() {
               >
                 Open it directly
               </Link>{' '}
-              , no code needed.
+              — no code needed.
             </p>
           </div>
         </form>
