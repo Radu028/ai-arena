@@ -29,6 +29,10 @@ export const createSessionSchema = z.object({
     .default(''),
   responseLanguage: z.enum(RESPONSE_LANGUAGES).default('english'),
   roundCount: z.coerce.number().int().min(MIN_ROUNDS).max(MAX_ROUNDS),
+  scheduledStartAt: z
+    .union([z.number().finite().positive(), z.null()])
+    .optional()
+    .default(null),
   modelKeys: z
     .array(z.string().min(1))
     .min(MIN_MODELS_PER_SESSION, 'Select at least two models.')
@@ -44,6 +48,7 @@ export const joinSessionSchema = z.object({
   displayName: z
     .string()
     .trim()
+    .min(1, 'Choose a username before joining the session.')
     .max(40, 'Display names must stay under 40 characters.'),
   email: z
     .string()

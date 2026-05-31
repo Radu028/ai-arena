@@ -1,4 +1,5 @@
-import { useReducer, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
+import { useUser } from '@clerk/tanstack-react-start'
 import { Link, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
@@ -34,17 +35,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 
 type SessionPageState = {
   displayName: string
+  displayNameTouched: boolean
   pendingJoin: boolean
   pendingVoteId: string | null
 }
 
 type SessionPageAction =
   | { type: 'field'; field: 'displayName'; value: string }
+  | { type: 'prefillDisplayName'; value: string }
   | { type: 'pendingJoin'; value: boolean }
   | { type: 'pendingVoteId'; value: string | null }
 
 const INITIAL_STATE: SessionPageState = {
   displayName: '',
+  displayNameTouched: false,
   pendingJoin: false,
   pendingVoteId: null,
 }
@@ -55,7 +59,16 @@ function sessionPageReducer(
 ): SessionPageState {
   switch (action.type) {
     case 'field':
-      return { ...current, [action.field]: action.value }
+      return {
+        ...current,
+        [action.field]: action.value,
+        displayNameTouched: true,
+      }
+    case 'prefillDisplayName':
+      if (current.displayName || current.displayNameTouched) {
+        return current
+      }
+      return { ...current, displayName: action.value }
     case 'pendingJoin':
       return { ...current, pendingJoin: action.value }
     case 'pendingVoteId':
@@ -65,6 +78,7 @@ function sessionPageReducer(
 
 export function SessionPage() {
   const { slug } = useParams({ from: '/sessions/$slug' })
+  const { user } = useUser()
   const [participantToken, setParticipantToken] = useParticipantToken(slug)
   const sessionView = useQuery(api.sessions.getPublicSessionView, {
     slug,
@@ -75,6 +89,33 @@ export function SessionPage() {
   const [state, dispatch] = useReducer(sessionPageReducer, INITIAL_STATE)
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const voteAfterJoinIdRef = useRef<string | null>(null)
+  const sessionEnded =
+    sessionView !== undefined &&
+    sessionView !== null &&
+    (sessionView.session.status === 'ended' ||
+      sessionView.session.status === 'stopped')
+  const requiresUsername =
+    sessionView !== undefined &&
+    sessionView !== null &&
+    !sessionView.viewer &&
+    !sessionEnded
+
+  useEffect(() => {
+    const suggestedName =
+      user?.firstName?.trim() ||
+      user?.fullName?.trim().split(/\s+/)[0] ||
+      user?.username?.trim() ||
+      ''
+    if (suggestedName) {
+      dispatch({ type: 'prefillDisplayName', value: suggestedName })
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (requiresUsername) {
+      setJoinDialogOpen(true)
+    }
+  }, [requiresUsername])
 
   async function handleVote(responseId: string) {
     if (!participantToken || !sessionView?.viewer) {
@@ -99,16 +140,16 @@ export function SessionPage() {
     }
   }
 
-  async function handleJoinToVote(event: React.FormEvent<HTMLFormElement>) {
+  async function handleJoin(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const displayName = state.displayName.trim()
     if (!displayName) {
-      toast.error('Choose a username before voting.')
+      toast.error('Choose a username before entering the session.')
       return
     }
     const parsed = joinSessionSchema.safeParse({
       displayName,
-      email: '',
+      email: user?.primaryEmailAddress?.emailAddress ?? '',
     })
     if (!parsed.success) {
       toast.error(
@@ -126,7 +167,7 @@ export function SessionPage() {
       const result = await joinSession({
         slug,
         displayName: parsed.data.displayName,
-        email: null,
+        email: user?.primaryEmailAddress?.emailAddress ?? null,
         existingToken: participantToken,
       })
       setParticipantToken(result.accessToken)
@@ -143,7 +184,7 @@ export function SessionPage() {
             : 'Username saved. Your vote was already counted.',
         )
       } else {
-        toast.success('Username saved.')
+        toast.success('Username saved. Welcome to the arena.')
       }
       voteAfterJoinIdRef.current = null
       setJoinDialogOpen(false)
@@ -151,7 +192,7 @@ export function SessionPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Could not join and vote right now.',
+          : 'Could not save your username right now.',
       )
     } finally {
       dispatch({ type: 'pendingJoin', value: false })
@@ -204,9 +245,6 @@ export function SessionPage() {
     )
   }
 
-  const sessionEnded =
-    sessionView.session.status === 'ended' ||
-    sessionView.session.status === 'stopped'
   const winner = sessionEnded ? sessionView.scoreboard.at(0) : undefined
   const winnerVoteLabel = winner
     ? `${winner.totalVotes} ${winner.totalVotes === 1 ? 'vote' : 'votes'}`
@@ -282,6 +320,9 @@ export function SessionPage() {
       <Dialog
         open={joinDialogOpen}
         onOpenChange={(open) => {
+          if (!open && requiresUsername) {
+            return
+          }
           setJoinDialogOpen(open)
           if (!open) {
             voteAfterJoinIdRef.current = null
@@ -290,13 +331,13 @@ export function SessionPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Choose a username to vote</DialogTitle>
+            <DialogTitle>Choose a username to enter</DialogTitle>
             <DialogDescription>
-              Spectators don&rsquo;t need an account. A username is only
-              required when you cast a vote.
+              This is how you will appear in the live room and on the voting
+              roster. We prefill your Google first name when it is available.
             </DialogDescription>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={handleJoinToVote}>
+          <form className="space-y-4" onSubmit={handleJoin}>
             <div className="space-y-2">
               <Label htmlFor="voteDisplayName">Username</Label>
               <Input
@@ -309,13 +350,18 @@ export function SessionPage() {
                     value: event.target.value,
                   })
                 }
-                placeholder="e.g. radu"
-                autoComplete="off"
+                placeholder="e.g. Radu"
+                autoComplete="username"
+                autoFocus
               />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={state.pendingJoin}>
-                {state.pendingJoin ? 'Saving...' : 'Save username and vote'}
+                {state.pendingJoin
+                  ? 'Saving...'
+                  : voteAfterJoinIdRef.current
+                    ? 'Save username and vote'
+                    : 'Save username and enter'}
               </Button>
             </DialogFooter>
           </form>

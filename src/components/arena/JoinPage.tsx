@@ -103,8 +103,7 @@ export function JoinPage() {
           Join with a <span className="gradient-text">six-letter code.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-          Watch instantly as a spectator. You only pick a username when you
-          vote.
+          Pick your username first, then watch and vote as the session unfolds.
         </p>
       </section>
 
@@ -142,10 +141,7 @@ export function JoinPage() {
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="displayName">
-                Display name{' '}
-                <span className="text-muted-foreground">(optional)</span>
-              </Label>
+              <Label htmlFor="displayName">Username</Label>
               <Input
                 id="displayName"
                 value={state.displayName}
@@ -157,7 +153,8 @@ export function JoinPage() {
                   })
                 }
                 className="h-11"
-                placeholder="Auto-generated if empty"
+                placeholder="e.g. Radu"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -212,8 +209,8 @@ export function JoinPage() {
           />
           <JoinInfoItem
             icon={UserRoundIcon}
-            title="Name only when you vote"
-            copy="Pick a username the moment you cast a ballot — nothing more."
+            title="Username first"
+            copy="Choose how you appear in the room before the live round begins."
           />
           <JoinInfoItem
             icon={KeyRoundIcon}

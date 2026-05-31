@@ -54,13 +54,13 @@ describe('shared validation', () => {
     expect(result.success).toBe(false)
   })
 
-  test('allows blank display names so the server can auto-generate one', () => {
-    const result = joinSessionSchema.parse({
+  test('requires a username before joining from the client', () => {
+    const result = joinSessionSchema.safeParse({
       displayName: '   ',
       email: '',
     })
 
-    expect(result.displayName).toBe('')
+    expect(result.success).toBe(false)
   })
 })
 

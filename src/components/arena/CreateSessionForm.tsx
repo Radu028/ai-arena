@@ -9,7 +9,10 @@ import {
   MAX_ROUNDS,
   MIN_ROUNDS,
   RESPONSE_LANGUAGE_COPY,
+  SESSION_THEMES,
+  getThemeCopy,
 } from '@shared/arena'
+import type { ResponseLanguage, SessionTheme } from '@shared/arena'
 import { createSessionSchema } from '@shared/validation'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -27,9 +30,11 @@ import { cn } from '#/lib/utils'
 
 type State = {
   title: string
+  theme: SessionTheme
   customPrompt: string
-  responseLanguage: keyof typeof RESPONSE_LANGUAGE_COPY
+  responseLanguage: ResponseLanguage
   roundCount: number
+  scheduledStartLocal: string
   maxParticipants: number
   selectedModels: string[]
   pending: boolean
@@ -41,9 +46,11 @@ type Action =
       type: 'field'
       field:
         | 'title'
+        | 'theme'
         | 'customPrompt'
         | 'responseLanguage'
         | 'roundCount'
+        | 'scheduledStartLocal'
         | 'maxParticipants'
       value: string | number
     }
@@ -74,9 +81,11 @@ export function CreateSessionForm() {
     },
     {
       title: 'Friday Night Arena',
+      theme: 'comedy',
       customPrompt: '',
       responseLanguage: 'romanian',
       roundCount: 3,
+      scheduledStartLocal: '',
       maxParticipants: 200,
       selectedModels: AVAILABLE_MODELS.slice(0, 4).map((m) => m.key),
       pending: false,
@@ -96,10 +105,13 @@ export function CreateSessionForm() {
     event.preventDefault()
     const parsed = createSessionSchema.safeParse({
       title: state.title,
-      theme: 'comedy',
+      theme: state.theme,
       customPrompt: state.customPrompt,
       responseLanguage: state.responseLanguage,
       roundCount: state.roundCount,
+      scheduledStartAt: state.scheduledStartLocal
+        ? new Date(state.scheduledStartLocal).getTime()
+        : null,
       modelKeys: state.selectedModels,
       maxParticipants: state.maxParticipants,
     })
@@ -131,7 +143,7 @@ export function CreateSessionForm() {
         title="Name, arena prompt, and language"
         description="The title is public. The arena prompt is the single brief used for every generated round."
       >
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="title">Session title</Label>
             <Input
@@ -148,6 +160,30 @@ export function CreateSessionForm() {
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="theme">Theme</Label>
+            <Select
+              value={state.theme}
+              onValueChange={(value) =>
+                dispatch({
+                  type: 'field',
+                  field: 'theme',
+                  value: value as SessionTheme,
+                })
+              }
+            >
+              <SelectTrigger id="theme" className="h-10">
+                <SelectValue placeholder="Select theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {SESSION_THEMES.map((theme) => (
+                  <SelectItem key={theme} value={theme}>
+                    {getThemeCopy(theme).label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="responseLanguage">Response language</Label>
             <Select
               value={state.responseLanguage}
@@ -155,7 +191,7 @@ export function CreateSessionForm() {
                 dispatch({
                   type: 'field',
                   field: 'responseLanguage',
-                  value: value as keyof typeof RESPONSE_LANGUAGE_COPY,
+                  value: value as ResponseLanguage,
                 })
               }
             >
@@ -171,7 +207,7 @@ export function CreateSessionForm() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2 md:col-span-3">
             <Label htmlFor="customPrompt">Arena prompt</Label>
             <Textarea
               id="customPrompt"
@@ -201,7 +237,7 @@ export function CreateSessionForm() {
         title="Format"
         description="Pick how many rounds you want and how many seats the room can hold."
       >
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="roundCount">
               Rounds
@@ -224,6 +260,28 @@ export function CreateSessionForm() {
               }
               className="h-10"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="scheduledStartLocal">
+              Scheduled start{' '}
+              <span className="text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="scheduledStartLocal"
+              type="datetime-local"
+              value={state.scheduledStartLocal}
+              onChange={(e) =>
+                dispatch({
+                  type: 'field',
+                  field: 'scheduledStartLocal',
+                  value: e.target.value,
+                })
+              }
+              className="h-10"
+            />
+            <p className="text-xs leading-5 text-muted-foreground">
+              Leave empty to start manually from the admin controls.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="maxParticipants">
