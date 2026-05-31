@@ -3,7 +3,7 @@
 
 import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -62,6 +62,42 @@ describe('sessions flow', () => {
     expect(liveView?.currentRound?.topic).toBe(
       'Make jokes about final exams and student life.',
     )
+  })
+
+  test('admin can schedule a session start time', async () => {
+    const t = convexTest({ schema, modules })
+    const admin = t.withIdentity(adminIdentity)
+    const scheduledStartAt = Date.now() + 60_000
+
+    const created = await admin.mutation(api.sessions.create, {
+      title: 'Scheduled Arena',
+      theme: 'comedy',
+      customPrompt: 'Make jokes about launch timing.',
+      responseLanguage: 'english',
+      roundCount: 2,
+      scheduledStartAt,
+      modelKeys: ['openai-gpt5', 'google-gemini-31-pro'],
+      maxParticipants: 20,
+    })
+
+    const waitingView = await admin.query(api.sessions.getAdminSession, {
+      sessionId: created.sessionId,
+    })
+    expect(waitingView?.status).toBe('waiting')
+    expect(waitingView?.scheduledStartAt).toBe(scheduledStartAt)
+
+    await t.mutation(internal.sessionStart.startScheduled, {
+      sessionId: created.sessionId,
+      scheduledStartAt,
+    })
+
+    const liveView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: null,
+    })
+    expect(liveView?.session.status).toBe('active')
+    expect(liveView?.session.scheduledStartAt).toBeNull()
+    expect(liveView?.currentRound?.status).toBe('generating')
   })
 
   test('starting a session locks the admin prompt for the round', async () => {

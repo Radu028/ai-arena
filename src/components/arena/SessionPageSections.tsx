@@ -8,7 +8,7 @@ import {
   Users2Icon,
 } from 'lucide-react'
 import type { api } from '@convex/_generated/api'
-import { formatClock, initials } from '#/lib/format'
+import { formatClock, formatDateTime, initials } from '#/lib/format'
 import { Avatar, AvatarFallback } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
 import {
@@ -77,9 +77,12 @@ export function SessionOverviewSection({
         />
         <span className="inline-flex items-center gap-2">
           <CalendarClockIcon className="size-4" />
-          {sessionView.viewer
-            ? `Ready to vote as ${sessionView.viewer.displayName}`
-            : 'Watching as a spectator'}
+          {sessionView.session.scheduledStartAt &&
+          sessionView.session.status === 'waiting'
+            ? `Starts ${formatDateTime(sessionView.session.scheduledStartAt)}`
+            : sessionView.viewer
+              ? `Ready to vote as ${sessionView.viewer.displayName}`
+              : 'Choose a username to enter'}
         </span>
       </div>
 

@@ -38,6 +38,7 @@ export default defineSchema({
     currentRoundNumber: v.number(),
     maxParticipants: v.number(),
     votingWindowSeconds: v.number(),
+    scheduledStartAt: v.optional(nullableNumberValidator),
     selectedModelKeys: v.array(v.string()),
     selectedModelsSnapshot: v.array(sessionModelSnapshotValidator),
     startedAt: nullableNumberValidator,

@@ -3,6 +3,7 @@ import {
   ArrowLeftIcon,
   EyeIcon,
   ExternalLinkIcon,
+  LogInIcon,
   PlayIcon,
   SkipForwardIcon,
   SquareIcon,
@@ -31,6 +32,8 @@ export function AdminSessionHeader({
   onReveal: () => Promise<void>
   onStop: () => Promise<void>
 }) {
+  const publicRoomPath = `/sessions/${session.slug}`
+
   return (
     <>
       <div>
@@ -59,10 +62,14 @@ export function AdminSessionHeader({
           </h1>
         </div>
 
-        <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-border/50">
+        <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-5 lg:divide-x lg:divide-border/50">
           <AdminSessionDateStat
             label="Created"
             value={formatDateTime(session.createdAt)}
+          />
+          <AdminSessionDateStat
+            label="Scheduled"
+            value={formatDateTime(session.scheduledStartAt)}
           />
           <AdminSessionDateStat
             label="Started"
@@ -127,10 +134,16 @@ export function AdminSessionHeader({
             Stop session
           </Button>
           <Button asChild variant="outline">
-            <Link to="/sessions/$slug" params={{ slug: session.slug }}>
+            <a href={publicRoomPath} target="_blank" rel="noreferrer">
+              <LogInIcon className="size-4" />
+              Participate as admin
+            </a>
+          </Button>
+          <Button asChild variant="ghost">
+            <a href={publicRoomPath} target="_blank" rel="noreferrer">
               <ExternalLinkIcon className="size-4" />
               Open public room
-            </Link>
+            </a>
           </Button>
         </div>
       </header>

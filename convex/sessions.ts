@@ -49,6 +49,46 @@ function getRoundTopic(session: Doc<'sessions'>) {
   return getCustomPrompt(session) ?? session.title
 }
 
+async function prepareRoundResponses(
+  ctx: MutationCtx,
+  session: Doc<'sessions'>,
+  round: Doc<'rounds'>,
+  promptVersion: string,
+) {
+  const startedAt = now()
+  const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+  await ctx.db.patch(round._id, {
+    status: 'generating',
+    topic: getRoundTopic(session),
+    topicSubmittedByParticipantId: null,
+    topicLockedAt: startedAt,
+    generatingStartedAt: startedAt,
+  })
+
+  for (const [index, model] of session.selectedModelsSnapshot.entries()) {
+    await ctx.db.insert('roundResponses', {
+      sessionId: session._id,
+      roundId: round._id,
+      providerKey: model.providerKey,
+      modelKey: model.key,
+      modelId: model.modelId,
+      modelLabel: model.label,
+      anonymizedSlot: slots[index],
+      promptVersion,
+      responseText: null,
+      status: 'pending',
+      latencyMs: null,
+      tokenUsageInput: null,
+      tokenUsageOutput: null,
+      costMicrosUsd: null,
+      errorCode: null,
+      errorMessage: null,
+      createdAt: startedAt,
+      completedAt: null,
+    })
+  }
+}
+
 function summarizeRound(
   round: Doc<'rounds'>,
   responses: Array<Doc<'roundResponses'>>,
@@ -315,6 +355,7 @@ async function buildSessionView(
       roundCount: session.roundCount,
       currentRoundNumber: session.currentRoundNumber,
       startedAt: session.startedAt,
+      scheduledStartAt: session.scheduledStartAt,
       stoppedAt: session.stoppedAt,
       endedAt: session.endedAt,
       maxParticipants: session.maxParticipants,
@@ -378,6 +419,7 @@ export const listAdminSessions = query({
         responseLanguage: getResponseLanguage(session),
         roundCount: session.roundCount,
         currentRoundNumber: session.currentRoundNumber,
+        scheduledStartAt: session.scheduledStartAt,
         createdAt: session.createdAt,
       })),
     }
@@ -441,6 +483,7 @@ export const getAdminSession = query({
       maxParticipants: session.maxParticipants,
       createdAt: session.createdAt,
       startedAt: session.startedAt,
+      scheduledStartAt: session.scheduledStartAt,
       stoppedAt: session.stoppedAt,
       endedAt: session.endedAt,
       scoreboard: await buildScoreboard(ctx, session, rounds),
@@ -474,6 +517,7 @@ export const create = mutation({
     customPrompt: v.optional(v.string()),
     responseLanguage: v.optional(responseLanguageValidator),
     roundCount: v.number(),
+    scheduledStartAt: v.optional(v.union(v.number(), v.null())),
     modelKeys: v.array(v.string()),
     maxParticipants: v.optional(v.number()),
   },
@@ -491,6 +535,10 @@ export const create = mutation({
     }
     if (args.roundCount < MIN_ROUNDS || args.roundCount > MAX_ROUNDS) {
       throw new Error('Round count is out of range.')
+    }
+    const scheduledStartAt = args.scheduledStartAt ?? null
+    if (scheduledStartAt !== null && scheduledStartAt <= now() + 30_000) {
+      throw new Error('Scheduled start must be at least 30 seconds from now.')
     }
     if (
       args.modelKeys.length < MIN_MODELS_PER_SESSION ||
@@ -516,6 +564,7 @@ export const create = mutation({
       currentRoundNumber: 0,
       maxParticipants: clampParticipantLimit(args.maxParticipants),
       votingWindowSeconds: defaultVotingWindowSeconds(),
+      scheduledStartAt,
       selectedModelKeys: args.modelKeys,
       selectedModelsSnapshot,
       startedAt: null,
@@ -550,10 +599,22 @@ export const create = mutation({
       sessionId,
       type: 'session_created',
       title: 'Session created',
-      description:
-        'The arena is configured and waiting for the admin to start it.',
+      description: scheduledStartAt
+        ? 'The arena is configured and scheduled to start automatically.'
+        : 'The arena is configured and waiting for the admin to start it.',
       meta: {},
     })
+
+    if (scheduledStartAt) {
+      await ctx.scheduler.runAt(
+        scheduledStartAt,
+        internal.sessionStart.startScheduled,
+        {
+          sessionId,
+          scheduledStartAt,
+        },
+      )
+    }
 
     const session = await ctx.db.get(sessionId)
     if (!session) {
@@ -588,40 +649,9 @@ export const start = mutation({
       status: 'active',
       currentRoundNumber: 1,
       startedAt: now(),
+      scheduledStartAt: null,
     })
-    const topic = getRoundTopic(session)
-    const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
-    const startedAt = now()
-    await ctx.db.patch(firstRound._id, {
-      status: 'generating',
-      topic,
-      topicSubmittedByParticipantId: null,
-      topicLockedAt: startedAt,
-      generatingStartedAt: startedAt,
-    })
-
-    for (const [index, model] of session.selectedModelsSnapshot.entries()) {
-      await ctx.db.insert('roundResponses', {
-        sessionId: session._id,
-        roundId: firstRound._id,
-        providerKey: model.providerKey,
-        modelKey: model.key,
-        modelId: model.modelId,
-        modelLabel: model.label,
-        anonymizedSlot: slots[index],
-        promptVersion: 'v2',
-        responseText: null,
-        status: 'pending',
-        latencyMs: null,
-        tokenUsageInput: null,
-        tokenUsageOutput: null,
-        costMicrosUsd: null,
-        errorCode: null,
-        errorMessage: null,
-        createdAt: startedAt,
-        completedAt: null,
-      })
-    }
+    await prepareRoundResponses(ctx, session, firstRound, 'v2')
 
     await appendSessionEvent(ctx, {
       sessionId: session._id,

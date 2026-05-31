@@ -12,6 +12,7 @@ import type * as admins from "../admins.js";
 import type * as lib from "../lib.js";
 import type * as orchestration from "../orchestration.js";
 import type * as rounds from "../rounds.js";
+import type * as sessionStart from "../sessionStart.js";
 import type * as sessions from "../sessions.js";
 import type * as state from "../state.js";
 import type * as stats from "../stats.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   lib: typeof lib;
   orchestration: typeof orchestration;
   rounds: typeof rounds;
+  sessionStart: typeof sessionStart;
   sessions: typeof sessions;
   state: typeof state;
   stats: typeof stats;
