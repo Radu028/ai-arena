@@ -322,8 +322,9 @@ export function SessionPage() {
                 <span className="gradient-text">takes the crown.</span>
               </h2>
               <p className="text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                {winner.wins} round{winner.wins !== 1 ? 's' : ''} won out of{' '}
-                {winner.roundsPlayed} - {winnerVoteLabel} for the winner.
+                Won {winner.wins} of {winner.roundsPlayed} round
+                {winner.roundsPlayed !== 1 ? 's' : ''} with {winnerVoteLabel} from
+                the audience.
               </p>
             </div>
           </div>

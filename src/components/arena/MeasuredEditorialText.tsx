@@ -32,17 +32,19 @@ export function MeasuredEditorialText({
     <figure
       ref={ref}
       className={cn(
-        'relative rounded-2xl border border-border/60 bg-card/90 px-5 py-4 sm:px-6 sm:py-5',
-        'before:absolute before:inset-y-4 before:left-0 before:w-[2px] before:rounded-full',
+        'relative pl-5 sm:pl-6',
+        'before:absolute before:inset-y-0.5 before:left-0 before:w-[3px] before:rounded-full',
         accentClass,
         className,
       )}
       style={
-        metrics?.height ? { minHeight: `${metrics.height + 36}px` } : undefined
+        metrics?.height ? { minHeight: `${metrics.height + 8}px` } : undefined
       }
     >
-      {label ? <figcaption className="eyebrow mb-2">{label}</figcaption> : null}
-      <p className="font-editorial text-[1.02rem] leading-7 text-foreground">
+      {label ? (
+        <figcaption className="eyebrow mb-1.5">{label}</figcaption>
+      ) : null}
+      <p className="font-editorial text-[1.02rem] leading-7 text-foreground/90">
         {text ?? fallback}
       </p>
     </figure>
