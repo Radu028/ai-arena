@@ -58,7 +58,7 @@ describe('sessions flow', () => {
     })
 
     expect(liveView?.session.status).toBe('active')
-    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.status).toBe('collecting_responses')
     expect(liveView?.currentRound?.topic).toBe(
       'Make jokes about final exams and student life.',
     )
@@ -97,7 +97,7 @@ describe('sessions flow', () => {
     })
     expect(liveView?.session.status).toBe('active')
     expect(liveView?.session.scheduledStartAt).toBeNull()
-    expect(liveView?.currentRound?.status).toBe('generating')
+    expect(liveView?.currentRound?.status).toBe('collecting_responses')
   })
 
   test('starting a session locks the admin prompt for the round', async () => {

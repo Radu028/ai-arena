@@ -18,6 +18,7 @@ const STATUS_TONES: Record<string, { tone: StatusTone; pulse?: boolean }> = {
   stopped: { tone: 'danger' },
   // round statuses
   collecting_topic: { tone: 'info' },
+  collecting_responses: { tone: 'info', pulse: true },
   generating: { tone: 'info', pulse: true },
   voting: { tone: 'primary', pulse: true },
   scored: { tone: 'warning' },

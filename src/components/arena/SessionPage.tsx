@@ -5,7 +5,10 @@ import { useMutation, useQuery } from 'convex/react'
 import { CrownIcon, GavelIcon, RadioIcon, ScrollTextIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@convex/_generated/api'
-import { joinSessionSchema } from '@shared/validation'
+import {
+  joinSessionSchema,
+  participantResponseSchema,
+} from '@shared/validation'
 import {
   LiveSessionTab,
   SessionEventLogTab,
@@ -36,20 +39,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 type SessionPageState = {
   displayName: string
   displayNameTouched: boolean
+  responseText: string
   pendingJoin: boolean
+  pendingResponse: boolean
   pendingVoteId: string | null
 }
 
 type SessionPageAction =
   | { type: 'field'; field: 'displayName'; value: string }
+  | { type: 'responseText'; value: string }
   | { type: 'prefillDisplayName'; value: string }
   | { type: 'pendingJoin'; value: boolean }
+  | { type: 'pendingResponse'; value: boolean }
   | { type: 'pendingVoteId'; value: string | null }
 
 const INITIAL_STATE: SessionPageState = {
   displayName: '',
   displayNameTouched: false,
+  responseText: '',
   pendingJoin: false,
+  pendingResponse: false,
   pendingVoteId: null,
 }
 
@@ -69,8 +78,12 @@ function sessionPageReducer(
         return current
       }
       return { ...current, displayName: action.value }
+    case 'responseText':
+      return { ...current, responseText: action.value }
     case 'pendingJoin':
       return { ...current, pendingJoin: action.value }
+    case 'pendingResponse':
+      return { ...current, pendingResponse: action.value }
     case 'pendingVoteId':
       return { ...current, pendingVoteId: action.value }
   }
@@ -85,6 +98,9 @@ export function SessionPage() {
     participantToken,
   })
   const joinSession = useMutation(api.sessions.joinBySlug)
+  const submitParticipantResponse = useMutation(
+    api.rounds.submitParticipantResponse,
+  )
   const castVote = useMutation(api.votes.castHumanVote)
   const [state, dispatch] = useReducer(sessionPageReducer, INITIAL_STATE)
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
@@ -137,6 +153,40 @@ export function SessionPage() {
       toast.error(error instanceof Error ? error.message : 'Vote failed.')
     } finally {
       dispatch({ type: 'pendingVoteId', value: null })
+    }
+  }
+
+  async function handleSubmitResponse(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!participantToken || !sessionView?.viewer) {
+      setJoinDialogOpen(true)
+      return
+    }
+    const parsed = participantResponseSchema.safeParse({
+      responseText: state.responseText,
+    })
+    if (!parsed.success) {
+      toast.error(
+        parsed.error.issues[0]?.message ?? 'Your joke is not valid yet.',
+      )
+      return
+    }
+
+    dispatch({ type: 'pendingResponse', value: true })
+    try {
+      const result = await submitParticipantResponse({
+        slug,
+        participantToken,
+        responseText: parsed.data.responseText,
+      })
+      toast.success(
+        result.updated ? 'Joke updated for this round.' : 'Joke submitted.',
+      )
+      dispatch({ type: 'responseText', value: '' })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Submission failed.')
+    } finally {
+      dispatch({ type: 'pendingResponse', value: false })
     }
   }
 
@@ -304,6 +354,10 @@ export function SessionPage() {
             liveRound={sessionView.currentRound}
             latestFinishedRound={sessionView.latestFinishedRound}
             state={state}
+            onResponseTextChange={(value) =>
+              dispatch({ type: 'responseText', value })
+            }
+            onSubmitResponse={handleSubmitResponse}
             onVote={handleVote}
           />
         </TabsContent>

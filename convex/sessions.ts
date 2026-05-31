@@ -16,7 +16,6 @@ import {
 import {
   appendSessionEvent,
   autoDisplayName,
-  buildAnonymizedSlots,
   clampParticipantLimit,
   countParticipantsForSession,
   defaultVotingWindowSeconds,
@@ -30,6 +29,7 @@ import {
   getSessionBySlug,
   hashToken,
   listRoundsForSession,
+  maxRoundResponsesForSession,
   now,
   requireAdminIdentity,
   requireSessionOwner,
@@ -49,44 +49,19 @@ function getRoundTopic(session: Doc<'sessions'>) {
   return getCustomPrompt(session) ?? session.title
 }
 
-async function prepareRoundResponses(
+async function openRoundForParticipantResponses(
   ctx: MutationCtx,
   session: Doc<'sessions'>,
   round: Doc<'rounds'>,
-  promptVersion: string,
 ) {
-  const startedAt = now()
-  const slots = buildAnonymizedSlots(session.selectedModelsSnapshot.length)
+  const openedAt = now()
   await ctx.db.patch(round._id, {
-    status: 'generating',
+    status: 'collecting_responses',
     topic: getRoundTopic(session),
     topicSubmittedByParticipantId: null,
-    topicLockedAt: startedAt,
-    generatingStartedAt: startedAt,
+    topicLockedAt: openedAt,
+    generatingStartedAt: null,
   })
-
-  for (const [index, model] of session.selectedModelsSnapshot.entries()) {
-    await ctx.db.insert('roundResponses', {
-      sessionId: session._id,
-      roundId: round._id,
-      providerKey: model.providerKey,
-      modelKey: model.key,
-      modelId: model.modelId,
-      modelLabel: model.label,
-      anonymizedSlot: slots[index],
-      promptVersion,
-      responseText: null,
-      status: 'pending',
-      latencyMs: null,
-      tokenUsageInput: null,
-      tokenUsageOutput: null,
-      costMicrosUsd: null,
-      errorCode: null,
-      errorMessage: null,
-      createdAt: startedAt,
-      completedAt: null,
-    })
-  }
 }
 
 function summarizeRound(
@@ -120,6 +95,8 @@ function summarizeRound(
     responses: responses.map((response) => ({
       id: response._id,
       slot: response.anonymizedSlot,
+      kind: response.responseKind ?? 'model',
+      participantId: response.participantId ?? null,
       status: response.status,
       text: response.responseText,
       label: revealModels ? response.modelLabel : null,
@@ -182,7 +159,7 @@ async function buildScoreboard(
       .withIndex('by_round_id_and_anonymized_slot', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(session.selectedModelsSnapshot.length + 2)
+      .take(maxRoundResponsesForSession(session))
     const humanVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_response_id', (q) =>
@@ -275,7 +252,7 @@ async function buildSessionView(
       .withIndex('by_round_id_and_anonymized_slot', (q) =>
         q.eq('roundId', round._id),
       )
-      .take(session.selectedModelsSnapshot.length + 2)
+      .take(maxRoundResponsesForSession(session))
     const humanVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_response_id', (q) =>
@@ -335,6 +312,19 @@ async function buildSessionView(
             .unique(),
         )
       : false
+  const viewerHasSubmittedResponse =
+    viewer && currentRoundDoc
+      ? Boolean(
+          await ctx.db
+            .query('roundResponses')
+            .withIndex('by_round_id_and_participant_id', (q) =>
+              q
+                .eq('roundId', currentRoundDoc._id)
+                .eq('participantId', viewer._id),
+            )
+            .unique(),
+        )
+      : false
 
   const scoreboard = await buildScoreboard(ctx, session, rounds, true)
 
@@ -367,8 +357,14 @@ async function buildSessionView(
           displayName: viewer.displayName,
           email: viewer.email,
           hasVotedCurrentRound: viewerHasVoted,
+          hasSubmittedCurrentRound: viewerHasSubmittedResponse,
           canVote: Boolean(
             currentRound && currentRound.status === 'voting' && !viewerHasVoted,
+          ),
+          canSubmitResponse: Boolean(
+            currentRound &&
+            currentRound.status === 'collecting_responses' &&
+            !viewerHasSubmittedResponse,
           ),
           canSubmitTopic: false,
         }
@@ -462,6 +458,11 @@ export const getAdminSession = query({
       (currentRound.status === 'aborted' || currentRound.revealAt !== null) &&
       currentRound.roundNumber < session.roundCount,
     )
+    const canEndResponseCollection = Boolean(
+      session.status === 'active' &&
+      currentRound &&
+      currentRound.status === 'collecting_responses',
+    )
     return {
       id: session._id,
       slug: session.slug,
@@ -479,6 +480,7 @@ export const getAdminSession = query({
       currentRoundStatus: currentRound?.status ?? null,
       hasUnrevealedScoredRound,
       canStartNextRound,
+      canEndResponseCollection,
       selectedModels: session.selectedModelsSnapshot,
       maxParticipants: session.maxParticipants,
       createdAt: session.createdAt,
@@ -651,20 +653,16 @@ export const start = mutation({
       startedAt: now(),
       scheduledStartAt: null,
     })
-    await prepareRoundResponses(ctx, session, firstRound, 'v2')
+    await openRoundForParticipantResponses(ctx, session, firstRound)
 
     await appendSessionEvent(ctx, {
       sessionId: session._id,
       roundId: firstRound._id,
       type: 'session_started',
       title: 'Session started',
-      description: 'Round 1 started from the admin prompt.',
+      description:
+        'Round 1 is open for optional participant jokes before AI generation.',
       meta: {},
-    })
-
-    await ctx.scheduler.runAfter(0, internal.orchestration.generateRound, {
-      sessionId: session._id,
-      roundId: firstRound._id,
     })
 
     return {
@@ -710,7 +708,7 @@ export const stop = mutation({
         .withIndex('by_round_id_and_anonymized_slot', (q) =>
           q.eq('roundId', currentRound._id),
         )
-        .take(session.selectedModelsSnapshot.length + 2)
+        .take(maxRoundResponsesForSession(session))
       for (const response of responses) {
         if (response.status === 'pending') {
           await ctx.db.patch(response._id, {

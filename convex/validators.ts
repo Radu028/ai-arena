@@ -26,6 +26,7 @@ export const sessionStatusValidator = v.union(
 export const roundStatusValidator = v.union(
   v.literal('pending'),
   v.literal('collecting_topic'),
+  v.literal('collecting_responses'),
   v.literal('generating'),
   v.literal('voting'),
   v.literal('scored'),

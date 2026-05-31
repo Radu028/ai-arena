@@ -7,10 +7,13 @@ import {
   getModelByKey,
   getThemeCopy,
 } from '../shared/arena'
-import { requireAdminIdentity } from './lib'
+import {
+  isParticipantResponse,
+  maxRoundResponsesForSession,
+  requireAdminIdentity,
+} from './lib'
 
 const MAX_SESSIONS_SCAN = 200
-const MAX_RESPONSES_PER_ROUND = 16
 const MAX_ROUNDS_PER_SESSION = 20
 
 type ModelAggregate = {
@@ -76,7 +79,7 @@ async function collectRoundData(ctx: QueryCtx, session: Doc<'sessions'>) {
       .withIndex('by_round_id_and_anonymized_slot', (queryBuilder) =>
         queryBuilder.eq('roundId', round._id),
       )
-      .take(MAX_RESPONSES_PER_ROUND)
+      .take(maxRoundResponsesForSession(session))
     const humanVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_response_id', (queryBuilder) =>
@@ -122,6 +125,9 @@ function accumulateModelStats(
   voteTally: Map<Id<'roundResponses'>, number>,
 ) {
   for (const response of responses) {
+    if (isParticipantResponse(response)) {
+      continue
+    }
     const key = response.modelKey
     let agg = aggregates.get(key)
     if (!agg) {
@@ -296,7 +302,7 @@ export const listCompletedSessions = query({
           .withIndex('by_round_id_and_anonymized_slot', (queryBuilder) =>
             queryBuilder.eq('roundId', round._id),
           )
-          .take(MAX_RESPONSES_PER_ROUND)
+          .take(maxRoundResponsesForSession(session))
         const humanVotes = await ctx.db
           .query('roundVotes')
           .withIndex('by_round_id_and_response_id', (queryBuilder) =>
@@ -410,8 +416,9 @@ export const getAdminCostSummary = query({
           .withIndex('by_round_id_and_anonymized_slot', (queryBuilder) =>
             queryBuilder.eq('roundId', round._id),
           )
-          .take(MAX_RESPONSES_PER_ROUND)
+          .take(maxRoundResponsesForSession(session))
         for (const response of responses) {
+          if (isParticipantResponse(response)) continue
           if (response.status === 'pending') continue
           sessionCalls += 1
           const inTok = response.tokenUsageInput ?? 0
