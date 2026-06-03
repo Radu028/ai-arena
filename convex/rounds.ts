@@ -8,6 +8,7 @@ import {
   getParticipantByToken,
   getRoundByNumber,
   getSessionBySlug,
+  isParticipantResponse,
   maxRoundResponsesForSession,
   now,
   appendSessionEvent,
@@ -27,6 +28,58 @@ function getRoundTopic(session: Doc<'sessions'>) {
   return prompt ? prompt : session.title
 }
 
+function responseTimestamp(response: Doc<'roundResponses'>) {
+  return response.completedAt ?? response.createdAt
+}
+
+function nextAvailableSlot(responses: Array<Doc<'roundResponses'>>) {
+  const usedSlots = new Set(
+    responses.map((response) => response.anonymizedSlot),
+  )
+  for (let index = 0; index <= responses.length; index += 1) {
+    const slot = getRoundSlotLabel(index)
+    if (!usedSlots.has(slot)) {
+      return slot
+    }
+  }
+  return getRoundSlotLabel(responses.length)
+}
+
+function normalizeParticipantResponses(
+  responses: Array<Doc<'roundResponses'>>,
+) {
+  const primaryByParticipant = new Map<string, Doc<'roundResponses'>>()
+  const staleResponses: Array<Doc<'roundResponses'>> = []
+
+  for (const response of responses) {
+    if (!isParticipantResponse(response) || !response.participantId) {
+      staleResponses.push(response)
+      continue
+    }
+
+    const key = response.participantId
+    const existing = primaryByParticipant.get(key)
+    if (!existing) {
+      primaryByParticipant.set(key, response)
+      continue
+    }
+
+    if (responseTimestamp(response) >= responseTimestamp(existing)) {
+      staleResponses.push(existing)
+      primaryByParticipant.set(key, response)
+    } else {
+      staleResponses.push(response)
+    }
+  }
+
+  return {
+    participantResponses: Array.from(primaryByParticipant.values()).sort(
+      (left, right) => responseTimestamp(left) - responseTimestamp(right),
+    ),
+    staleResponses,
+  }
+}
+
 async function prepareRoundResponses(
   ctx: MutationCtx,
   session: Doc<'sessions'>,
@@ -34,12 +87,14 @@ async function prepareRoundResponses(
   promptVersion: string,
 ) {
   const startedAt = now()
-  const participantResponses = await ctx.db
+  const existingResponses = await ctx.db
     .query('roundResponses')
     .withIndex('by_round_id_and_anonymized_slot', (query) =>
       query.eq('roundId', round._id),
     )
     .take(maxRoundResponsesForSession(session))
+  const { participantResponses, staleResponses } =
+    normalizeParticipantResponses(existingResponses)
   const slots = buildAnonymizedSlots(
     participantResponses.length + session.selectedModelsSnapshot.length,
   )
@@ -51,6 +106,10 @@ async function prepareRoundResponses(
     topicLockedAt: round.topicLockedAt ?? startedAt,
     generatingStartedAt: startedAt,
   })
+
+  for (const response of staleResponses) {
+    await ctx.db.delete(response._id)
+  }
 
   for (const [index, response] of participantResponses.entries()) {
     await ctx.db.patch(response._id, {
@@ -224,14 +283,20 @@ export const submitParticipantResponse = mutation({
       throw new Error('Joke length is invalid.')
     }
 
-    const existing = await ctx.db
+    const existingResponsesForParticipant = await ctx.db
       .query('roundResponses')
       .withIndex('by_round_id_and_participant_id', (query) =>
         query.eq('roundId', round._id).eq('participantId', participant._id),
       )
-      .unique()
+      .order('desc')
+      .take(maxRoundResponsesForSession(session))
     const submittedAt = now()
-    if (existing) {
+    if (existingResponsesForParticipant.length > 0) {
+      const existing = existingResponsesForParticipant[0]
+      const staleResponses = existingResponsesForParticipant.slice(1)
+      for (const response of staleResponses) {
+        await ctx.db.delete(response._id)
+      }
       await ctx.db.patch(existing._id, {
         responseText,
         status: 'success',
@@ -261,7 +326,7 @@ export const submitParticipantResponse = mutation({
       modelKey: participantResponseModelKey(participant._id),
       modelId: participant._id,
       modelLabel: participant.displayName,
-      anonymizedSlot: getRoundSlotLabel(existingResponses.length),
+      anonymizedSlot: nextAvailableSlot(existingResponses),
       promptVersion: 'participant-v1',
       responseText,
       status: 'success',

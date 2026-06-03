@@ -407,3 +407,27 @@ export function getEligibleResponses(responses: Array<Doc<'roundResponses'>>) {
       response.status === 'success' && Boolean(response.responseText),
   )
 }
+
+export function compactHumanVotes(votes: Array<Doc<'roundVotes'>>) {
+  const firstVoteByParticipant = new Map<string, Doc<'roundVotes'>>()
+  for (const vote of [...votes].sort(
+    (left, right) => left.createdAt - right.createdAt,
+  )) {
+    if (!firstVoteByParticipant.has(vote.participantId)) {
+      firstVoteByParticipant.set(vote.participantId, vote)
+    }
+  }
+  return Array.from(firstVoteByParticipant.values())
+}
+
+export function compactAiVotes(votes: Array<Doc<'roundAiVotes'>>) {
+  const firstVoteByModel = new Map<string, Doc<'roundAiVotes'>>()
+  for (const vote of [...votes].sort(
+    (left, right) => left.createdAt - right.createdAt,
+  )) {
+    if (!firstVoteByModel.has(vote.voterModelKey)) {
+      firstVoteByModel.set(vote.voterModelKey, vote)
+    }
+  }
+  return Array.from(firstVoteByModel.values())
+}

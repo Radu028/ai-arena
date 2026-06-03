@@ -186,7 +186,7 @@ function buildRoundPrompt(args: {
 }) {
   const formatInstruction =
     args.theme.label === 'Comedy Roast'
-      ? `For comedy, write one short joke with a fast setup and punchline. Stay under 240 characters and never add commentary after the punchline.`
+      ? `For comedy, write one short joke with a fast setup and punchline. Stay under 220 characters and never add commentary after the punchline.`
       : `Keep the answer compact enough to read and compare quickly during a live vote.`
   const lines = [
     `You are competing in an AI Arena round.`,

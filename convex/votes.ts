@@ -48,13 +48,18 @@ export const castHumanVote = mutation({
       throw new Error('You can only vote for successful responses.')
     }
 
-    const existing = await ctx.db
+    const existingVotes = await ctx.db
       .query('roundVotes')
       .withIndex('by_round_id_and_participant_id', (query) =>
         query.eq('roundId', round._id).eq('participantId', participant._id),
       )
-      .unique()
-    if (existing) {
+      .take(16)
+    if (existingVotes.length > 0) {
+      const existing = existingVotes[0]
+      const staleVotes = existingVotes.slice(1)
+      for (const vote of staleVotes) {
+        await ctx.db.delete(vote._id)
+      }
       return {
         accepted: false,
         responseId: existing.responseId,
