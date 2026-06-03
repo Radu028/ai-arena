@@ -220,6 +220,152 @@ describe('voting', () => {
     expect(revealedParticipant?.isWinner).toBe(true)
   })
 
+  test('public view stays available when participant joke records are duplicated', async () => {
+    const { t, created, guest } = await bootSessionWithTopic()
+
+    await t.run(async (ctx) => {
+      const round = await ctx.db
+        .query('rounds')
+        .withIndex('by_session_id_and_round_number', (query) =>
+          query.eq('sessionId', created.sessionId).eq('roundNumber', 1),
+        )
+        .unique()
+      if (!round) {
+        throw new Error('Missing test round.')
+      }
+
+      const baseResponse = {
+        sessionId: created.sessionId,
+        roundId: round._id,
+        responseKind: 'participant' as const,
+        participantId: guest.participantId,
+        providerKey: 'participant',
+        modelKey: `participant:${guest.participantId}`,
+        modelId: guest.participantId,
+        modelLabel: guest.displayName,
+        promptVersion: 'participant-v1',
+        status: 'success' as const,
+        latencyMs: null,
+        tokenUsageInput: null,
+        tokenUsageOutput: null,
+        costMicrosUsd: null,
+        errorCode: null,
+        errorMessage: null,
+      }
+      await ctx.db.insert('roundResponses', {
+        ...baseResponse,
+        anonymizedSlot: 'A',
+        responseText: 'Old duplicate joke.',
+        createdAt: 1,
+        completedAt: 1,
+      })
+      await ctx.db.insert('roundResponses', {
+        ...baseResponse,
+        anonymizedSlot: 'A',
+        responseText: 'Newest duplicate joke.',
+        createdAt: 2,
+        completedAt: 2,
+      })
+    })
+
+    const view = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(view?.viewer?.hasSubmittedCurrentRound).toBe(true)
+    expect(view?.currentRound?.responses).toHaveLength(1)
+    expect(view?.currentRound?.responses[0]?.text).toBe(
+      'Newest duplicate joke.',
+    )
+
+    const updated = await t.mutation(api.rounds.submitParticipantResponse, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+      responseText: 'Updated single joke.',
+    })
+    expect(updated.updated).toBe(true)
+
+    const storedResponses = await t.run(async (ctx) => {
+      const round = await ctx.db
+        .query('rounds')
+        .withIndex('by_session_id_and_round_number', (query) =>
+          query.eq('sessionId', created.sessionId).eq('roundNumber', 1),
+        )
+        .unique()
+      if (!round) {
+        throw new Error('Missing test round.')
+      }
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_participant_id', (query) =>
+          query
+            .eq('roundId', round._id)
+            .eq('participantId', guest.participantId),
+        )
+        .take(8)
+    })
+    expect(storedResponses).toHaveLength(1)
+    expect(storedResponses[0]?.responseText).toBe('Updated single joke.')
+  })
+
+  test('multiple guests can submit participant jokes and the admin can start AI responses', async () => {
+    const { t, admin, created, guest } = await bootSessionWithTopic()
+    const guestTwo = await t.mutation(api.sessions.joinBySlug, {
+      slug: created.slug,
+      displayName: 'Voter Two',
+      email: null,
+      existingToken: null,
+    })
+
+    const [firstSubmission, secondSubmission] = await Promise.all([
+      t.mutation(api.rounds.submitParticipantResponse, {
+        slug: created.slug,
+        participantToken: guest.accessToken,
+        responseText: 'First live joke.',
+      }),
+      t.mutation(api.rounds.submitParticipantResponse, {
+        slug: created.slug,
+        participantToken: guestTwo.accessToken,
+        responseText: 'Second live joke.',
+      }),
+    ])
+    expect(firstSubmission.accepted).toBe(true)
+    expect(secondSubmission.accepted).toBe(true)
+
+    const liveView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(liveView?.currentRound?.status).toBe('collecting_responses')
+    expect(liveView?.currentRound?.responses).toHaveLength(2)
+    expect(
+      new Set(
+        liveView?.currentRound?.responses.map((response) => response.slot),
+      ).size,
+    ).toBe(2)
+    expect(liveView?.viewer?.hasSubmittedCurrentRound).toBe(true)
+
+    await admin.mutation(api.rounds.endResponseCollection, {
+      sessionId: created.sessionId,
+    })
+    const preparedResponses = await t.run(async (ctx) => {
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot')
+        .take(8)
+    })
+    expect(preparedResponses).toHaveLength(4)
+    expect(
+      preparedResponses.filter(
+        (response) => response.responseKind === 'participant',
+      ),
+    ).toHaveLength(2)
+    expect(
+      new Set(preparedResponses.map((response) => response.anonymizedSlot))
+        .size,
+    ).toBe(4)
+  })
+
   test('multiple guests can vote concurrently and the admin controls round progression', async () => {
     vi.useFakeTimers()
     const { t, admin, created, guest } = await bootSessionWithTopic()
@@ -319,6 +465,83 @@ describe('voting', () => {
       'Hidden winner analysis.',
     )
     expect(revealedView?.scoreboard).not.toHaveLength(0)
+  })
+
+  test('duplicate human vote records are counted once and do not block the live view', async () => {
+    const { t, admin, created, guest } = await bootSessionWithTopic()
+    const responses = await startAiGenerationAndListResponses(
+      t,
+      admin,
+      created.sessionId,
+    )
+
+    for (const response of responses) {
+      await t.mutation(internal.state.saveModelResponse, {
+        sessionId: created.sessionId,
+        roundId: response.roundId,
+        modelKey: response.modelKey,
+        status: 'success',
+        responseText: `Successful response from ${response.modelKey}`,
+        latencyMs: 10,
+        tokenUsageInput: 20,
+        tokenUsageOutput: 10,
+        errorCode: null,
+        errorMessage: null,
+      })
+    }
+    await t.mutation(internal.state.openVoting, {
+      sessionId: created.sessionId,
+      roundId: responses[0].roundId,
+    })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('roundVotes', {
+        roundId: responses[0].roundId,
+        participantId: guest.participantId,
+        responseId: responses[0]._id,
+        source: 'human',
+        createdAt: 1,
+      })
+      await ctx.db.insert('roundVotes', {
+        roundId: responses[0].roundId,
+        participantId: guest.participantId,
+        responseId: responses[1]._id,
+        source: 'human',
+        createdAt: 2,
+      })
+    })
+
+    const view = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(view?.viewer?.hasVotedCurrentRound).toBe(true)
+    expect(view?.currentRound?.totals.humanVotes).toBe(1)
+    expect(
+      view?.currentRound?.responses.find(
+        (response) => response.id === responses[0]._id,
+      )?.votes,
+    ).toBe(1)
+    expect(
+      view?.currentRound?.responses.find(
+        (response) => response.id === responses[1]._id,
+      )?.votes,
+    ).toBe(0)
+
+    await admin.mutation(api.rounds.endVotingEarly, {
+      sessionId: created.sessionId,
+    })
+    await admin.mutation(api.rounds.revealLatestScoredRound, {
+      sessionId: created.sessionId,
+    })
+    const revealedView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(
+      revealedView?.currentRound?.responses.find(
+        (response) => response.id === responses[0]._id,
+      )?.isWinner,
+    ).toBe(true)
   })
 
   test('a stale timer cannot close a generating round', async () => {

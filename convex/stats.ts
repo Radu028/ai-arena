@@ -8,6 +8,8 @@ import {
   getThemeCopy,
 } from '../shared/arena'
 import {
+  compactAiVotes,
+  compactHumanVotes,
   isParticipantResponse,
   maxRoundResponsesForSession,
   requireAdminIdentity,
@@ -80,18 +82,22 @@ async function collectRoundData(ctx: QueryCtx, session: Doc<'sessions'>) {
         queryBuilder.eq('roundId', round._id),
       )
       .take(maxRoundResponsesForSession(session))
-    const humanVotes = await ctx.db
-      .query('roundVotes')
-      .withIndex('by_round_id_and_response_id', (queryBuilder) =>
-        queryBuilder.eq('roundId', round._id),
-      )
-      .take(session.maxParticipants + 1)
-    const aiVotes = await ctx.db
-      .query('roundAiVotes')
-      .withIndex('by_round_id_and_response_id', (queryBuilder) =>
-        queryBuilder.eq('roundId', round._id),
-      )
-      .take(session.selectedModelsSnapshot.length + 1)
+    const humanVotes = compactHumanVotes(
+      await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (queryBuilder) =>
+          queryBuilder.eq('roundId', round._id),
+        )
+        .take(session.maxParticipants + 1),
+    )
+    const aiVotes = compactAiVotes(
+      await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (queryBuilder) =>
+          queryBuilder.eq('roundId', round._id),
+        )
+        .take(session.selectedModelsSnapshot.length + 1),
+    )
 
     const voteTally = new Map<Id<'roundResponses'>, number>()
     for (const response of responses) {
@@ -303,12 +309,14 @@ export const listCompletedSessions = query({
             queryBuilder.eq('roundId', round._id),
           )
           .take(maxRoundResponsesForSession(session))
-        const humanVotes = await ctx.db
-          .query('roundVotes')
-          .withIndex('by_round_id_and_response_id', (queryBuilder) =>
-            queryBuilder.eq('roundId', round._id),
-          )
-          .take(session.maxParticipants + 1)
+        const humanVotes = compactHumanVotes(
+          await ctx.db
+            .query('roundVotes')
+            .withIndex('by_round_id_and_response_id', (queryBuilder) =>
+              queryBuilder.eq('roundId', round._id),
+            )
+            .take(session.maxParticipants + 1),
+        )
         totalVotes += humanVotes.length
 
         for (const response of responses) {

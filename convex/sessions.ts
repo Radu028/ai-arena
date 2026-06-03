@@ -17,6 +17,8 @@ import {
   appendSessionEvent,
   autoDisplayName,
   clampParticipantLimit,
+  compactAiVotes,
+  compactHumanVotes,
   countParticipantsForSession,
   defaultVotingWindowSeconds,
   ensureModelSnapshots,
@@ -28,6 +30,7 @@ import {
   getSessionByJoinCode,
   getSessionBySlug,
   hashToken,
+  isParticipantResponse,
   listRoundsForSession,
   maxRoundResponsesForSession,
   now,
@@ -47,6 +50,39 @@ function getCustomPrompt(session: Doc<'sessions'>) {
 
 function getRoundTopic(session: Doc<'sessions'>) {
   return getCustomPrompt(session) ?? session.title
+}
+
+function responseTimestamp(response: Doc<'roundResponses'>) {
+  return response.completedAt ?? response.createdAt
+}
+
+function responseDedupeKey(response: Doc<'roundResponses'>) {
+  if (isParticipantResponse(response) && response.participantId) {
+    return `participant:${response.participantId}`
+  }
+  if (!isParticipantResponse(response)) {
+    return `model:${response.modelKey}`
+  }
+  return `response:${response._id}`
+}
+
+function compactRoundResponses(responses: Array<Doc<'roundResponses'>>) {
+  const primaryByKey = new Map<string, Doc<'roundResponses'>>()
+
+  for (const response of responses) {
+    const key = responseDedupeKey(response)
+    const existing = primaryByKey.get(key)
+    if (
+      !existing ||
+      responseTimestamp(response) >= responseTimestamp(existing)
+    ) {
+      primaryByKey.set(key, response)
+    }
+  }
+
+  return Array.from(primaryByKey.values()).sort((left, right) =>
+    left.anonymizedSlot.localeCompare(right.anonymizedSlot),
+  )
 }
 
 async function openRoundForParticipantResponses(
@@ -154,24 +190,30 @@ async function buildScoreboard(
     if (revealedOnly && round.revealAt === null) {
       continue
     }
-    const responses = await ctx.db
-      .query('roundResponses')
-      .withIndex('by_round_id_and_anonymized_slot', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(maxRoundResponsesForSession(session))
-    const humanVotes = await ctx.db
-      .query('roundVotes')
-      .withIndex('by_round_id_and_response_id', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(session.maxParticipants + 1)
-    const aiVotes = await ctx.db
-      .query('roundAiVotes')
-      .withIndex('by_round_id_and_response_id', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(session.selectedModelsSnapshot.length + 1)
+    const responses = compactRoundResponses(
+      await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(maxRoundResponsesForSession(session)),
+    )
+    const humanVotes = compactHumanVotes(
+      await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(session.maxParticipants + 1),
+    )
+    const aiVotes = compactAiVotes(
+      await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(session.selectedModelsSnapshot.length + 1),
+    )
 
     const tally = new Map<string, number>()
     for (const response of responses) {
@@ -247,24 +289,30 @@ async function buildSessionView(
 
   const roundViews = []
   for (const round of rounds) {
-    const responses = await ctx.db
-      .query('roundResponses')
-      .withIndex('by_round_id_and_anonymized_slot', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(maxRoundResponsesForSession(session))
-    const humanVotes = await ctx.db
-      .query('roundVotes')
-      .withIndex('by_round_id_and_response_id', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(session.maxParticipants + 1)
-    const aiVotes = await ctx.db
-      .query('roundAiVotes')
-      .withIndex('by_round_id_and_response_id', (q) =>
-        q.eq('roundId', round._id),
-      )
-      .take(session.selectedModelsSnapshot.length + 1)
+    const responses = compactRoundResponses(
+      await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_anonymized_slot', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(maxRoundResponsesForSession(session)),
+    )
+    const humanVotes = compactHumanVotes(
+      await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(session.maxParticipants + 1),
+    )
+    const aiVotes = compactAiVotes(
+      await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (q) =>
+          q.eq('roundId', round._id),
+        )
+        .take(session.selectedModelsSnapshot.length + 1),
+    )
     const artifacts = await ctx.db
       .query('roundArtifacts')
       .withIndex('by_round_id_and_type', (q) => q.eq('roundId', round._id))
@@ -302,27 +350,31 @@ async function buildSessionView(
   const viewerHasVoted =
     viewer && currentRoundDoc
       ? Boolean(
-          await ctx.db
-            .query('roundVotes')
-            .withIndex('by_round_id_and_participant_id', (q) =>
-              q
-                .eq('roundId', currentRoundDoc._id)
-                .eq('participantId', viewer._id),
-            )
-            .unique(),
+          (
+            await ctx.db
+              .query('roundVotes')
+              .withIndex('by_round_id_and_participant_id', (q) =>
+                q
+                  .eq('roundId', currentRoundDoc._id)
+                  .eq('participantId', viewer._id),
+              )
+              .take(1)
+          )[0],
         )
       : false
   const viewerHasSubmittedResponse =
     viewer && currentRoundDoc
       ? Boolean(
-          await ctx.db
-            .query('roundResponses')
-            .withIndex('by_round_id_and_participant_id', (q) =>
-              q
-                .eq('roundId', currentRoundDoc._id)
-                .eq('participantId', viewer._id),
-            )
-            .unique(),
+          (
+            await ctx.db
+              .query('roundResponses')
+              .withIndex('by_round_id_and_participant_id', (q) =>
+                q
+                  .eq('roundId', currentRoundDoc._id)
+                  .eq('participantId', viewer._id),
+              )
+              .take(1)
+          )[0],
         )
       : false
 

@@ -1,6 +1,10 @@
 import type { FormEvent } from 'react'
 import type { FunctionReturnType } from 'convex/server'
 import {
+  MAX_PARTICIPANT_RESPONSE_LENGTH,
+  MIN_PARTICIPANT_RESPONSE_LENGTH,
+} from '@shared/arena'
+import {
   CalendarClockIcon,
   GavelIcon,
   HourglassIcon,
@@ -402,6 +406,11 @@ function ParticipantResponsePanel({
     )
   }
 
+  const responseLength = state.responseText.trim().length
+  const canSubmit =
+    responseLength >= MIN_PARTICIPANT_RESPONSE_LENGTH &&
+    responseLength <= MAX_PARTICIPANT_RESPONSE_LENGTH
+
   return (
     <form
       onSubmit={onSubmitResponse}
@@ -417,15 +426,15 @@ function ParticipantResponsePanel({
         value={state.responseText}
         onChange={(event) => onResponseTextChange(event.target.value)}
         placeholder="Write one short joke for this round..."
-        maxLength={280}
+        maxLength={MAX_PARTICIPANT_RESPONSE_LENGTH}
         disabled={state.pendingResponse}
         className="min-h-24"
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          {state.responseText.trim().length}/280 characters
+          {responseLength}/{MAX_PARTICIPANT_RESPONSE_LENGTH} characters
         </p>
-        <Button type="submit" disabled={state.pendingResponse}>
+        <Button type="submit" disabled={state.pendingResponse || !canSubmit}>
           <SparklesIcon className="size-4" />
           {state.pendingResponse ? 'Submitting...' : 'Submit joke'}
         </Button>

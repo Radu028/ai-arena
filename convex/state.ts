@@ -5,6 +5,8 @@ import { v } from 'convex/values'
 import { getThemeCopy } from '../shared/arena'
 import {
   appendSessionEvent,
+  compactAiVotes,
+  compactHumanVotes,
   getEligibleResponses,
   getRoundByNumber,
   maxRoundResponsesForSession,
@@ -60,18 +62,22 @@ export const getRoundReviewContext = internalQuery({
         query.eq('roundId', round._id),
       )
       .take(maxRoundResponsesForSession(session))
-    const humanVotes = await ctx.db
-      .query('roundVotes')
-      .withIndex('by_round_id_and_response_id', (query) =>
-        query.eq('roundId', round._id),
-      )
-      .take(session.maxParticipants + 1)
-    const aiVotes = await ctx.db
-      .query('roundAiVotes')
-      .withIndex('by_round_id_and_response_id', (query) =>
-        query.eq('roundId', round._id),
-      )
-      .take(session.selectedModelsSnapshot.length + 1)
+    const humanVotes = compactHumanVotes(
+      await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(session.maxParticipants + 1),
+    )
+    const aiVotes = compactAiVotes(
+      await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(session.selectedModelsSnapshot.length + 1),
+    )
     const nextRound =
       round.roundNumber < session.roundCount
         ? await getRoundByNumber(ctx, session._id, round.roundNumber + 1)
@@ -122,18 +128,22 @@ export const getSessionScoreboard = internalQuery({
           query.eq('roundId', round._id),
         )
         .take(maxRoundResponsesForSession(session))
-      const humanVotes = await ctx.db
-        .query('roundVotes')
-        .withIndex('by_round_id_and_response_id', (query) =>
-          query.eq('roundId', round._id),
-        )
-        .take(session.maxParticipants + 1)
-      const aiVotes = await ctx.db
-        .query('roundAiVotes')
-        .withIndex('by_round_id_and_response_id', (query) =>
-          query.eq('roundId', round._id),
-        )
-        .take(session.selectedModelsSnapshot.length + 1)
+      const humanVotes = compactHumanVotes(
+        await ctx.db
+          .query('roundVotes')
+          .withIndex('by_round_id_and_response_id', (query) =>
+            query.eq('roundId', round._id),
+          )
+          .take(session.maxParticipants + 1),
+      )
+      const aiVotes = compactAiVotes(
+        await ctx.db
+          .query('roundAiVotes')
+          .withIndex('by_round_id_and_response_id', (query) =>
+            query.eq('roundId', round._id),
+          )
+          .take(session.selectedModelsSnapshot.length + 1),
+      )
 
       const tally = new Map<string, number>()
       for (const response of responses) {
@@ -301,15 +311,20 @@ export const saveAiVote = internalMutation({
     if (voterResponse?.status !== 'success' || !voterResponse.responseText) {
       return null
     }
-    const existing = await ctx.db
+    const existingVotes = await ctx.db
       .query('roundAiVotes')
       .withIndex('by_round_id_and_voter_model_key', (query) =>
         query
           .eq('roundId', args.roundId)
           .eq('voterModelKey', args.voterModelKey),
       )
-      .unique()
-    if (existing) {
+      .take(16)
+    if (existingVotes.length > 0) {
+      const existing = existingVotes[0]
+      const staleVotes = existingVotes.slice(1)
+      for (const vote of staleVotes) {
+        await ctx.db.delete(vote._id)
+      }
       return existing._id
     }
     return await ctx.db.insert('roundAiVotes', {
@@ -399,18 +414,22 @@ export const finalizeRound = internalMutation({
       )
       .take(maxRoundResponsesForSession(session))
     const eligibleResponses = getEligibleResponses(responses)
-    const humanVotes = await ctx.db
-      .query('roundVotes')
-      .withIndex('by_round_id_and_response_id', (query) =>
-        query.eq('roundId', round._id),
-      )
-      .take(session.maxParticipants + 1)
-    const aiVotes = await ctx.db
-      .query('roundAiVotes')
-      .withIndex('by_round_id_and_response_id', (query) =>
-        query.eq('roundId', round._id),
-      )
-      .take(session.selectedModelsSnapshot.length + 1)
+    const humanVotes = compactHumanVotes(
+      await ctx.db
+        .query('roundVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(session.maxParticipants + 1),
+    )
+    const aiVotes = compactAiVotes(
+      await ctx.db
+        .query('roundAiVotes')
+        .withIndex('by_round_id_and_response_id', (query) =>
+          query.eq('roundId', round._id),
+        )
+        .take(session.selectedModelsSnapshot.length + 1),
+    )
 
     const tally = new Map<string, number>()
     for (const response of eligibleResponses) {
