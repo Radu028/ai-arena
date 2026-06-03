@@ -1,6 +1,6 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
-import { Spinner } from '#/components/ui/spinner'
+import { RoutePending } from '#/components/routing/RoutePending'
 
 export function getRouter() {
   const router = createTanStackRouter({
@@ -14,17 +14,6 @@ export function getRouter() {
   })
 
   return router
-}
-
-function RoutePending() {
-  return (
-    <div className="shell py-10">
-      <div className="surface flex items-center gap-3 rounded-2xl p-6 text-sm text-muted-foreground">
-        <Spinner className="size-4" />
-        Loading page...
-      </div>
-    </div>
-  )
 }
 
 declare module '@tanstack/react-router' {

@@ -1,8 +1,8 @@
 import { layout, prepare } from '@chenglou/pretext'
 import {
+  useCallback,
   useDeferredValue,
   useEffect,
-  useEffectEvent,
   useRef,
   useState,
 } from 'react'
@@ -37,7 +37,7 @@ export function usePretextBlock<TElement extends HTMLElement = HTMLDivElement>(
   const deferredText = useDeferredValue(text)
   const [metrics, setMetrics] = useState<LayoutMetrics | null>(null)
 
-  const measure = useEffectEvent(async () => {
+  const measure = useCallback(async () => {
     const node = ref.current
     if (!node || !deferredText) {
       setMetrics(null)
@@ -53,7 +53,7 @@ export function usePretextBlock<TElement extends HTMLElement = HTMLDivElement>(
     }
     const preparedText = getPrepared(deferredText, font, options)
     setMetrics(layout(preparedText, width, lineHeight))
-  })
+  }, [deferredText, font, lineHeight, options])
 
   useEffect(() => {
     void measure()
@@ -67,7 +67,7 @@ export function usePretextBlock<TElement extends HTMLElement = HTMLDivElement>(
     return () => {
       observer.disconnect()
     }
-  }, [deferredText, font, lineHeight, measure, options])
+  }, [measure])
 
   return {
     ref,
