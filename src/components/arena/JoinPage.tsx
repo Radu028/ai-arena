@@ -195,8 +195,8 @@ export function JoinPage() {
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
                 Open it directly
-              </Link>{' '}
-              — no code needed.
+              </Link>
+              {', no code needed.'}
             </p>
           </div>
         </form>

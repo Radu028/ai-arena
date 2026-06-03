@@ -308,6 +308,60 @@ describe('voting', () => {
     expect(storedResponses[0]?.responseText).toBe('Updated single joke.')
   })
 
+  test('a repeated participant joke submit is idempotent and keeps live views available', async () => {
+    const { t, created, guest } = await bootSessionWithTopic()
+
+    const [firstSubmission, retrySubmission] = await Promise.all([
+      t.mutation(api.rounds.submitParticipantResponse, {
+        slug: created.slug,
+        participantToken: guest.accessToken,
+        responseText: 'Phone submit joke.',
+      }),
+      t.mutation(api.rounds.submitParticipantResponse, {
+        slug: created.slug,
+        participantToken: guest.accessToken,
+        responseText: 'Phone retry joke.',
+      }),
+    ])
+
+    expect(firstSubmission.accepted).toBe(true)
+    expect(retrySubmission.accepted).toBe(true)
+
+    const liveView = await t.query(api.sessions.getPublicSessionView, {
+      slug: created.slug,
+      participantToken: guest.accessToken,
+    })
+    expect(liveView?.viewer?.hasSubmittedCurrentRound).toBe(true)
+    expect(liveView?.currentRound?.status).toBe('collecting_responses')
+    expect(liveView?.currentRound?.responses).toHaveLength(1)
+    expect(
+      ['Phone submit joke.', 'Phone retry joke.'].includes(
+        liveView?.currentRound?.responses[0]?.text ?? '',
+      ),
+    ).toBe(true)
+
+    const storedResponses = await t.run(async (ctx) => {
+      const round = await ctx.db
+        .query('rounds')
+        .withIndex('by_session_id_and_round_number', (query) =>
+          query.eq('sessionId', created.sessionId).eq('roundNumber', 1),
+        )
+        .unique()
+      if (!round) {
+        throw new Error('Missing test round.')
+      }
+      return await ctx.db
+        .query('roundResponses')
+        .withIndex('by_round_id_and_participant_id', (query) =>
+          query
+            .eq('roundId', round._id)
+            .eq('participantId', guest.participantId),
+        )
+        .take(8)
+    })
+    expect(storedResponses).toHaveLength(1)
+  })
+
   test('multiple guests can submit participant jokes and the admin can start AI responses', async () => {
     const { t, admin, created, guest } = await bootSessionWithTopic()
     const guestTwo = await t.mutation(api.sessions.joinBySlug, {
