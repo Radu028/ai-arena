@@ -19,6 +19,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:agents": "vitest run shared/agent-evals.test.ts",
+    "test:agents:live": "RUN_LIVE_AGENT_EVALS=true vitest run shared/agent-live-evals.test.ts",
     "lint": "eslint .",
     "format": "prettier --check .",
     "check": "pnpm format && pnpm lint && pnpm typecheck && pnpm test"

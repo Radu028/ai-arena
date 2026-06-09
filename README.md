@@ -127,7 +127,11 @@ The repo includes:
 
 - shared schema and validation unit tests
 - Convex function tests with `convex-test`
-- deterministic Host, Critic, and Stats Analyst agent evals
+- deterministic Host, Critic, and Stats Analyst quality evals with word and
+  sentence ranges, topic coverage, model coverage, numeric fidelity, formatting
+  checks, and explicit pass scores
+- optional live provider evals with an LLM-as-judge scoring relevance, clarity,
+  tone, and usefulness from 1 to 5
 - React Doctor verification for changed React code
 
 Run the full verification set with:
@@ -138,6 +142,11 @@ pnpm lint
 pnpm test
 pnpm build
 ```
+
+Run only the deterministic agent evals with `pnpm test:agents`. To evaluate
+fresh outputs from the real Host, Critic, and Stats Analyst models, provide
+`OPENAI_API_KEY` and `GOOGLE_AI_API_KEY`, then run
+`pnpm test:agents:live`. Live evals are opt-in because they use paid APIs.
 
 ## Clerk note
 

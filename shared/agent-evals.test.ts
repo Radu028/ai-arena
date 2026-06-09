@@ -2,64 +2,75 @@ import { describe, expect, test } from 'vitest'
 import {
   evaluateCriticCopy,
   evaluateHostCopy,
+  evaluateQualityJudgeScores,
   evaluateStatsCopy,
 } from './agent-evals'
 
-describe('agent evals', () => {
-  test('host copy is non-empty, references the topic, and fits theme tone', () => {
+function check(result: ReturnType<typeof evaluateHostCopy>, name: string) {
+  return result.checks.find((candidate) => candidate.name === name)
+}
+
+describe('deterministic agent quality evals', () => {
+  test('host output meets length, structure, relevance, tone, and format thresholds', () => {
     const evaluation = evaluateHostCopy({
       theme: 'comedy',
       topic: 'Debugging a smart toaster before breakfast',
       output:
-        'Step onto the stage: this round turns debugging a smart toaster into a breakfast joke with a live punchline.',
+        'Welcome to the comedy stage, where debugging a smart toaster is the only thing standing between us and breakfast. Keep the punchline warm, the crumbs controlled, and let this ridiculous round begin!',
     })
 
     expect(evaluation.passed).toBe(true)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'non_empty_output', passed: true },
-        { name: 'references_topic', passed: true },
-        { name: 'theme_tone_match', passed: true },
-      ]),
-    )
+    expect(evaluation.score).toBe(100)
+    expect(check(evaluation, 'word_count_in_range')).toMatchObject({
+      passed: true,
+      expected: '15-90 words',
+    })
+    expect(check(evaluation, 'sentence_count_in_range')).toMatchObject({
+      passed: true,
+      actual: 2,
+    })
+    expect(check(evaluation, 'topic_keyword_coverage')).toMatchObject({
+      passed: true,
+    })
   })
 
-  test('host eval fails when copy ignores the topic and theme tone', () => {
+  test('host output fails when it is short, generic, single-sentence, and badly formatted', () => {
     const evaluation = evaluateHostCopy({
       theme: 'debate',
       topic: 'Regulating autonomous delivery drones in cities',
-      output: 'Welcome back. This round should be interesting.',
+      output: '## Welcome back to the show.',
     })
 
     expect(evaluation.passed).toBe(false)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'references_topic', passed: false },
-        { name: 'theme_tone_match', passed: false },
-      ]),
+    expect(check(evaluation, 'word_count_in_range')?.passed).toBe(false)
+    expect(check(evaluation, 'sentence_count_in_range')?.passed).toBe(false)
+    expect(check(evaluation, 'topic_keyword_coverage')?.passed).toBe(false)
+    expect(check(evaluation, 'theme_tone_match')?.passed).toBe(false)
+    expect(check(evaluation, 'no_meta_or_markdown_formatting')?.passed).toBe(
+      false,
     )
   })
 
-  test('critic copy mentions every model and gives a rationale for the winner', () => {
+  test('critic output covers the topic, every model, the winner, and comparative reasoning', () => {
     const evaluation = evaluateCriticCopy({
+      topic: 'Should autonomous delivery drones be regulated in cities?',
       modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.6', 'Gemini 3.1 Pro'],
       winnerLabels: ['Claude Sonnet 4.6'],
       output:
-        'Claude Sonnet 4.6 worked best because it made the clearest case. OpenAI GPT-5.5 was strong but less focused, while Gemini 3.1 Pro lacked enough detail.',
+        'On regulating autonomous delivery drones in cities, Claude Sonnet 4.6 worked best because it balanced public safety with practical delivery benefits. OpenAI GPT-5.5 made a strong efficiency case but lacked detail on enforcement, while Gemini 3.1 Pro covered privacy concerns yet offered a weaker policy trade-off.',
     })
 
     expect(evaluation.passed).toBe(true)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'mentions_all_models', passed: true },
-        { name: 'mentions_winner', passed: true },
-        { name: 'provides_rationale', passed: true },
-      ]),
+    expect(evaluation.score).toBe(100)
+    expect(check(evaluation, 'mentions_all_models')?.passed).toBe(true)
+    expect(check(evaluation, 'provides_comparative_rationale')?.passed).toBe(
+      true,
     )
   })
 
-  test('critic eval fails when a model is omitted or no rationale is given', () => {
+  test('critic output fails measurable quality checks when analysis is incomplete', () => {
     const evaluation = evaluateCriticCopy({
+      topic: 'Should autonomous delivery drones be regulated in cities?',
       modelLabels: ['OpenAI GPT-5.5', 'Claude Sonnet 4.6', 'Gemini 3.1 Pro'],
       winnerLabels: ['Gemini 3.1 Pro'],
       output:
@@ -67,45 +78,73 @@ describe('agent evals', () => {
     })
 
     expect(evaluation.passed).toBe(false)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'mentions_all_models', passed: false },
-        { name: 'provides_rationale', passed: false },
-      ]),
+    expect(check(evaluation, 'word_count_in_range')?.passed).toBe(false)
+    expect(check(evaluation, 'topic_keyword_coverage')?.passed).toBe(false)
+    expect(check(evaluation, 'mentions_all_models')?.passed).toBe(false)
+    expect(check(evaluation, 'provides_comparative_rationale')?.passed).toBe(
+      false,
     )
   })
 
-  test('stats copy mentions models, vote counts, and a statistical takeaway', () => {
+  test('stats output reports every model and only the supplied vote values', () => {
     const evaluation = evaluateStatsCopy({
       modelLabels: ['OpenAI GPT-5.5', 'Gemini 3 Flash'],
       requiredNumbers: [4, 2],
       output:
-        'Stats Analyst: OpenAI GPT-5.5 wins the round with 4 votes, while Gemini 3 Flash lands at 2 votes. The vote split shows a clear winner rather than a tie.',
+        'OpenAI GPT-5.5 wins the round with 4 votes, while Gemini 3 Flash finishes with 2 votes. The vote split shows a clear lead for OpenAI GPT-5.5 and no tie.',
     })
 
     expect(evaluation.passed).toBe(true)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'mentions_a_model', passed: true },
-        { name: 'mentions_required_numbers', passed: true },
-        { name: 'stats_focused', passed: true },
-      ]),
-    )
+    expect(evaluation.score).toBe(100)
+    expect(check(evaluation, 'mentions_required_numbers')).toMatchObject({
+      passed: true,
+      actual: '4, 2',
+    })
+    expect(check(evaluation, 'no_hallucinated_numbers')?.passed).toBe(true)
   })
 
-  test('stats eval fails when output has no numbers or model reference', () => {
+  test('stats output fails when it omits a model and invents a vote value', () => {
     const evaluation = evaluateStatsCopy({
       modelLabels: ['OpenAI GPT-5.5', 'Gemini 3 Flash'],
       requiredNumbers: [4, 2],
-      output: 'This was an exciting round with a confident result.',
+      output:
+        'OpenAI GPT-5.5 wins this round with 7 votes. The result shows a decisive winner and a wide voting margin.',
     })
 
     expect(evaluation.passed).toBe(false)
-    expect(evaluation.checks).toEqual(
-      expect.arrayContaining([
-        { name: 'mentions_a_model', passed: false },
-        { name: 'mentions_required_numbers', passed: false },
-      ]),
-    )
+    expect(check(evaluation, 'mentions_all_models')?.passed).toBe(false)
+    expect(check(evaluation, 'mentions_required_numbers')?.passed).toBe(false)
+    expect(check(evaluation, 'no_hallucinated_numbers')).toMatchObject({
+      passed: false,
+      actual: '7',
+    })
+  })
+
+  test('LLM-as-judge scores must meet the minimum on every quality dimension', () => {
+    const passing = evaluateQualityJudgeScores({
+      relevance: 5,
+      clarity: 4,
+      tone: 4,
+      usefulness: 5,
+    })
+    const failing = evaluateQualityJudgeScores({
+      relevance: 5,
+      clarity: 3,
+      tone: 4,
+      usefulness: 4,
+    })
+
+    expect(passing.passed).toBe(true)
+    expect(passing.score).toBe(100)
+    expect(failing.passed).toBe(false)
+    expect(
+      failing.checks.find(
+        (evaluationCheck) => evaluationCheck.name === 'llm_judge_clarity',
+      ),
+    ).toMatchObject({
+      passed: false,
+      actual: 3,
+      expected: '4-5',
+    })
   })
 })
