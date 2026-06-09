@@ -107,17 +107,31 @@ prompts.
   `stats.listCompletedSessions` returns empty gracefully before any data
   exists).
 
-**Agent evals (lightweight)**
+**Agent evals**
 
-Because the Host, Critic, and Stats Analyst prompts can run against live paid providers, the
-project keeps the committed evals deterministic and no-cost. The eval suite
-checks both passing and failing examples for:
+The project has two automated eval layers:
 
-- Host copy: non-empty output, topic reference, and theme-appropriate tone.
-- Critic copy: all model labels mentioned, winner mentioned, and rationale
-  present.
-- Stats Analyst copy: model reference, vote numbers, and a statistical takeaway
-  present.
+- Deterministic evals run in CI without provider cost. They measure word and
+  sentence ranges, topic-keyword coverage, model and winner coverage, causal
+  reasoning, exact vote-number fidelity, hallucinated numbers, and unwanted
+  markdown or prompt leakage. Every result exposes individual observed values,
+  expected thresholds, and a percentage score.
+- Opt-in live evals generate fresh Host, Critic, and Stats Analyst outputs using
+  the configured OpenAI and Google models. A separate LLM-as-judge scores each
+  output from 1 to 5 for relevance, clarity, tone, and usefulness; every
+  dimension must score at least 4. These run with `pnpm test:agents:live` and
+  stay outside default CI because they consume paid API calls.
+
+The deterministic suite includes both passing and deliberately failing examples
+so the tests verify that weak outputs are rejected rather than merely proving
+that the evaluator accepts a golden sample.
+
+- Host copy: 15-90 words, 2-4 sentences, topic coverage, theme tone, and clean
+  audience-facing formatting.
+- Critic copy: 25-180 words, 2-6 sentences, topic coverage, all model and winner
+  labels, and comparative rationale.
+- Stats Analyst copy: 20-100 words, 2-4 sentences, all model labels, exact
+  supplied vote values, no invented numbers, and a statistical takeaway.
 - Structural prompt invariants enforced by unit tests (`getThemeCopy` returns
   non-empty `label`, `hostTone`, `criticAngle` for every theme — so Host and
   Critic prompt builders cannot silently produce empty strings).
@@ -152,8 +166,7 @@ checks both passing and failing examples for:
 
 - Use Cursor hooks to run `pnpm check` on every commit instead of relying on
   the CI workflow alone.
-- Add a thin "agent eval" harness that hits mock provider responses and
-  asserts on Host/Critic prompt quality (length, presence of theme keywords,
-  anonymization respected).
+- Persist live eval reports as CI artifacts in a manually triggered, budgeted
+  workflow so quality trends can be compared over time.
 - Add a dedicated `npx convex ai-files install` run to the `pnpm dev` script
   to keep `convex/_generated/ai/guidelines.md` always up to date.

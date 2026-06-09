@@ -331,16 +331,17 @@ Cover critical app logic with automated tests and validate both AI agents with l
 
 **Agent evals**
 
-- [x] **Host eval** — output is non-empty, references the topic, tone fits the session theme
-- [x] **Critic eval** — analysis mentions all models and provides a rationale for the winner
-- [x] **Stats Analyst eval** — summary mentions model labels, vote counts, and a statistical takeaway
+- [x] **Host eval** — 15-90 words, 2-4 sentences, topic coverage, theme tone, clean formatting
+- [x] **Critic eval** — 25-180 words, 2-6 sentences, topic coverage, all models and winner mentioned, comparative rationale
+- [x] **Stats Analyst eval** — 20-100 words, 2-4 sentences, all models, exact vote values, no hallucinated numbers
+- [x] **Live LLM eval** — optional real-provider generation plus LLM-as-judge scores for relevance, clarity, tone, and usefulness
 
 **Setup**
 
 - [x] Vitest configured; tests run in CI (see AIA-15)
 - [x] At least one test written with AI — documented în `docs/AI_TOOLS_REPORT.md`
 
-**Files:** `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts`, `shared/agent-evals.test.ts`.
+**Files:** `convex/sessions.test.ts`, `convex/voting.test.ts`, `shared/validation.test.ts`, `shared/agent-evals.test.ts`, `shared/agent-live-evals.test.ts`.
 
 ---
 
