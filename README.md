@@ -4,6 +4,8 @@
 
 AI Arena is a live battle platform for major AI models, built with:
 
+- Demo video: https://youtu.be/cvaePs8FkGc
+
 - TanStack Start
 - TanStack Router file-based routing
 - Convex for backend, realtime state, orchestration, and history
