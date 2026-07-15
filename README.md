@@ -1,33 +1,25 @@
 # AI Arena
 
 [![CI](https://github.com/Radu028/ai-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/Radu028/ai-arena/actions/workflows/ci.yml)
+[![Live app](https://img.shields.io/badge/live-ai--arena--seven.vercel.app-111111)](https://ai-arena-seven.vercel.app)
 
-AI Arena is a live battle platform for major AI models, built with:
+AI Arena is a live comparison room for nine OpenAI, Anthropic, and Google models. Providers run in parallel, responses stay anonymous during voting, and every round records latency, token usage, and estimated cost.
 
-- Demo video: https://youtu.be/cvaePs8FkGc
+[Live app](https://ai-arena-seven.vercel.app) · [Demo video](https://youtu.be/cvaePs8FkGc)
 
-- TanStack Start
-- TanStack Router file-based routing
-- Convex for backend, realtime state, orchestration, and history
-- Clerk for admin authentication
-- shadcn/ui on Tailwind CSS v4
-- Vite
-- `@chenglou/pretext` for measured editorial text blocks
+## What it does
 
-The current base includes:
+- Runs model providers concurrently with explicit timeout and failure handling.
+- Supports public sessions through share links, join codes, and QR codes.
+- Keeps response identity hidden until scoring is complete.
+- Combines audience voting with eligible model judges; ties remain explicit.
+- Produces Host, Critic, and Stats Analyst artifacts around each session.
+- Maintains realtime lobbies, scoreboards, history, event logs, and cost summaries.
+- Covers core orchestration and UI behavior with 56 deterministic tests.
 
-- public guest join by share link or join code
-- QR code sharing for live sessions
-- admin session creation, start, stop, and early vote close
-- email-based admin allowlist with `radupopa028@gmail.com` as bootstrap admin
-- Host / MC agent artifacts
-- Critic agent analysis
-- Stats Analyst agent summaries after finalized rounds
-- realtime public session view via Convex subscriptions
-- anonymous response cards and reveal after scoring
-- human voting plus AI model judging
-- spectator-first voting: viewers only choose a username when they vote
-- session history, scoreboard, and event log
+## Stack
+
+TanStack Start · React · TypeScript · Convex · Clerk · Tailwind CSS · shadcn/ui · Vitest
 
 ## Product structure
 
